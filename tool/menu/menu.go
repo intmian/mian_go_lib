@@ -1,5 +1,4 @@
 package menu
 
-type MenuNode interface {
-	Do()
+type Menu struct {
 }
