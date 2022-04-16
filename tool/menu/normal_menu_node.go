@@ -6,14 +6,14 @@ type normalMenuLogicNode struct {
 	child  []*MenuNode
 }
 
-func (n normalMenuLogicNode) getParent() *MenuNode {
+func (n normalMenuLogicNode) GetParent() *MenuNode {
 	return n.parent
 }
 
-func (n normalMenuLogicNode) getRoot() *MenuNode {
+func (n normalMenuLogicNode) GetRoot() *MenuNode {
 	return n.root
 }
 
-func (n normalMenuLogicNode) getAllChild() []*MenuNode {
+func (n normalMenuLogicNode) GetAllChild() []*MenuNode {
 	return n.child
 }
