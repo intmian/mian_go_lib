@@ -8,20 +8,16 @@ type MenuNode interface {
 
 // MenuFuncNode 菜单功能节点
 type MenuFuncNode interface {
+	isCallAble() bool
 	do()
 	stop() <-chan bool // 返回一个通道，用于显示什么时候停止
 }
 
 // MenuLogicNode 菜单逻辑节点
 type MenuLogicNode interface {
-	goRoot()
-	goChild(int)
-	goParent()
-	isCallAble() bool
-	getText()
-	getParent() MenuLogicNode
-	getRoot() MenuLogicNode
-	getAllChild() []MenuLogicNode
+	getParent() *MenuNode
+	getRoot() *MenuNode
+	getAllChild() []*MenuNode
 }
 
 type UnCallableMenuLogicNode struct {
@@ -41,5 +37,6 @@ func (receiver UnCallableMenuLogicNode) do() {
 
 type inputModel interface {
 	input() string
+	inputWithLen(strLen int) string
 	outInput(string) string
 }
