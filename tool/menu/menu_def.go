@@ -9,8 +9,7 @@ type MenuNode interface {
 // MenuFuncNode 菜单功能节点
 type MenuFuncNode interface {
 	IsCallAble() bool
-	Do()
-	Stop() <-chan bool // 返回一个通道，用于显示什么时候停止
+	Do(end chan<- bool) // 阻塞执行、end用来强制结束
 }
 
 // MenuLogicNode 菜单逻辑节点
@@ -18,13 +17,15 @@ type MenuLogicNode interface {
 	GetParent() *MenuNode
 	GetRoot() *MenuNode
 	GetAllChild() []*MenuNode
+	GetName() string
+
+	BindParent(parent *MenuNode)
+	BindChild(child *MenuNode)
+	BindRoot(root *MenuNode)
+	SetName(name string)
 }
 
 type UnCallableMenuLogicNode struct {
-}
-
-func (receiver UnCallableMenuLogicNode) Stop() <-chan bool {
-	return nil
 }
 
 func (receiver UnCallableMenuLogicNode) IsCallAble() bool {
