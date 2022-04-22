@@ -118,3 +118,13 @@ func IsLegalOutURL(url string) bool{
 
 	return true
 }
+
+//Clear 清空屏幕
+func clear() {
+	cmd := exec.Command("cmd.exe", "/c", "cls")
+	cmd.Stdout = os.Stdout
+	err := cmd.Run()
+	if err != nil {
+		print("clear fail")
+	}
+}
