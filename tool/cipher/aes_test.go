@@ -16,7 +16,15 @@ func TestAesDecrypt(t *testing.T) {
 		want    []byte
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "test1",
+			args: args{
+				cryptData: []byte("1234567890123456"),
+				key:       []byte("1234567890123456"),
+			},
+			want:    []byte("1234567890123456"),
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

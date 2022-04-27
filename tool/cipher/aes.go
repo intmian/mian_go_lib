@@ -1,11 +1,11 @@
 package cipher
+
 import (
-	"fmt"
-	"crypto/cipher"
-	"crypto/aes"
 	"bytes"
-	"encoding/base64"
-	)
+	"crypto/aes"
+	"crypto/cipher"
+)
+
 func PKCS5Padding(ciphertext []byte, blockSize int) []byte {
 	padding := blockSize - len(ciphertext)%blockSize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
@@ -19,7 +19,7 @@ func PKCS5UnPadding(origData []byte) []byte {
 func AesEncrypt(origData, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-	return nil, err
+		return nil, err
 	}
 	blockSize := block.BlockSize()
 	origData = PKCS5Padding(origData, blockSize)
@@ -31,7 +31,7 @@ func AesEncrypt(origData, key []byte) ([]byte, error) {
 func AesDecrypt(cryptData, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-	return nil, err
+		return nil, err
 	}
 	blockSize := block.BlockSize()
 	blockMode := cipher.NewCBCDecrypter(block, key[:blockSize])
