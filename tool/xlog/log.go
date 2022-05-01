@@ -3,78 +3,213 @@ package xlog
 import (
 	"fmt"
 	"github.com/intmian/mian_go_lib/tool/misc"
+	"github.com/intmian/mian_go_lib/tool/push"
 	"os"
+	"strings"
 	"time"
 )
 
-// 以后局部全局变量的接口也这样暴露
+type Printer func(string) bool
 
-type log struct {
-	logAddr string
+type Mgr struct {
+	logAddr         string
+	printer         Printer
+	pushMgr         push.Mgr
+	pushStyle       []push.PushType
+	ifMisc          bool
+	ifDebug         bool
+	ifPrint         bool
+	ifPush          bool
+	ifFile          bool
+	emailTargetAddr string // 用;分割
+	emailFromAddr   string
+	logTag          string // 标记日志的类型，用于在推送中区分不同的日志
 }
 
-type TLogLevel uint8
+func (receiver *Mgr) SetLogAddr(logAddr string) {
+	receiver.logAddr = logAddr
+}
 
-const (
-	EError TLogLevel = iota
-	EWarning
-	ELog
-	EDebug
-	EMisc
-)
+func (receiver *Mgr) SetPrinter(printer Printer) {
+	receiver.printer = printer
+}
+
+func (receiver *Mgr) SetPushMgr(pushMgr push.Mgr) {
+	receiver.pushMgr = pushMgr
+}
+
+func (receiver *Mgr) SetPushStyle(pushStyle []push.PushType) {
+	receiver.pushStyle = pushStyle
+}
+
+func (receiver *Mgr) SetIfMisc(ifMisc bool) {
+	receiver.ifMisc = ifMisc
+}
+
+func (receiver *Mgr) SetIfDebug(ifDebug bool) {
+	receiver.ifDebug = ifDebug
+}
+
+func (receiver *Mgr) SetIfPrint(ifPrint bool) {
+	receiver.ifPrint = ifPrint
+}
+
+func (receiver *Mgr) SetIfPush(ifPush bool) {
+	receiver.ifPush = ifPush
+}
+
+func (receiver *Mgr) SetIfFile(ifFile bool) {
+	receiver.ifFile = ifFile
+}
+
+func (receiver *Mgr) SetEmailTargetAddr(emailTargetAddr string) {
+	receiver.emailTargetAddr = emailTargetAddr
+}
+
+func (receiver *Mgr) SetEmailFromAddr(emailFromAddr string) {
+	receiver.emailFromAddr = emailFromAddr
+}
+
+func (receiver *Mgr) SetLogTag(logTag string) {
+	receiver.logTag = logTag
+}
+
+func SimpleNewMgr(pushMgr push.Mgr, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
+	m := &Mgr{pushMgr: pushMgr, emailTargetAddr: emailTargetAddr, emailFromAddr: emailFromAddr, logTag: logTag}
+	m.printer = func(s string) bool {
+		fmt.Println(s)
+		return true
+	}
+	m.logAddr = "\\log"
+	m.pushStyle = []push.PushType{push.PushType_PUSH_PUSH_DEER}
+	m.ifMisc = true
+	m.ifPrint = true
+	m.ifPush = true
+	m.ifFile = true
+
+	return m
+}
+
+func NewMgr(logAddr string, printer Printer, pushMgr push.Mgr, pushStyle []push.PushType, ifMisc bool, ifDebug bool, ifPrint bool, ifPush bool, ifFile bool, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
+	return &Mgr{logAddr: logAddr, printer: printer, pushMgr: pushMgr, pushStyle: pushStyle, ifMisc: ifMisc, ifDebug: ifDebug, ifPrint: ifPrint, ifPush: ifPush, ifFile: ifFile, emailTargetAddr: emailTargetAddr, emailFromAddr: emailFromAddr, logTag: logTag}
+}
+
+type Setting struct {
+}
 
 var logLevel2Str map[TLogLevel]string = map[TLogLevel]string{
 	EError:   "ERROR",
 	EWarning: "WARNING",
 	ELog:     "LOG",
-	EDebug:   "DEBUG",
 	EMisc:    "MISC",
+	EDebug:   "DEBUG",
 }
 
-//log 记录一条日志， from 中应填入来源模块的大写
-func (receiver *log) log(level TLogLevel, from string, info string) {
+//detailLog 记录详细日志，并返回失败的模块
+func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc, ifDebug, ifPrint, ifPush, ifFile bool) []error {
+	errors := make([]error, 0)
+	if !ifMisc && level == EMisc {
+		return nil
+	}
+	if !ifDebug && level == EDebug {
+		return nil
+	}
+
 	// log 格式为[级别]\t[日期]\t[发起人] 内容\n
 	sLevel := logLevel2Str[level]
 
 	t := time.Now()
 	ts := t.Format("2006-01-02 15:04:05")
 
+	content := parseLog(sLevel, ts, from, info)
+	if ifPrint {
+		switch level {
+		case EError:
+			content = misc.Red(content)
+		case EWarning:
+			content = misc.Yellow(content)
+		case EDebug:
+			content = misc.Green(content)
+		default:
+			// do nothing
+		}
+
+		if !receiver.printer(content) {
+			errors = append(errors, fmt.Errorf("print failed"))
+		}
+	}
+
+	if ifPush {
+		for _, pushType := range receiver.pushStyle {
+			switch pushType {
+			case push.PushType_PUSH_EMAIL:
+				if !receiver.pushMgr.PushEmail(receiver.emailFromAddr, receiver.logTag+" log", receiver.emailTargetAddr, receiver.logTag+" "+sLevel+" log", content, false) {
+					errors = append(errors, fmt.Errorf("push failed"))
+				}
+			case push.PushType_PUSH_PUSH_DEER:
+				if _, suc := receiver.pushMgr.PushPushDeer(receiver.logTag+" "+sLevel+" log", content, false); !suc {
+					errors = append(errors, fmt.Errorf("push failed"))
+				}
+			}
+		}
+	}
+
+	if ifFile {
+		fp, err := os.OpenFile(receiver.logAddr+`\`+geneLogAddr(t),
+			os.O_WRONLY|os.O_APPEND,
+			0666)
+		if err != nil {
+			errors = append(errors, err)
+		}
+		_, err = fp.Write([]byte(content))
+		if err != nil {
+			errors = append(errors, err)
+		}
+		err = fp.Close()
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+
+	return errors
+}
+
+//log 记录一条日志， from 中应填入来源模块的大写
+func (receiver *Mgr) log(level TLogLevel, from string, info string) {
+	errors := receiver.detailLog(level, from, info, receiver.ifMisc, receiver.ifDebug, receiver.ifPrint, receiver.ifPush, receiver.ifFile)
+
+	// 如果有错误，则排除发生错误的那一种记录方式并将剩余的记录方式记录，同时发送一个日志错误日志
+	canPrint := receiver.ifPrint
+	canPush := receiver.ifPush
+	canFile := receiver.ifFile
+	errorReason := ""
+	if errors != nil && len(errors) > 0 {
+		for _, err := range errors {
+			if err.Error() == "print failed" {
+				canPrint = false
+				errorReason += "print failed;"
+			}
+			if err.Error() == "push failed" {
+				canPush = false
+				errorReason += "push failed;"
+			}
+			if err.Error() == "file failed" {
+				canFile = false
+				errorReason += "file failed;"
+			}
+		}
+	}
+	errorReason = strings.TrimRight(errorReason, ";")
+	err := receiver.detailLog(EError, "LOG", errorReason, true, true, canPrint, canPush, canFile)
+	if err != nil {
+		fmt.Println("救救我，我的日志记录有问题！")
+	}
+}
+
+func parseLog(sLevel string, ts string, from string, info string) string {
 	perm := "[%s]\t[%s]\t[%s]\t%s\n"
 	perm = fmt.Sprintf(perm, sLevel, ts, from, info)
-
-	switch level {
-	case EError:
-		print(perm)
-	case EWarning:
-		print(misc.Yellow(perm))
-	case EDebug:
-		print(misc.Green(perm))
-	default:
-		print(perm)
-	}
-
-	// TODO 增加邮件
-	if from == "LOG" {
-		return // 对于自身发起的警告不写入文件，避免循环调用
-	}
-
-	fp, err := os.OpenFile(receiver.logAddr+`\`+geneLogAddr(t),
-		os.O_WRONLY|os.O_APPEND,
-		0666)
-	if err != nil {
-		receiver.log(EWarning, "LOG", "日志系统无法打开日志文件")
-		return
-	}
-	_, err = fp.Write([]byte(perm))
-	if err != nil {
-		receiver.log(EWarning, "LOG", "日志系统无法写入日志文件")
-		return
-	}
-	err = fp.Close()
-	if err != nil {
-		receiver.log(EWarning, "LOG", "日志系统无法关闭日志文件")
-		return
-	}
+	return perm
 }
 
 func geneLogAddr(t time.Time) string {
