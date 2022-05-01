@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
@@ -108,11 +109,11 @@ func ClearIOBuffer() {
 }
 
 //IsLegalOutURL 判断是否是合法的外链
-func IsLegalOutURL(url string) bool{
+func IsLegalOutURL(url string) bool {
 	if len(url) < 6 {
 		return false
 	}
-	if strings.Index(url,"://") == -1 {
+	if strings.Index(url, "://") == -1 {
 		return false
 	}
 

@@ -2,10 +2,10 @@ package push
 
 import (
 	"github.com/intmian/mian_go_lib/tool/misc"
+	"net/http"
 	"net/smtp"
+	"net/url"
 	"strings"
-
-	"github.com/Luoxin/go-pushdeer-sdk/psdk"
 )
 
 type PushType int8
@@ -17,7 +17,7 @@ const (
 
 type Mgr struct {
 	pushEmailToken *EmailToken
-	PushDeerToken  *PushDeerToken
+	pushDeerToken  *PushDeerToken
 }
 
 type EmailToken struct {
@@ -39,7 +39,7 @@ func (m *Mgr) PushEmail(from string, to string, title string, content string, ma
 	if markDown {
 		mailType = "html"
 	}
-	err := SendToMail(m.pushEmailToken.host, m.pushEmailToken.User, m.pushEmailToken.Token, from, to, title, content, mailType)
+	err := sendToMail(m.pushEmailToken.host, m.pushEmailToken.User, m.pushEmailToken.Token, from, to, title, content, mailType)
 	if err != nil {
 		return false
 	}
@@ -47,28 +47,21 @@ func (m *Mgr) PushEmail(from string, to string, title string, content string, ma
 	return true
 }
 
-func (m *Mgr) PushPushDeer(title string, content string, markDown bool) bool {
-	p, err := psdk.New("api2.pushdeer.com", m.PushDeerToken.Token)
-	if err != nil {
-		return false
-	}
-
-	req := psdk.MessagePushReq{
-		BaseReq: psdk.BaseReq{},
-		PushKey: m.PushDeerToken.Token,
-		Text:    title,
-		Desp:    content,
-	}
+func (m *Mgr) PushPushDeer(title string, content string, markDown bool) (string, bool) {
+	baseUrl := "https://api2.pushdeer.com/message/push"
+	t := ""
 
 	if markDown {
-		req.Type = "markdown"
+		t = "markdown"
 	}
 
-	_, err = p.MessagePush(&req)
+	resp, err := http.PostForm(baseUrl, url.Values{"pushkey": {m.pushDeerToken.Token}, "text": {title}, "desp": {content}, "type": {t}})
+
 	if err != nil {
-		return false
+		return "", false
 	}
-	return true
+
+	return resp.Status, true
 }
 
 // SetEmailToken 设置邮件token
@@ -82,12 +75,12 @@ func (m *Mgr) SetEmailToken(host string, user string, token string) {
 
 // SetPushDeerToken 设置pushDeer token
 func (m *Mgr) SetPushDeerToken(token string) {
-	m.PushDeerToken = &PushDeerToken{
+	m.pushDeerToken = &PushDeerToken{
 		Token: token,
 	}
 }
 
-func SendToMail(host, user, password, from, to, subject, body, mailType string) error {
+func sendToMail(host, user, password, from, to, subject, body, mailType string) error {
 	hp := strings.Split(host, ":")
 	auth := smtp.PlainAuth("", user, password, hp[0])
 	var content_type string
