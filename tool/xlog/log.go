@@ -1,9 +1,8 @@
-package log
+package xlog
 
 import (
 	"fmt"
-	"mio-blog/libs/tool/misc"
-	"mio-blog/setting"
+	"github.com/intmian/mian_go_lib/tool/misc"
 	"os"
 	"time"
 )
@@ -35,10 +34,6 @@ var logLevel2Str map[TLogLevel]string = map[TLogLevel]string{
 //log 记录一条日志， from 中应填入来源模块的大写
 func (receiver *log) log(level TLogLevel, from string, info string) {
 	// log 格式为[级别]\t[日期]\t[发起人] 内容\n
-	if !setting.GSetting.Data().Debug && level > ELog {
-		// 非debug模式，无视DEBUG与MISC级信息
-		return
-	}
 	sLevel := logLevel2Str[level]
 
 	t := time.Now()
@@ -49,7 +44,7 @@ func (receiver *log) log(level TLogLevel, from string, info string) {
 
 	switch level {
 	case EError:
-		print(misc.Red(perm))
+		print(perm)
 	case EWarning:
 		print(misc.Yellow(perm))
 	case EDebug:
@@ -85,11 +80,4 @@ func (receiver *log) log(level TLogLevel, from string, info string) {
 func geneLogAddr(t time.Time) string {
 	perm := `log_%d_%d_%d.txt`
 	return fmt.Sprintf(perm, t.Year(), t.Month(), t.Day())
-}
-
-var lLog log = log{setting.GSetting.Data().LogPath}
-
-//Log 记录一条日志， from 中应填入来源模块的大写
-func Log(level TLogLevel, from string, info string) {
-	lLog.log(level, from, info)
 }
