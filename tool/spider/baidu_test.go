@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGetNews(t *testing.T) {
+func TestGetBaiduNews(t *testing.T) {
 	params := []string{
 		"nuc",
 		"群晖",
@@ -16,7 +16,7 @@ func TestGetNews(t *testing.T) {
 	keywords := []string{}
 	newss := [][]BaiduNew{}
 	for _, v := range params {
-		news, b1, b2 := getBaiduNews(v, true)
+		news, b1, b2 := GetBaiduNews(v, true)
 		if b1 == true || b2 == true {
 			t.Error("get news error")
 		}
@@ -25,7 +25,7 @@ func TestGetNews(t *testing.T) {
 		newss = append(newss, news)
 	}
 
-	s := parseNewToMarkdown(keywords, newss)
+	s := ParseNewToMarkdown(keywords, newss)
 	p := push.Mgr{}
 	p.SetTag("auto")
 	p.SetPushDeerToken("PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ")

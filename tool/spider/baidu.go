@@ -28,11 +28,11 @@ func timeValid(timeStr string) bool {
 	return false
 }
 
-func parseNewToString(new BaiduNew) string {
+func ParseNewToString(new BaiduNew) string {
 	return new.title + "\r\n" + new.content + "\r\n" + new.source + "\r\n" + new.time
 }
 
-func parseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
+func ParseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 	if len(news) == 0 {
 		return ""
 	}
@@ -53,7 +53,7 @@ func parseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 	return s
 }
 
-func getBaiduNews(keyword string, limitHour bool) (newsReturn []BaiduNew, reErrorExist bool, noNews bool) {
+func GetBaiduNews(keyword string, limitHour bool) (newsReturn []BaiduNew, reErrorExist bool, noNews bool) {
 	newsReturn = make([]BaiduNew, 0)
 	reErrorExist = false
 	noNews = false
@@ -67,16 +67,9 @@ func getBaiduNews(keyword string, limitHour bool) (newsReturn []BaiduNew, reErro
 		Header: header,
 	}
 	client := &http.Client{}
-	response, err := client.Do(req)
+	response, _ := client.Do(req)
 
-	if err != nil {
-		panic("failed to get : " + err.Error())
-	}
-
-	text, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		panic("failed to read : " + err.Error())
-	}
+	text, _ := ioutil.ReadAll(response.Body)
 	reStr := `"accessibilityData":{"titleAriaLabel":"标题[： ](.*)","absAriaLabel":"摘要[： ](.*)","sourceAriaLabel":"新闻来源[： ](.*)","timeAriaLabel":"发布于[： ](.{0,20})"}`
 	reg1 := regexp.MustCompile(reStr)
 	if reg1 == nil {
