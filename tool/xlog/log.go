@@ -123,23 +123,24 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 
 	content := parseLog(sLevel, ts, from, info)
 	if ifPrint {
+		var printContent string
 		switch level {
 		case EError:
-			content = misc.Red(content)
+			printContent = misc.Red(content)
 		case EWarning:
-			content = misc.Yellow(content)
+			printContent = misc.Yellow(content)
 		case EDebug:
-			content = misc.Green(content)
+			printContent = misc.Green(content)
 		default:
-			// do nothing
+			printContent = content
 		}
 
-		if !receiver.printer(content) {
+		if !receiver.printer(printContent) {
 			errors = append(errors, fmt.Errorf("print failed"))
 		}
 	}
 
-	if ifPush {
+	if ifPush && level >= EWarning {
 		for _, pushType := range receiver.pushStyle {
 			switch pushType {
 			case push.PushType_PUSH_EMAIL:
@@ -158,16 +159,20 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 		fp, err := os.OpenFile(receiver.logAddr+`\`+geneLogAddr(t),
 			os.O_WRONLY|os.O_APPEND,
 			0666)
+		isErr := false
 		if err != nil {
-			errors = append(errors, err)
+			isErr = true
 		}
 		_, err = fp.Write([]byte(content))
 		if err != nil {
-			errors = append(errors, err)
+			isErr = true
 		}
 		err = fp.Close()
 		if err != nil {
-			errors = append(errors, err)
+			isErr = true
+		}
+		if isErr {
+			errors = append(errors, fmt.Errorf("file failed"))
 		}
 	}
 
@@ -201,7 +206,7 @@ func (receiver *Mgr) log(level TLogLevel, from string, info string) {
 	}
 	errorReason = strings.TrimRight(errorReason, ";")
 	err := receiver.detailLog(EError, "LOG", errorReason, true, true, canPrint, canPush, canFile)
-	if err != nil {
+	if err != nil && len(err) > 0 {
 		fmt.Println("救救我，我的日志记录有问题！")
 	}
 }
