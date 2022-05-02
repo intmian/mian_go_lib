@@ -28,6 +28,31 @@ func timeValid(timeStr string) bool {
 	return false
 }
 
+func parseNewToString(new BaiduNew) string {
+	return new.title + "\r\n" + new.content + "\r\n" + new.source + "\r\n" + new.time
+}
+
+func parseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
+	if len(news) == 0 {
+		return ""
+	}
+	if len(news) != len(keywords) {
+		return ""
+	}
+	s := ""
+	for i, keyword := range keywords {
+		s += "- " + keyword + "\r\n"
+		for _, baiduNew := range news[i] {
+			s += "  - " + baiduNew.title + "\r\n"
+			s += "    - " + baiduNew.content + "\r\n"
+			s += "    - " + baiduNew.source + "\r\n"
+			s += "    - " + baiduNew.time + "\r\n"
+			s += "\r\n"
+		}
+	}
+	return s
+}
+
 func getBaiduNews(keyword string, limitHour bool) (newsReturn []BaiduNew, reErrorExist bool, noNews bool) {
 	newsReturn = make([]BaiduNew, 0)
 	reErrorExist = false
@@ -70,6 +95,7 @@ func getBaiduNews(keyword string, limitHour bool) (newsReturn []BaiduNew, reErro
 		}
 		bn.title = result[1]
 		bn.content = result[2]
+		bn.content = strings.Replace(bn.content, " 摘要结束，点击查看详情", "...", -1)
 		bn.source = result[3]
 		bn.time = result[4]
 		if limitHour {

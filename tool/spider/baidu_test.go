@@ -1,6 +1,9 @@
 package spider
 
-import "testing"
+import (
+	"github.com/intmian/mian_go_lib/tool/push"
+	"testing"
+)
 
 func TestGetNews(t *testing.T) {
 	params := []string{
@@ -10,21 +13,21 @@ func TestGetNews(t *testing.T) {
 		"扫地机器人",
 		"kindle",
 	}
+	keywords := []string{}
+	newss := [][]BaiduNew{}
 	for _, v := range params {
 		news, b1, b2 := getBaiduNews(v, true)
-
 		if b1 == true || b2 == true {
 			t.Error("get news error")
 		}
 		t.Logf("%s: %d", v, len(news))
+		keywords = append(keywords, v)
+		newss = append(newss, news)
 	}
 
-	for _, v := range params {
-		news, b1, b2 := getBaiduNews(v, false)
-
-		if b1 == true || b2 == true {
-			t.Error("get news error")
-		}
-		t.Logf("%s: %d", v, len(news))
-	}
+	s := parseNewToMarkdown(keywords, newss)
+	p := push.Mgr{}
+	p.SetTag("auto")
+	p.SetPushDeerToken("PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ")
+	p.PushPushDeer("新闻", s, true)
 }

@@ -40,7 +40,7 @@ func TestMgr_PushPushDeer(t *testing.T) {
 			fields: fields{
 				pushEmailToken: nil,
 				PushDeerToken: &PushDeerToken{
-					Token: "我不想把我的账号推送到这里",
+					Token: "PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ",
 				},
 			},
 			args: args{

@@ -15,6 +15,11 @@ const (
 type Mgr struct {
 	pushEmailToken *EmailToken
 	pushDeerToken  *PushDeerToken
+	tag            string
+}
+
+func (m *Mgr) SetTag(tag string) {
+	m.tag = tag
 }
 
 type PushDeerToken struct {
@@ -22,6 +27,9 @@ type PushDeerToken struct {
 }
 
 func (m *Mgr) PushPushDeer(title string, content string, markDown bool) (string, bool) {
+	if m.tag != "" {
+		title = m.tag + ":" + title
+	}
 	if m.pushDeerToken == nil {
 		return "", false
 	}
