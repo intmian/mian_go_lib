@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type BaiduNew struct {
@@ -23,7 +25,16 @@ func timeValid(timeStr string) bool {
 	} else if strings.Contains(timeStr, "今天") {
 		return true
 	} else if strings.Contains(timeStr, "昨天") {
-		return true
+		if strings.Contains(timeStr, ":") {
+			// 筛选出小时，仅显示24小时内的
+			t := strings.Split(timeStr, "昨天")
+			t2 := strings.Split(t[1], ":")
+			hour, _ := strconv.Atoi(t2[0])
+			nowHour := time.Now().Hour()
+			if nowHour <= hour {
+				return true
+			}
+		}
 	}
 	return false
 }

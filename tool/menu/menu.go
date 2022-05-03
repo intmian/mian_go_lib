@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"strconv"
+	"time"
 )
 
 const PAGE_NUM = 10
@@ -24,7 +25,7 @@ nodeCircle:
 		canParent := m.now.GetParent() != nil
 		iPage := 1
 		for {
-			print(getText(m.root, m.now.GetParent(), m.now.GetAllChild(), iPage, canRoot, canParent))
+			println(getText(m.now, m.root, m.now.GetParent(), m.now.GetAllChild(), iPage, canRoot, canParent))
 			c := misc.WaitKeyDown()
 			switch c {
 			case 'r':
@@ -43,11 +44,12 @@ nodeCircle:
 				}
 			case 'e':
 				return
-			case '←':
+			// 不知道为什么↑↓←→没有键盘按下事件。。。。然后键盘抬起和hold都有问题
+			case '[':
 				if iPage > 1 {
 					iPage--
 				}
-			case '→':
+			case ']':
 				if misc.GetMaxPage(len(m.now.GetAllChild()), PAGE_NUM, true) > iPage {
 					iPage++
 				}
@@ -75,24 +77,26 @@ nodeCircle:
 	}
 }
 
-func getText(root MenuNode, parent MenuNode, children []MenuNode, page int, canRoot bool, canParent bool) string {
+func getText(new MenuNode, root MenuNode, parent MenuNode, children []MenuNode, page int, canRoot bool, canParent bool) string {
 	head := ""
 	content := ""
 	foot := ""
+	head += time.Now().Format("2006-01-02 15:04:05") + "\n"
+	head += "当前节点:" + misc.Red(new.GetName()) + "\n"
 	if canRoot {
-		head += "r." + root.GetName() + " "
+		head += misc.Green("r.") + root.GetName() + " "
 	}
 	if canParent {
-		head += "p." + parent.GetName() + " "
+		head += misc.Green("p.") + parent.GetName() + " "
 	}
-	head += "e.exit"
+	head += misc.Green("e.") + "exit"
 	if head != "" {
 		head += "\n"
 	}
 	begin, end := misc.GetPageStartEnd(page, PAGE_NUM, len(children), true)
-	for i := begin; i < end; i++ {
-		realIndex := misc.GetPageIndexOriIndex(i, PAGE_NUM, len(children), true)
-		content += strconv.Itoa(i) + "." + children[realIndex].GetName() + "\n"
+	for i := begin; i < end+1; i++ {
+		realIndex := misc.GetPageIndexOriIndex(i, page, PAGE_NUM, true)
+		content += misc.Green(strconv.Itoa(i)) + "." + children[realIndex].GetName() + "\n"
 	}
 
 	if len(children) > PAGE_NUM {
@@ -108,9 +112,10 @@ func getText(root MenuNode, parent MenuNode, children []MenuNode, page int, canR
 			perm += t
 		}
 		perm = fmt.Sprintf(perm, page)
+		perm += " " + misc.Green("[") + ".上一页 " + misc.Green("]") + ".下一页"
 		foot += perm
 	}
-	return ""
+	return head + content + foot
 }
 
 // BindJson 用来确认菜单结构
@@ -120,7 +125,6 @@ func getText(root MenuNode, parent MenuNode, children []MenuNode, page int, canR
         {
             "id":0,
             "name" : "0号节点",
-            "father" : -1,
             "child" : [1,2,3]
         }
     ],
@@ -129,10 +133,9 @@ func getText(root MenuNode, parent MenuNode, children []MenuNode, page int, canR
 */
 type BindJson struct {
 	Nodes []struct {
-		Id     int    `json:"id"`
-		Name   string `json:"name"`
-		Father int    `json:"father"`
-		Child  []int  `json:"child"`
+		Id    int    `json:"id"`
+		Name  string `json:"name"`
+		Child []int  `json:"child"`
 	} `json:"nodes"`
 	Root int `json:"root"`
 }
@@ -161,7 +164,7 @@ func (m *Menu) Init(info BindInfo) bool {
 	if err != nil {
 		return false
 	}
-
+	m.ID2Node = make(map[int]MenuNode)
 	// 添加所有逻辑节点
 	for _, v := range b.Nodes {
 		n := NormalMenuNode{}
@@ -180,6 +183,9 @@ func (m *Menu) Init(info BindInfo) bool {
 
 	// 添加所有父子关系
 	for _, v := range b.Nodes {
+		if m.root != m.ID2Node[v.Id] {
+			m.ID2Node[v.Id].BindRoot(m.root)
+		}
 		for _, c := range v.Child {
 			m.ID2Node[v.Id].BindChild(m.ID2Node[c])
 			m.ID2Node[c].BindParent(m.ID2Node[v.Id])

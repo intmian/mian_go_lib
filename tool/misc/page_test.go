@@ -78,7 +78,7 @@ func TestGetOriIndex(t *testing.T) {
 				pageSize:   10,
 				pageBegin1: true,
 			},
-			want: 12,
+			want: 11,
 		},
 	}
 	for _, tt := range tests {
@@ -111,8 +111,8 @@ func TestGetPageStartEnd(t *testing.T) {
 				total:      15,
 				pageBegin1: true,
 			},
-			wantPageStart: 0,
-			wantPageEnd:   9,
+			wantPageStart: 1,
+			wantPageEnd:   10,
 		},
 		{
 			name: "2",
@@ -122,7 +122,7 @@ func TestGetPageStartEnd(t *testing.T) {
 				total:      15,
 				pageBegin1: true,
 			},
-			wantPageStart: 10,
+			wantPageStart: 11,
 			wantPageEnd:   15,
 		},
 		{

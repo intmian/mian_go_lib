@@ -33,11 +33,7 @@ func (n *NormalMenuLogicNode) BindChild(child MenuNode) {
 	if n.child == nil {
 		n.child = make([]MenuNode, 0)
 	}
-	for _, v := range n.child {
-		if (v).GetName() == (child).GetName() {
-			return
-		}
-	}
+	n.child = append(n.child, child)
 }
 
 func (n *NormalMenuLogicNode) BindRoot(root MenuNode) {
