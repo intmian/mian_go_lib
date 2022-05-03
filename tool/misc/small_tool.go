@@ -121,7 +121,7 @@ func IsLegalOutURL(url string) bool {
 }
 
 //Clear 清空屏幕
-func clear() {
+func Clear() {
 	cmd := exec.Command("cmd.exe", "/c", "cls")
 	cmd.Stdout = os.Stdout
 	err := cmd.Run()
