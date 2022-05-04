@@ -69,6 +69,7 @@ func GetBaiduNews(keyword string, limitHour bool) (newsReturn []BaiduNew, reErro
 	reErrorExist = false
 	noNews = false
 
+	keyword = strings.Replace(keyword, " ", "+", -1)
 	header := http.Header{"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"}}
 	u := "https://www.baidu.com/s?tn=news&rtt=4&bsst=1&cl=2&wd=" + keyword
 	httpUrl, _ := url.Parse(u)
