@@ -14,7 +14,7 @@ type Printer func(string) bool
 type Mgr struct {
 	logAddr         string
 	printer         Printer
-	pushMgr         push.Mgr
+	pushMgr         *push.Mgr
 	pushStyle       []push.PushType
 	ifMisc          bool
 	ifDebug         bool
@@ -34,7 +34,7 @@ func (receiver *Mgr) SetPrinter(printer Printer) {
 	receiver.printer = printer
 }
 
-func (receiver *Mgr) SetPushMgr(pushMgr push.Mgr) {
+func (receiver *Mgr) SetPushMgr(pushMgr *push.Mgr) {
 	receiver.pushMgr = pushMgr
 }
 
@@ -74,7 +74,7 @@ func (receiver *Mgr) SetLogTag(logTag string) {
 	receiver.logTag = logTag
 }
 
-func SimpleNewMgr(pushMgr push.Mgr, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
+func SimpleNewMgr(pushMgr *push.Mgr, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
 	m := &Mgr{pushMgr: pushMgr, emailTargetAddr: emailTargetAddr, emailFromAddr: emailFromAddr, logTag: logTag}
 	m.printer = func(s string) bool {
 		fmt.Println(s)
@@ -90,7 +90,7 @@ func SimpleNewMgr(pushMgr push.Mgr, emailTargetAddr string, emailFromAddr string
 	return m
 }
 
-func NewMgr(logAddr string, printer Printer, pushMgr push.Mgr, pushStyle []push.PushType, ifMisc bool, ifDebug bool, ifPrint bool, ifPush bool, ifFile bool, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
+func NewMgr(logAddr string, printer Printer, pushMgr *push.Mgr, pushStyle []push.PushType, ifMisc bool, ifDebug bool, ifPrint bool, ifPush bool, ifFile bool, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
 	return &Mgr{logAddr: logAddr, printer: printer, pushMgr: pushMgr, pushStyle: pushStyle, ifMisc: ifMisc, ifDebug: ifDebug, ifPrint: ifPrint, ifPush: ifPush, ifFile: ifFile, emailTargetAddr: emailTargetAddr, emailFromAddr: emailFromAddr, logTag: logTag}
 }
 

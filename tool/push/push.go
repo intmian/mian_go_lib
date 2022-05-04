@@ -18,6 +18,10 @@ type Mgr struct {
 	tag            string
 }
 
+func NewMgr(pushEmailToken *EmailToken, pushDeerToken *PushDeerToken, tag string) *Mgr {
+	return &Mgr{pushEmailToken: pushEmailToken, pushDeerToken: pushDeerToken, tag: tag}
+}
+
 func (m *Mgr) SetTag(tag string) {
 	m.tag = tag
 }

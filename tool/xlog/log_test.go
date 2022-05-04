@@ -14,7 +14,7 @@ func TestLog(t *testing.T) {
 		fmt.Println(msg)
 		return true
 	}
-	l := NewMgr("\\log", f, p, pushStyle, true, true, true, true, true, "target@intmian.com", "from@intmian.com", "testlog")
+	l := NewMgr("\\log", f, &p, pushStyle, true, true, true, true, true, "target@intmian.com", "from@intmian.com", "testlog")
 	l.log(EError, "TEST", "testError")
 	l.log(EWarning, "TEST", "testWarning")
 	l.log(ELog, "TEST", "testLog")
