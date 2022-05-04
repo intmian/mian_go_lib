@@ -15,9 +15,9 @@ func TestLog(t *testing.T) {
 		return true
 	}
 	l := NewMgr("\\log", f, &p, pushStyle, true, true, true, true, true, "target@intmian.com", "from@intmian.com", "testlog")
-	l.log(EError, "TEST", "testError")
-	l.log(EWarning, "TEST", "testWarning")
-	l.log(ELog, "TEST", "testLog")
-	l.log(EMisc, "TEST", "testMisc")
-	l.log(EDebug, "TEST", "testDebug")
+	l.Log(EError, "TEST", "testError")
+	l.Log(EWarning, "TEST", "testWarning")
+	l.Log(ELog, "TEST", "testLog")
+	l.Log(EMisc, "TEST", "testMisc")
+	l.Log(EDebug, "TEST", "testDebug")
 }

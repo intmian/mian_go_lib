@@ -179,8 +179,8 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 	return errors
 }
 
-//log 记录一条日志， from 中应填入来源模块的大写
-func (receiver *Mgr) log(level TLogLevel, from string, info string) {
+//Log 记录一条日志， from 中应填入来源模块的大写
+func (receiver *Mgr) Log(level TLogLevel, from string, info string) {
 	errors := receiver.detailLog(level, from, info, receiver.ifMisc, receiver.ifDebug, receiver.ifPrint, receiver.ifPush, receiver.ifFile)
 
 	// 如果有错误，则排除发生错误的那一种记录方式并将剩余的记录方式记录，同时发送一个日志错误日志
