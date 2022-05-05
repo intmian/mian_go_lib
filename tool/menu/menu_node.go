@@ -282,8 +282,8 @@ findLoop:
 			if !strings.Contains(v.key, vv) {
 				continue findLoop
 			}
-			indexs = append(indexs, i)
 		}
+		indexs = append(indexs, i)
 	}
 	return indexs
 }
@@ -293,16 +293,17 @@ func UniListFindPre(kv uniKVSlice, nowSearch string, nowIndex int) int {
 		return -1
 	}
 	nowSearchSub := strings.Split(nowSearch, " ")
+findLoop:
 	for i := nowIndex - 1; i >= 0; i-- {
 		for _, vv := range nowSearchSub {
 			if vv == "" {
 				continue
 			}
 			if !strings.Contains(kv[i].key, vv) {
-				continue
+				continue findLoop
 			}
-			return i
 		}
+		return i
 	}
 	return -1
 }
@@ -312,16 +313,17 @@ func UniListFindNext(kv uniKVSlice, nowSearch string, nowIndex int) int {
 		return -1
 	}
 	nowSearchSub := strings.Split(nowSearch, " ")
+findLoop:
 	for i := nowIndex + 1; i < len(kv); i++ {
 		for _, vv := range nowSearchSub {
 			if vv == "" {
 				continue
 			}
 			if !strings.Contains(kv[i].key, vv) {
-				continue
+				continue findLoop
 			}
-			return i
 		}
+		return i
 	}
 	return -1
 }
@@ -351,7 +353,7 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 
 		for {
 			text := parseUniList2text(copySlice, nowIndex, nowInput, searchInput)
-			text += "\n" + misc.Green("[]") + "选择，" + misc.Green(".") + "反转，" + misc.Green("/") + "搜索，" + misc.Green("esc") + "退出"
+			text += "\n" + misc.Green("[]") + "选择，" + misc.Green("\\") + "反转，" + misc.Green("/") + "搜索，" + misc.Green("esc") + "退出"
 			misc.Clear()
 			println(text)
 			input := misc.WaitKeyDown()
@@ -425,7 +427,7 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 						nowInput = nowInput[:len(nowInput)-1]
 					}
 				}
-			} else if input == '.' {
+			} else if input == '\\' {
 				// 清空或者翻转
 				if nowIndex == -1 {
 					return
