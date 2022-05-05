@@ -12,6 +12,5 @@ func TestWaitKeyDown(t *testing.T) {
 		if ev.Kind == hook.KeyDown || ev.Kind == hook.KeyUp || ev.Kind == hook.KeyHold {
 			println(ev.Kind, ev.Keychar, ev.Keycode)
 		}
-
 	}
 }

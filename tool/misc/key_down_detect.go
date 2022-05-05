@@ -7,7 +7,10 @@ import (
 //WaitKeyDown 阻塞式的等待按键按下
 func WaitKeyDown() rune {
 	evChan := hook.Start()
-	defer hook.End()
+	defer func() {
+		ClearIOBuffer() // TODO: 没用
+		hook.End()
+	}()
 	for ev := range evChan {
 		if ev.Kind == hook.KeyDown {
 			return ev.Keychar

@@ -104,8 +104,9 @@ func Stop() {
 }
 
 func ClearIOBuffer() {
-	myReader := bufio.NewReader(nil)
+	myReader := bufio.NewReader(os.Stdin)
 	myReader.Reset(os.Stdin)
+	_, _ = myReader.ReadString('\n')
 }
 
 //IsLegalOutURL 判断是否是合法的外链
