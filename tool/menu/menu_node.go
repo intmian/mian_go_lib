@@ -2,9 +2,10 @@ package menu
 
 import (
 	"fmt"
-	"github.com/intmian/mian_go_lib/tool/misc"
 	"sort"
 	"time"
+
+	"github.com/intmian/mian_go_lib/tool/misc"
 )
 
 //MakeUntilPressFunc 创建一个按下一般都会返回的函数
@@ -168,9 +169,41 @@ func MakeListInputFunc(kv map[string]string, callBack func()) func() {
 					nowInput = ""
 					nowIndex++
 				}
+			} else if input == 8 /*backspace*/ {
+				if nowInput != "" {
+					nowInput = nowInput[:len(nowInput)-1]
+				}
 			} else {
 				nowInput += string(input)
 			}
 		}
+	}
+}
+
+type uniKVMap map[string]interface{}
+
+// MakeUniListInputFunc 创建一个通用输入列表的函数
+func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
+	return func() {
+		// 获得kv的第一个key
+		nowIndex := 0
+		nowInput := ""
+		var copySlice []struct {
+			key   string
+			value interface{}
+		}
+		for k, v := range kv {
+			// 注意一下显示的可能是无序的，是因为hash的机制
+			copySlice = append(copySlice, struct {
+				key   string
+				value interface{}
+			}{k, v})
+		}
+		// 排序
+		sort.Slice(copySlice, func(i, j int) bool {
+			return copySlice[i].key < copySlice[j].key
+		})
+
+
 	}
 }

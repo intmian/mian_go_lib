@@ -1,8 +1,9 @@
 package spider
 
 import (
-	"github.com/intmian/mian_go_lib/tool/push"
 	"testing"
+
+	"github.com/intmian/mian_go_lib/tool/push"
 )
 
 func TestGetBaiduNews(t *testing.T) {
@@ -10,7 +11,7 @@ func TestGetBaiduNews(t *testing.T) {
 		"nuc",
 		"群晖",
 		"macbook air",
-		"扫地机器人 新品",
+		"扫地机器人 发布",
 		"kindle",
 	}
 	keywords := []string{}
