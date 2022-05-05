@@ -3,6 +3,7 @@ package menu
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/intmian/mian_go_lib/tool/misc"
@@ -182,6 +183,25 @@ func MakeListInputFunc(kv map[string]string, callBack func()) func() {
 
 type uniKVMap map[string]interface{}
 
+func interface2text(i interface{}) string {
+	switch v := i.(type) {
+	case string:
+		return v
+	case int:
+		return strconv.Itoa(v)
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	case bool:
+		if v {
+			return "√"
+		} else {
+			return "×"
+		}
+	default:
+		return ""
+	}
+}
+
 // MakeUniListInputFunc 创建一个通用输入列表的函数
 func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 	return func() {
@@ -203,7 +223,6 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 		sort.Slice(copySlice, func(i, j int) bool {
 			return copySlice[i].key < copySlice[j].key
 		})
-
 
 	}
 }
