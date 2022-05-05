@@ -254,7 +254,7 @@ showLoop:
 			}
 		}
 
-		s := "%-15s: %25s\n"
+		s := "%-15s: %10s\n"
 		valueStr := ""
 		if nowIndex != -1 && v.key == kv[nowIndex].key {
 			valueStr = makeValueStr(interface2text(v.value), nowInput)
@@ -273,13 +273,14 @@ func UniListFind(kv uniKVSlice, nowSearch string) []int {
 		return indexs
 	}
 	nowSearchSub := strings.Split(nowSearch, " ")
+findLoop:
 	for i, v := range kv {
 		for _, vv := range nowSearchSub {
 			if vv == "" {
 				continue
 			}
 			if !strings.Contains(v.key, vv) {
-				continue
+				continue findLoop
 			}
 			indexs = append(indexs, i)
 		}
@@ -356,7 +357,9 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 			input := misc.WaitKeyDown()
 			if input == 27 /*esc*/ {
 				// 保存并返回
-				copySlice[nowIndex].value = text2interface(nowInput, copySlice[nowIndex].value)
+				if nowIndex != -1 {
+					copySlice[nowIndex].value = text2interface(nowInput, copySlice[nowIndex].value)
+				}
 				// 回写kv并回调
 				for k := range kv {
 					for _, vv := range copySlice {
