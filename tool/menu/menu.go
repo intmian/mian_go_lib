@@ -3,9 +3,10 @@ package menu
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/intmian/mian_go_lib/tool/misc"
 	"strconv"
 	"time"
+
+	"github.com/intmian/mian_go_lib/tool/misc"
 )
 
 const PAGE_NUM = 10
@@ -83,16 +84,7 @@ func getText(new MenuNode, root MenuNode, parent MenuNode, children []MenuNode, 
 	foot := ""
 	head += time.Now().Format("2006-01-02 15:04:05") + "\n"
 	head += "当前节点:" + misc.Red(new.GetName()) + "\n"
-	if canRoot {
-		head += misc.Green("r.") + root.GetName() + " "
-	}
-	if canParent {
-		head += misc.Green("p.") + parent.GetName() + " "
-	}
-	head += misc.Green("e.") + "exit"
-	if head != "" {
-		head += "\n"
-	}
+
 	begin, end := misc.GetPageStartEnd(page, PAGE_NUM, len(children), true)
 	for i := begin; i < end+1; i++ {
 		realIndex := misc.GetPageIndexOriIndex(i, page, PAGE_NUM, true)
@@ -112,8 +104,19 @@ func getText(new MenuNode, root MenuNode, parent MenuNode, children []MenuNode, 
 			perm += t
 		}
 		perm = fmt.Sprintf(perm, page)
-		perm += " " + misc.Green("[") + ".上一页 " + misc.Green("]") + ".下一页"
+		perm += " " + misc.Green("[") + ".上一页 " + misc.Green("]") + ".下一页\n"
 		foot += perm
+	}
+
+	if canRoot {
+		foot += misc.Green("r.") + root.GetName() + " "
+	}
+	if canParent {
+		head += misc.Green("p.") + parent.GetName() + " "
+	}
+	foot += misc.Green("e.") + "exit"
+	if foot != "" {
+		foot += "\n"
 	}
 	return head + content + foot
 }

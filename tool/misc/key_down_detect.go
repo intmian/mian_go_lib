@@ -8,7 +8,7 @@ import (
 func WaitKeyDown() rune {
 	evChan := hook.Start()
 	defer func() {
-		ClearIOBuffer() // TODO: 没用
+		// ClearIOBuffer() // TODO: 没用
 		hook.End()
 	}()
 	for ev := range evChan {
