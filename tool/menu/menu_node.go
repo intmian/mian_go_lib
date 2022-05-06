@@ -202,6 +202,8 @@ func interface2text(i interface{}) string {
 		} else {
 			return " × "
 		}
+	case []string:
+		return strings.Join(i.([]string), ",")
 	default:
 		return ""
 	}
@@ -219,10 +221,12 @@ func text2interface(s string, oriInterface interface{}) interface{} {
 		return f
 	case bool:
 		if s == "√" {
-			s = "true"
+			return true
 		} else if s == "×" {
-			s = "false"
+			return false
 		}
+	case []string:
+		return strings.Split(s, ",")
 	default:
 		return ""
 	}

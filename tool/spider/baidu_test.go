@@ -27,6 +27,7 @@ func TestGetBaiduNews(t *testing.T) {
 	}
 
 	s := ParseNewToMarkdown(keywords, newss)
+	println(s)
 	p := push.Mgr{}
 	p.SetTag("auto")
 	p.SetPushDeerToken("PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ")
