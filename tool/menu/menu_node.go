@@ -208,6 +208,18 @@ func interface2text(i interface{}) string {
 		}
 	case []string:
 		return strings.Join(i.([]string), ",")
+	case []interface{}:
+		if len(i.([]interface{})) == 0 {
+			return ""
+		}
+		var text string
+		for _, v := range i.([]interface{}) {
+			text += interface2text(v) + ","
+		}
+		if len(text) > 0 {
+			text = text[:len(text)-1]
+		}
+		return text
 	default:
 		return ""
 	}
