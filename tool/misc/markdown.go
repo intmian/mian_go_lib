@@ -36,7 +36,7 @@ func MarkdownToHTML(md string) string {
 }
 
 //GetPicLinkFromStr 从字符串中提取所有的图片外链
-func GetPicLinkFromStr(mdStr string) []string{
+func GetPicLinkFromStr(mdStr string) []string {
 	reg := regexp.MustCompile(`![.*](.*)`)
 	if reg == nil {
 		return nil
@@ -44,4 +44,3 @@ func GetPicLinkFromStr(mdStr string) []string{
 	//提取
 	return reg.FindAllString(mdStr, -1)
 }
-
