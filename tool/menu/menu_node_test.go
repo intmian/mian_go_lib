@@ -25,6 +25,12 @@ func TestMakeListInputFunc(t *testing.T) {
 	})()
 }
 
+func TestMakeUntilPressForShowFunc(t *testing.T) {
+	MakeUntilPressForShowFunc(func() {
+		println("aaa")
+	}, 5)()
+}
+
 func TestMakeUniListInputFunc(t *testing.T) {
 	kv := make(map[string]interface{})
 	kv["test.title"] = "this is a test"

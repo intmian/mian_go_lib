@@ -20,15 +20,14 @@ func MakeUntilPressFunc(f func(chan bool)) func() {
 			f(endChan)
 			finishChan <- true
 		}()
-		misc.BindKeyDown("esc", func() {
-			endChan <- true
-		})
 		for {
-			select {
-			case <-finishChan:
-				return
+			c := misc.WaitKeyDown()
+			if c == 27 /*esc*/ {
+				endChan <- true
+				break
 			}
 		}
+		<-finishChan
 	}
 }
 
@@ -47,7 +46,7 @@ func MakeUntilPressForFunc(f func()) func() {
 	return MakeUntilPressFunc(forFunc)
 }
 
-//MakeUntilPressForShowFunc 返回一个每隔waitSecond刷新一次printFunc，按下esc才停止的函数
+//MakeUntilPressForShowFunc 返回一个每隔waitSecond刷新一次printFunc，收到endChan则停止的函数
 func MakeUntilPressForShowFunc(printFunc func(), waitSecond int) func() {
 	forShowFunc := func(endChan chan bool) {
 		for {
@@ -58,7 +57,12 @@ func MakeUntilPressForShowFunc(printFunc func(), waitSecond int) func() {
 				misc.Clear()
 				println(misc.Green("esc.") + "退出")
 				printFunc()
-				time.Sleep(time.Duration(waitSecond) * time.Second)
+				select {
+				case <-endChan:
+					return
+				case <-time.After(time.Duration(waitSecond) * time.Second):
+					// do nothing
+				}
 			}
 		}
 	}

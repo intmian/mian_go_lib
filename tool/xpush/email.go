@@ -1,4 +1,4 @@
-package push
+package xpush
 
 import (
 	"github.com/intmian/mian_go_lib/tool/misc"

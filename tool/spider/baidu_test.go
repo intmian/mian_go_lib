@@ -3,7 +3,7 @@ package spider
 import (
 	"testing"
 
-	"github.com/intmian/mian_go_lib/tool/push"
+	"github.com/intmian/mian_go_lib/tool/xpush"
 )
 
 func TestGetBaiduNews(t *testing.T) {
@@ -28,7 +28,7 @@ func TestGetBaiduNews(t *testing.T) {
 
 	s := ParseNewToMarkdown(keywords, newss)
 	println(s)
-	p := push.Mgr{}
+	p := xpush.Mgr{}
 	p.SetTag("auto")
 	p.SetPushDeerToken("PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ")
 	p.PushPushDeer("新闻", s, true)

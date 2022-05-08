@@ -14,3 +14,12 @@ func TestWaitKeyDown(t *testing.T) {
 		}
 	}
 }
+
+func TestBindKeyDown(t *testing.T) {
+	endC := make(chan bool)
+	BindKeyDown("esc", func() {
+		println("esc")
+		endC <- true
+	})
+	<-endC
+}

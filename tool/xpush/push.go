@@ -1,4 +1,4 @@
-package push
+package xpush
 
 import (
 	"net/http"
