@@ -55,8 +55,8 @@ func MakeUntilPressForShowFunc(printFunc func(), waitSecond int) func() {
 				return
 			default:
 				misc.Clear()
-				println(misc.Green("esc.") + "退出")
 				printFunc()
+				println(misc.Green("esc.") + "退出")
 				select {
 				case <-endChan:
 					return
