@@ -373,9 +373,9 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 
 		for {
 			text := parseUniList2text(copySlice, nowIndex, nowInput, searchInput)
-			text += "\n" + misc.Green("[]") + "选择，" + misc.Green("\\") + "反转，" + misc.Green("/") + "搜索，" + misc.Green("esc") + "退出"
+			text += misc.Green("[]") + "选择，" + misc.Green("\\") + "反转，" + misc.Green("/") + "搜索，" + misc.Green("esc") + "退出" + "\n"
 			misc.Clear()
-			println(text)
+			print(text)
 			input := misc.WaitKeyDown()
 			if input == 27 /*esc*/ {
 				// 保存并返回

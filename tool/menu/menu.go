@@ -27,7 +27,7 @@ nodeCircle:
 		// 不改变node节点的操作
 		for {
 			misc.Clear()
-			println(getText(m.now, m.root, m.now.GetParent(), m.now.GetAllChild(), iPage, canRoot, canParent))
+			print(getText(m.now, m.root, m.now.GetParent(), m.now.GetAllChild(), iPage, canRoot, canParent))
 			c := misc.WaitKeyDown()
 			switch c {
 			case 'r':
