@@ -40,6 +40,7 @@ func TestMakeUniListInputFunc(t *testing.T) {
 	kv["test.close"] = false
 	kv["test.num"] = 222
 	kv["test.float"] = 3.14
+	kv["test.slice"] = []string{"a", "b", "c"}
 	MakeUniListInputFunc(kv, func() {
 		for k, v := range kv {
 			t.Logf("%s:%v", k, v)

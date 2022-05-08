@@ -73,7 +73,7 @@ func makeValueStr(oriValue, nowValue string) string {
 	lenOriValue := len(oriValue)
 	lenNowValue := len(nowValue)
 	if lenNowValue >= lenOriValue {
-		return misc.Green(nowValue)
+		return misc.Green(nowValue + "_")
 	} else {
 		valueA := nowValue[:lenNowValue]
 		valueB := oriValue[lenNowValue+1:]
@@ -373,7 +373,7 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 
 		for {
 			text := parseUniList2text(copySlice, nowIndex, nowInput, searchInput)
-			text += misc.Green("[]") + "选择，" + misc.Green("\\") + "反转，" + misc.Green("/") + "搜索，" + misc.Green("esc") + "退出" + "\n"
+			text += misc.Green("[]") + "选择，" + misc.Green("\\") + "反转，" + misc.Green("/") + "搜索，" + misc.Green("tab") + "补全，" + misc.Green("esc") + "退出" + "\n"
 			misc.Clear()
 			print(text)
 			input := misc.WaitKeyDown()
@@ -445,6 +445,17 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 				} else {
 					if nowInput != "" {
 						nowInput = nowInput[:len(nowInput)-1]
+					}
+				}
+			} else if input == 9 /*tab*/ {
+				if nowIndex == -1 {
+					// do nothing
+				} else {
+					switch copySlice[nowIndex].value.(type) {
+					case bool:
+						//copySlice[nowIndex].value = !copySlice[nowIndex].value.(bool)
+					default:
+						nowInput = interface2text(copySlice[nowIndex].value)
 					}
 				}
 			} else if input == '\\' {
