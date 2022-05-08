@@ -140,11 +140,11 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 		}
 	}
 
-	if ifPush && level >= EWarning {
+	if ifPush && level <= EWarning {
 		for _, pushType := range receiver.pushStyle {
 			switch pushType {
 			case xpush.PushType_PUSH_EMAIL:
-				if !receiver.pushMgr.PushEmail(receiver.emailFromAddr, receiver.logTag+" log", receiver.emailTargetAddr, receiver.logTag+" "+sLevel+" log", content, false) {
+				if !receiver.pushMgr.PushEmail(receiver.emailFromAddr, receiver.logTag, receiver.emailTargetAddr, receiver.logTag+" "+sLevel+" log", content, false) {
 					errors = append(errors, fmt.Errorf("push failed"))
 				}
 			case xpush.PushType_PUSH_PUSH_DEER:
