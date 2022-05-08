@@ -379,7 +379,7 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 			input := misc.WaitKeyDown()
 			if input == 27 /*esc*/ {
 				// 保存并返回
-				if nowIndex != -1 {
+				if nowIndex != -1 && nowInput != "" {
 					copySlice[nowIndex].value = text2interface(nowInput, copySlice[nowIndex].value)
 				}
 				// 回写kv并回调
