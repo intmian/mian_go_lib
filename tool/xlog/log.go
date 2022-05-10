@@ -3,7 +3,7 @@ package xlog
 import (
 	"fmt"
 	"github.com/intmian/mian_go_lib/tool/misc"
-	"github.com/intmian/mian_go_lib/tool/push"
+	"github.com/intmian/mian_go_lib/tool/xpush"
 	"os"
 	"strings"
 	"time"
@@ -14,8 +14,8 @@ type Printer func(string) bool
 type Mgr struct {
 	logAddr         string
 	printer         Printer
-	pushMgr         *push.Mgr
-	pushStyle       []push.PushType
+	pushMgr         *xpush.Mgr
+	pushStyle       []xpush.PushType
 	ifMisc          bool
 	ifDebug         bool
 	ifPrint         bool
@@ -34,11 +34,11 @@ func (receiver *Mgr) SetPrinter(printer Printer) {
 	receiver.printer = printer
 }
 
-func (receiver *Mgr) SetPushMgr(pushMgr *push.Mgr) {
+func (receiver *Mgr) SetPushMgr(pushMgr *xpush.Mgr) {
 	receiver.pushMgr = pushMgr
 }
 
-func (receiver *Mgr) SetPushStyle(pushStyle []push.PushType) {
+func (receiver *Mgr) SetPushStyle(pushStyle []xpush.PushType) {
 	receiver.pushStyle = pushStyle
 }
 
@@ -74,14 +74,14 @@ func (receiver *Mgr) SetLogTag(logTag string) {
 	receiver.logTag = logTag
 }
 
-func SimpleNewMgr(pushMgr *push.Mgr, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
+func SimpleNewMgr(pushMgr *xpush.Mgr, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
 	m := &Mgr{pushMgr: pushMgr, emailTargetAddr: emailTargetAddr, emailFromAddr: emailFromAddr, logTag: logTag}
 	m.printer = func(s string) bool {
 		fmt.Println(s)
 		return true
 	}
 	m.logAddr = "\\log"
-	m.pushStyle = []push.PushType{push.PushType_PUSH_PUSH_DEER}
+	m.pushStyle = []xpush.PushType{xpush.PushType_PUSH_PUSH_DEER}
 	m.ifMisc = true
 	m.ifPrint = true
 	m.ifPush = true
@@ -90,7 +90,7 @@ func SimpleNewMgr(pushMgr *push.Mgr, emailTargetAddr string, emailFromAddr strin
 	return m
 }
 
-func NewMgr(logAddr string, printer Printer, pushMgr *push.Mgr, pushStyle []push.PushType, ifMisc bool, ifDebug bool, ifPrint bool, ifPush bool, ifFile bool, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
+func NewMgr(logAddr string, printer Printer, pushMgr *xpush.Mgr, pushStyle []xpush.PushType, ifMisc bool, ifDebug bool, ifPrint bool, ifPush bool, ifFile bool, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
 	return &Mgr{logAddr: logAddr, printer: printer, pushMgr: pushMgr, pushStyle: pushStyle, ifMisc: ifMisc, ifDebug: ifDebug, ifPrint: ifPrint, ifPush: ifPush, ifFile: ifFile, emailTargetAddr: emailTargetAddr, emailFromAddr: emailFromAddr, logTag: logTag}
 }
 
@@ -140,14 +140,14 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 		}
 	}
 
-	if ifPush && level >= EWarning {
+	if ifPush && level <= EWarning {
 		for _, pushType := range receiver.pushStyle {
 			switch pushType {
-			case push.PushType_PUSH_EMAIL:
-				if !receiver.pushMgr.PushEmail(receiver.emailFromAddr, receiver.logTag+" log", receiver.emailTargetAddr, receiver.logTag+" "+sLevel+" log", content, false) {
+			case xpush.PushType_PUSH_EMAIL:
+				if !receiver.pushMgr.PushEmail(receiver.emailFromAddr, receiver.logTag, receiver.emailTargetAddr, receiver.logTag+" "+sLevel+" log", content, false) {
 					errors = append(errors, fmt.Errorf("push failed"))
 				}
-			case push.PushType_PUSH_PUSH_DEER:
+			case xpush.PushType_PUSH_PUSH_DEER:
 				if _, suc := receiver.pushMgr.PushPushDeer(receiver.logTag+" "+sLevel+" log", content, false); !suc {
 					errors = append(errors, fmt.Errorf("push failed"))
 				}
@@ -157,7 +157,7 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 
 	if ifFile {
 		fp, err := os.OpenFile(receiver.logAddr+`\`+geneLogAddr(t),
-			os.O_WRONLY|os.O_APPEND,
+			os.O_WRONLY|os.O_APPEND|os.O_CREATE,
 			0666)
 		isErr := false
 		if err != nil {
@@ -203,11 +203,11 @@ func (receiver *Mgr) Log(level TLogLevel, from string, info string) {
 				errorReason += "file failed;"
 			}
 		}
-	}
-	errorReason = strings.TrimRight(errorReason, ";")
-	err := receiver.detailLog(EError, "LOG", errorReason, true, true, canPrint, canPush, canFile)
-	if err != nil && len(err) > 0 {
-		fmt.Println("救救我，我的日志记录有问题！")
+		errorReason = strings.TrimRight(errorReason, ";")
+		err := receiver.detailLog(EError, "LOG", errorReason, true, true, canPrint, canPush, canFile)
+		if err != nil && len(err) > 0 {
+			fmt.Println("救救我，我的日志记录有问题！")
+		}
 	}
 }
 

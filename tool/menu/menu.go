@@ -21,12 +21,13 @@ func (m *Menu) Do() {
 	m.now = m.root
 nodeCircle:
 	for {
-		misc.Clear()
 		canRoot := m.now != m.root
 		canParent := m.now.GetParent() != nil
 		iPage := 1
+		// 不改变node节点的操作
 		for {
-			println(getText(m.now, m.root, m.now.GetParent(), m.now.GetAllChild(), iPage, canRoot, canParent))
+			misc.Clear()
+			print(getText(m.now, m.root, m.now.GetParent(), m.now.GetAllChild(), iPage, canRoot, canParent))
 			c := misc.WaitKeyDown()
 			switch c {
 			case 'r':

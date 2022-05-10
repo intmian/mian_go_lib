@@ -20,15 +20,14 @@ func MakeUntilPressFunc(f func(chan bool)) func() {
 			f(endChan)
 			finishChan <- true
 		}()
-		misc.BindKeyDown("esc", func() {
-			endChan <- true
-		})
 		for {
-			select {
-			case <-finishChan:
-				return
+			c := misc.WaitKeyDown()
+			if c == 27 /*esc*/ {
+				endChan <- true
+				break
 			}
 		}
+		<-finishChan
 	}
 }
 
@@ -47,7 +46,7 @@ func MakeUntilPressForFunc(f func()) func() {
 	return MakeUntilPressFunc(forFunc)
 }
 
-//MakeUntilPressForShowFunc 返回一个每隔waitSecond刷新一次printFunc，按下esc才停止的函数
+//MakeUntilPressForShowFunc 返回一个每隔waitSecond刷新一次printFunc，收到endChan则停止的函数
 func MakeUntilPressForShowFunc(printFunc func(), waitSecond int) func() {
 	forShowFunc := func(endChan chan bool) {
 		for {
@@ -56,9 +55,14 @@ func MakeUntilPressForShowFunc(printFunc func(), waitSecond int) func() {
 				return
 			default:
 				misc.Clear()
-				println(misc.Green("esc.") + "退出")
 				printFunc()
-				time.Sleep(time.Duration(waitSecond) * time.Second)
+				println(misc.Green("esc.") + "退出")
+				select {
+				case <-endChan:
+					return
+				case <-time.After(time.Duration(waitSecond) * time.Second):
+					// do nothing
+				}
 			}
 		}
 	}
@@ -69,7 +73,7 @@ func makeValueStr(oriValue, nowValue string) string {
 	lenOriValue := len(oriValue)
 	lenNowValue := len(nowValue)
 	if lenNowValue >= lenOriValue {
-		return misc.Green(nowValue)
+		return misc.Green(nowValue + "_")
 	} else {
 		valueA := nowValue[:lenNowValue]
 		valueB := oriValue[lenNowValue+1:]
@@ -204,6 +208,18 @@ func interface2text(i interface{}) string {
 		}
 	case []string:
 		return strings.Join(i.([]string), ",")
+	case []interface{}:
+		if len(i.([]interface{})) == 0 {
+			return ""
+		}
+		var text string
+		for _, v := range i.([]interface{}) {
+			text += interface2text(v) + ","
+		}
+		if len(text) > 0 {
+			text = text[:len(text)-1]
+		}
+		return text
 	default:
 		return ""
 	}
@@ -357,13 +373,13 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 
 		for {
 			text := parseUniList2text(copySlice, nowIndex, nowInput, searchInput)
-			text += "\n" + misc.Green("[]") + "选择，" + misc.Green("\\") + "反转，" + misc.Green("/") + "搜索，" + misc.Green("esc") + "退出"
+			text += misc.Green("[]") + "选择，" + misc.Green("\\") + "反转，" + misc.Green("/") + "搜索，" + misc.Green("tab") + "补全，" + misc.Green("esc") + "退出" + "\n"
 			misc.Clear()
-			println(text)
+			print(text)
 			input := misc.WaitKeyDown()
 			if input == 27 /*esc*/ {
 				// 保存并返回
-				if nowIndex != -1 {
+				if nowIndex != -1 && nowInput != "" {
 					copySlice[nowIndex].value = text2interface(nowInput, copySlice[nowIndex].value)
 				}
 				// 回写kv并回调
@@ -429,6 +445,17 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 				} else {
 					if nowInput != "" {
 						nowInput = nowInput[:len(nowInput)-1]
+					}
+				}
+			} else if input == 9 /*tab*/ {
+				if nowIndex == -1 {
+					// do nothing
+				} else {
+					switch copySlice[nowIndex].value.(type) {
+					case bool:
+						//copySlice[nowIndex].value = !copySlice[nowIndex].value.(bool)
+					default:
+						nowInput = interface2text(copySlice[nowIndex].value)
 					}
 				}
 			} else if input == '\\' {

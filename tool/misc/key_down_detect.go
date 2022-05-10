@@ -42,6 +42,7 @@ func KeyDownSendChan(key rune) <-chan bool {
 func BindKeyDown(key string, callback func()) {
 	hook.Register(hook.KeyDown, []string{key}, func(event hook.Event) {
 		callback()
+		hook.End()
 	})
 }
 

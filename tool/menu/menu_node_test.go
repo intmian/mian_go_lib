@@ -25,6 +25,12 @@ func TestMakeListInputFunc(t *testing.T) {
 	})()
 }
 
+func TestMakeUntilPressForShowFunc(t *testing.T) {
+	MakeUntilPressForShowFunc(func() {
+		println("aaa")
+	}, 5)()
+}
+
 func TestMakeUniListInputFunc(t *testing.T) {
 	kv := make(map[string]interface{})
 	kv["test.title"] = "this is a test"
@@ -34,6 +40,7 @@ func TestMakeUniListInputFunc(t *testing.T) {
 	kv["test.close"] = false
 	kv["test.num"] = 222
 	kv["test.float"] = 3.14
+	kv["test.slice"] = []string{"a", "b", "c"}
 	MakeUniListInputFunc(kv, func() {
 		for k, v := range kv {
 			t.Logf("%s:%v", k, v)
