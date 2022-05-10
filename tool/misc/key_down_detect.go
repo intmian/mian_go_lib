@@ -1,6 +1,7 @@
 package misc
 
 import (
+	"github.com/go-vgo/robotgo"
 	hook "github.com/robotn/gohook"
 )
 
@@ -12,6 +13,9 @@ func WaitKeyDown() rune {
 		hook.End()
 	}()
 	for ev := range evChan {
+		if !robotgo.IsValid() {
+			continue
+		}
 		if ev.Kind == hook.KeyDown {
 			return ev.Keychar
 		}
