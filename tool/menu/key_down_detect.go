@@ -1,4 +1,4 @@
-package misc
+package menu
 
 import (
 	"github.com/go-vgo/robotgo"

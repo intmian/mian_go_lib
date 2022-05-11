@@ -28,7 +28,7 @@ nodeCircle:
 		for {
 			misc.Clear()
 			print(getText(m.now, m.root, m.now.GetParent(), m.now.GetAllChild(), iPage, canRoot, canParent))
-			c := misc.WaitKeyDown()
+			c := WaitKeyDown()
 			switch c {
 			case 'r':
 				if canRoot {

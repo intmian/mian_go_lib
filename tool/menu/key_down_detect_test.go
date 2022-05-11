@@ -1,4 +1,4 @@
-package misc
+package menu
 
 import (
 	hook "github.com/robotn/gohook"

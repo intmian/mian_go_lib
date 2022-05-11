@@ -21,7 +21,7 @@ func MakeUntilPressFunc(f func(chan bool)) func() {
 			finishChan <- true
 		}()
 		for {
-			c := misc.WaitKeyDown()
+			c := WaitKeyDown()
 			if c == 27 /*esc*/ {
 				endChan <- true
 				break
@@ -145,7 +145,7 @@ func MakeListInputFunc(kv map[string]string, callBack func()) func() {
 			text := parseList2text(copySlice, nowIndex, nowInput)
 			text += "\n" + misc.Green("[]") + "选择，" + misc.Green("esc") + "退出"
 			println(text)
-			input := misc.WaitKeyDown()
+			input := WaitKeyDown()
 			if input == 27 /*esc*/ {
 				copySlice[nowIndex].value = nowInput
 				// 回写kv并回调
@@ -376,7 +376,7 @@ func MakeUniListInputFunc(kv uniKVMap, callBack func()) func() {
 			text += misc.Green("[]") + "选择，" + misc.Green("\\") + "反转，" + misc.Green("/") + "搜索，" + misc.Green("tab") + "补全，" + misc.Green("esc") + "退出" + "\n"
 			misc.Clear()
 			print(text)
-			input := misc.WaitKeyDown()
+			input := WaitKeyDown()
 			if input == 27 /*esc*/ {
 				// 保存并返回
 				if nowIndex != -1 && nowInput != "" {
