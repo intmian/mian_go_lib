@@ -64,7 +64,7 @@ func (t *TJsonTool) Save() bool {
 
 //SaveOther 序列化数据结构到某个文件
 func (t *TJsonTool) SaveOther(addr string) bool {
-	s, err := json.Marshal(t.pData)
+	s, err := json.MarshalIndent(t.pData, "", "\t")
 	if err != nil {
 		return false
 	}
