@@ -156,7 +156,7 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 	}
 
 	if ifFile {
-		fp, err := os.OpenFile(receiver.logAddr+`\`+geneLogAddr(t),
+		fp, err := os.OpenFile(receiver.logAddr+`/`+geneLogAddr(t),
 			os.O_WRONLY|os.O_APPEND|os.O_CREATE,
 			0666)
 		isErr := false
