@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"time"
 )
 
 const lotteryRe = `.*<li><div class="zxkjc1"><span>(.*)<\/span><b>(.*)<\/b>(.*)<\/div><\/li>
@@ -58,6 +59,19 @@ func GetLottery() []Lottery {
 		lotteries = append(lotteries, l)
 	}
 	return lotteries
+}
+
+func GetLotteryNow() []Lottery {
+	lotteries := GetLottery()
+	var pushList []Lottery
+	MonthDay := time.Now().Format("2006-01-02")
+	MonthDay = MonthDay[5:]
+	for _, lottery := range lotteries {
+		if lottery.t[0:5] == MonthDay {
+			pushList = append(pushList, lottery)
+		}
+	}
+	return pushList
 }
 
 func ParseLotteriesToMarkDown(lotteries []Lottery) string {

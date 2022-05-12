@@ -16,3 +16,12 @@ func TestLottery(t *testing.T) {
 	p.SetPushDeerToken("PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ")
 	p.PushPushDeer("彩票", s, true)
 }
+
+func TestGetLotteryNow(t *testing.T) {
+	lottery := GetLotteryNow()
+	if lottery == nil {
+		t.Error("lottery is nil")
+	}
+	s := ParseLotteriesToMarkDown(lottery)
+	t.Log(s)
+}
