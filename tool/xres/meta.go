@@ -1,35 +1,34 @@
 package xres
 
+import (
+	"strconv"
+	"strings"
+)
+
 //ColumnType 列类型
 type ColumnType int
 
-const (
-	CtNone         ColumnType = iota //无效
-	CtInt                            //整数
-	CtString                         //文本
-	CtFloat                          //小数
-	CtEnum                           //枚举
-	CtBitEnum                        //位枚举
-	CtVecDataPKey                    //主枚举列
-	CtVecDataCKey                    //子枚举列
-	CtVecDataValue                   //数据列
-)
-
-type ResType interface {
-	int | string | float64 |
-}
-
-type ExcelCowMeta struct {
+type ExcelCowMetaOri struct {
 	Type string `json:"type"`
 	Data string `json:"data"`
 }
 
-type ExcelCowsMeta struct {
+type ExcelCowMeta struct {
+	Type ColumnType
+	Data map[string]int // 用于将填在excel中的枚举转换为int
+	Child
+}
+
+type ExcelMeta struct {
 	Columns map[string]*ExcelCowMeta
 }
 
-func (m *ExcelCowsMeta) GetColumnType() ColumnType {
-	switch m.Columns["type"].Data {
+type ExcelMetaOri struct {
+	Columns map[string]*ExcelCowMetaOri
+}
+
+func (m *ExcelCowMetaOri) GetColumnType() ColumnType {
+	switch m.Type {
 	case "整数":
 		return CtInt
 	case "文本":
@@ -49,4 +48,56 @@ func (m *ExcelCowsMeta) GetColumnType() ColumnType {
 	default:
 		return CtNone
 	}
+}
+
+func (m *ExcelCowMetaOri) GetData() map[string]int {
+	/*
+		如果类型是枚举，则解析枚举数据
+		枚举格式如下
+		[枚举1:1]
+		[枚举2:2]
+		位枚举格式如下
+		[枚举1:1]
+		[枚举2:2]
+	*/
+	switch m.GetColumnType() {
+	case CtEnum, CtBitEnum, CtVecDataPKey, CtVecDataCKey:
+		data := make(map[string]int)
+		for _, line := range strings.Split(m.Data, "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			if !strings.HasPrefix(line, "[") || !strings.HasSuffix(line, "]") {
+				continue
+			}
+			line = strings.TrimPrefix(line, "[")
+			line = strings.TrimSuffix(line, "]")
+			kv := strings.Split(line, ":")
+			if len(kv) != 2 {
+				continue
+			}
+			key := strings.TrimSpace(kv[0])
+			value, err := strconv.Atoi(strings.TrimSpace(kv[1]))
+			if err != nil {
+				continue
+			}
+			data[key] = value
+		}
+		return data
+	default:
+		return nil
+	}
+}
+
+func (m *ExcelMetaOri) GetMeta() *ExcelMeta {
+	meta := ExcelMeta{}
+	meta.Columns = make(map[string]*ExcelCowMeta)
+	for sheetName, cowMetaOri := range m.Columns {
+		cowMeta := ExcelCowMeta{}
+		cowMeta.Type = cowMetaOri.GetColumnType()
+		cowMeta.Data = cowMetaOri.GetData()
+		meta.Columns[sheetName] = &cowMeta
+	}
+	return &meta
 }
