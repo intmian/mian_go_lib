@@ -5,20 +5,20 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-type ExcelCowOri struct {
+type ExcelColOri struct {
 	Name        string
 	cellStrings []string
 }
 
 type ExcelOri struct {
 	SheetName string
-	Cows      []*ExcelCowOri
+	cols      []*ExcelColOri
 }
 
 func GetExcelData(addr, sheet string) (*ExcelOri, error) {
 	excelOri := ExcelOri{}
 	excelOri.SheetName = sheet
-	excelOri.Cows = make([]*ExcelCowOri, 0)
+	excelOri.cols = make([]*ExcelColOri, 0)
 	f, err := excelize.OpenFile(addr)
 	if err != nil {
 		return nil, err
@@ -34,12 +34,12 @@ func GetExcelData(addr, sheet string) (*ExcelOri, error) {
 		return nil, err
 	}
 	for _, row := range rows {
-		excelCowOri := ExcelCowOri{}
-		excelCowOri.cellStrings = make([]string, 0)
+		excelcolOri := ExcelColOri{}
+		excelcolOri.cellStrings = make([]string, 0)
 		for _, colCell := range row {
-			excelCowOri.cellStrings = append(excelCowOri.cellStrings, colCell)
+			excelcolOri.cellStrings = append(excelcolOri.cellStrings, colCell)
 		}
-		excelOri.Cows = append(excelOri.Cows, &excelCowOri)
+		excelOri.cols = append(excelOri.cols, &excelcolOri)
 	}
 	return &excelOri, nil
 }

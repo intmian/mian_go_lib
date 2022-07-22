@@ -21,6 +21,7 @@ type Mgr struct {
 	ifPrint         bool
 	ifPush          bool
 	ifFile          bool
+	ifUseColor      bool
 	emailTargetAddr string // 用;分割
 	emailFromAddr   string
 	logTag          string // 标记日志的类型，用于在推送中区分不同的日志

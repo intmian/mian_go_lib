@@ -1,5 +1,8 @@
 package xres
 
+//ColumnType 列类型
+type ColumnType int
+
 const (
 	CtNone         ColumnType = iota //无效
 	CtInt                            //整数
@@ -12,8 +15,12 @@ const (
 	CtVecDataValue                   //数据列
 )
 
-type Data map[int]int
-
+type SuperValue struct {
+	// 用来表示类似于 数据类型:数据 的格式
+	valueType int
+	value     []int
+}
+type Data []SuperValue
 type ResType interface {
 	int | string | float64 | Data
 }

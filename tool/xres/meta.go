@@ -5,29 +5,30 @@ import (
 	"strings"
 )
 
-//ColumnType 列类型
-type ColumnType int
-
-type ExcelCowMetaOri struct {
+//ExcelcolMetaOri 从json中读取的原始数据
+type ExcelcolMetaOri struct {
 	Type string `json:"type"`
 	Data string `json:"data"`
 }
 
-type ExcelCowMeta struct {
+//ExcelcolMeta 转化后的列元数据
+type ExcelcolMeta struct {
 	Type ColumnType
 	Data map[string]int // 用于将填在excel中的枚举转换为int
-	Child
 }
 
+//ExcelMeta Excel元数据
 type ExcelMeta struct {
-	Columns map[string]*ExcelCowMeta
+	Columns map[string]*ExcelcolMeta
 }
 
+//ExcelMetaOri 从json中读取的原始excel元数据
 type ExcelMetaOri struct {
-	Columns map[string]*ExcelCowMetaOri
+	Columns map[string]*ExcelcolMetaOri
 }
 
-func (m *ExcelCowMetaOri) GetColumnType() ColumnType {
+//GetColumnType 从原始文本中获得列类型
+func (m *ExcelcolMetaOri) GetColumnType() ColumnType {
 	switch m.Type {
 	case "整数":
 		return CtInt
@@ -50,7 +51,8 @@ func (m *ExcelCowMetaOri) GetColumnType() ColumnType {
 	}
 }
 
-func (m *ExcelCowMetaOri) GetData() map[string]int {
+//GetData 将原始文本中的枚举文本转换为实际的map
+func (m *ExcelcolMetaOri) GetData() map[string]int {
 	/*
 		如果类型是枚举，则解析枚举数据
 		枚举格式如下
@@ -90,14 +92,22 @@ func (m *ExcelCowMetaOri) GetData() map[string]int {
 	}
 }
 
+//GetMeta 将原始的元数据转换为实际的元数据
 func (m *ExcelMetaOri) GetMeta() *ExcelMeta {
 	meta := ExcelMeta{}
-	meta.Columns = make(map[string]*ExcelCowMeta)
-	for sheetName, cowMetaOri := range m.Columns {
-		cowMeta := ExcelCowMeta{}
-		cowMeta.Type = cowMetaOri.GetColumnType()
-		cowMeta.Data = cowMetaOri.GetData()
-		meta.Columns[sheetName] = &cowMeta
+	meta.Columns = make(map[string]*ExcelcolMeta)
+	for sheetName, colMetaOri := range m.Columns {
+		colMeta := ExcelcolMeta{}
+		colMeta.Type = colMetaOri.GetColumnType()
+		colMeta.Data = colMetaOri.GetData()
+		meta.Columns[sheetName] = &colMeta
 	}
+
+	// 增加第一列为自增长ID列
+	meta.Columns["序号"] = &ExcelcolMeta{
+		Type: CtInt,
+		Data: nil,
+	}
+
 	return &meta
 }
