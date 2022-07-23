@@ -17,10 +17,14 @@ const (
 
 type SuperValue struct {
 	// 用来表示类似于 数据类型:数据 的格式
-	valueType int
-	value     []int
+	valueTypeName string
+	valueType     int
+	valueName     string
+	value         []int
 }
 type Data []SuperValue
 type ResType interface {
 	int | string | float64 | Data
 }
+
+//在吗 int i = 3;

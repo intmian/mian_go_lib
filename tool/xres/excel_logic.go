@@ -1,20 +1,19 @@
 package xres
 
-// TODO: 将逻辑从实际列转换为逻辑行
 import (
 	"fmt"
 	"strconv"
 )
 
-type ExcelCol struct {
+type ExcelLogicCol struct {
 	name      string
 	ExcelType ColumnType
 	data      []interface{}
 }
 
-type Excel struct {
+type ExcelLogic struct {
 	SheetName string
-	cols      []*ExcelCol
+	cols      []*ExcelLogicCol
 }
 
 func convertNormalStrFromOri(columnType ColumnType, str string, metaEnumMap map[string]int) interface{} {
@@ -40,17 +39,17 @@ func convertNormalStrFromOri(columnType ColumnType, str string, metaEnumMap map[
 	}
 }
 
-func GetExcelFromOri(ori *ExcelOri, meta *ExcelMeta) (*Excel, error) {
+func ExcelOri2Logic(ori *ExcelOri, meta *ExcelMeta) (*ExcelLogic, error) {
 	if (ori == nil) || (meta == nil) {
 		return nil, fmt.Errorf("%s:ori or meta is nil", ori.SheetName)
 	}
-	excel := Excel{}
+	excel := ExcelLogic{}
 	excel.SheetName = ori.SheetName
-	excel.cols = make([]*ExcelCol, 0)
+	excel.cols = make([]*ExcelLogicCol, 0)
 
 	// 检查原始数据第一列是否为序号列
-	if ori.cols[0].Name != "序号" {
-		return nil, fmt.Errorf("%s:first column is not '序号'", ori.SheetName)
+	if ori.cols[0].Name != "ID" {
+		return nil, fmt.Errorf("%s:first column is not 'ID'", ori.SheetName)
 	}
 
 	// 检查原始数据的每一列长度是否一致
@@ -68,7 +67,7 @@ func GetExcelFromOri(ori *ExcelOri, meta *ExcelMeta) (*Excel, error) {
 		if !ok {
 			return nil, fmt.Errorf("%s:column %s not found in meta", ori.SheetName, colOri.Name)
 		}
-		col := ExcelCol{}
+		col := ExcelLogicCol{}
 		col.name = colOri.Name
 		col.ExcelType = colMeta.Type
 		col.data = make([]interface{}, 0)
