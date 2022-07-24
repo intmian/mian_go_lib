@@ -7,18 +7,18 @@ import (
 
 type ExcelColOri struct {
 	Name        string
-	cellStrings []string
+	CellStrings []string
 }
 
 type ExcelOri struct {
 	SheetName string
-	cols      []*ExcelColOri
+	Columns   []*ExcelColOri
 }
 
 func GetExcelData(addr, sheet string) (*ExcelOri, error) {
 	excelOri := ExcelOri{}
 	excelOri.SheetName = sheet
-	excelOri.cols = make([]*ExcelColOri, 0)
+	excelOri.Columns = make([]*ExcelColOri, 0)
 	f, err := excelize.OpenFile(addr)
 	if err != nil {
 		return nil, err
@@ -35,11 +35,11 @@ func GetExcelData(addr, sheet string) (*ExcelOri, error) {
 	}
 	for _, row := range rows {
 		excelcolOri := ExcelColOri{}
-		excelcolOri.cellStrings = make([]string, 0)
+		excelcolOri.CellStrings = make([]string, 0)
 		for _, colCell := range row {
-			excelcolOri.cellStrings = append(excelcolOri.cellStrings, colCell)
+			excelcolOri.CellStrings = append(excelcolOri.CellStrings, colCell)
 		}
-		excelOri.cols = append(excelOri.cols, &excelcolOri)
+		excelOri.Columns = append(excelOri.Columns, &excelcolOri)
 	}
 	return &excelOri, nil
 }

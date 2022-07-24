@@ -13,12 +13,12 @@ type ExcelLogicCol struct {
 
 type ExcelLogic struct {
 	SheetName string
-	cols      []*ExcelLogicCol
+	Columns   []*ExcelLogicCol
 }
 
 func convertNormalStrFromOri(columnType ColumnType, str string, metaEnumMap map[string]int) interface{} {
 	switch columnType {
-	case CtInt:
+	case CtInt, CtVecDataValue:
 		v, err := strconv.Atoi(str)
 		if err != nil {
 			return nil
@@ -32,63 +32,58 @@ func convertNormalStrFromOri(columnType ColumnType, str string, metaEnumMap map[
 			return nil
 		}
 		return v
-	case CtEnum, CtBitEnum:
+	case CtEnum, CtBitEnum, CtVecDataPKey, CtVecDataCKey:
 		return metaEnumMap[str]
 	default:
 		return nil
 	}
 }
 
+//ExcelOri2Logic 将原始的以列组织的表，进行基础的校验，并将所有的文本翻译为逻辑值
 func ExcelOri2Logic(ori *ExcelOri, meta *ExcelMeta) (*ExcelLogic, error) {
 	if (ori == nil) || (meta == nil) {
 		return nil, fmt.Errorf("%s:ori or meta is nil", ori.SheetName)
 	}
 	excel := ExcelLogic{}
 	excel.SheetName = ori.SheetName
-	excel.cols = make([]*ExcelLogicCol, 0)
+	excel.Columns = make([]*ExcelLogicCol, 0)
 
+	// 进行原始检验
 	// 检查原始数据第一列是否为序号列
-	if ori.cols[0].Name != "ID" {
+	if ori.Columns[0].Name != "ID" {
 		return nil, fmt.Errorf("%s:first column is not 'ID'", ori.SheetName)
 	}
-
 	// 检查原始数据的每一列长度是否一致
 	cellsNum := -1
-	for _, col := range ori.cols {
+	for _, col := range ori.Columns {
 		if cellsNum == -1 {
-			cellsNum = len(col.cellStrings)
-		} else if cellsNum != len(col.cellStrings) {
-			return nil, fmt.Errorf("%s:columns(%s) num is not equal, this column num is %d, last column num is %d", ori.SheetName, col.Name, len(col.cellStrings), cellsNum)
+			cellsNum = len(col.CellStrings)
+		} else if cellsNum != len(col.CellStrings) {
+			return nil, fmt.Errorf("%s:columns(%s) num is not equal, this column num is %d, last column num is %d", ori.SheetName, col.Name, len(col.CellStrings), cellsNum)
 		}
 	}
+	// 检查原始数据的列数与meta的列数是否一致
+	if len(ori.Columns) != len(meta.ColumnMeta)+1 {
+		return nil, fmt.Errorf("%s:columns length is not equal to meta", ori.SheetName)
+	}
 
-	for _, colOri := range ori.cols {
-		colMeta, ok := meta.Columns[colOri.Name]
+	// 对每一列的数据进行处理
+	for _, colOri := range ori.Columns {
+		colMeta, ok := meta.ColumnMeta[colOri.Name]
 		if !ok {
 			return nil, fmt.Errorf("%s:column %s not found in meta", ori.SheetName, colOri.Name)
 		}
 		col := ExcelLogicCol{}
 		col.name = colOri.Name
 		col.ExcelType = colMeta.Type
-		col.data = make([]interface{}, 0)
-		tempData := Data{}
-		tempSuperValue := SuperValue{}
-		for _, cellStr := range colOri.cellStrings {
-			switch colMeta.Type {
-			case CtVecDataPKey:
-				v := convertNormalStrFromOri(CtEnum, cellStr, colMeta.Data)
-				if v == nil {
-					return nil, fmt.Errorf("%s:column %s cell %s convert error", ori.SheetName, colOri.Name, cellStr)
-				}
-				tempSuperValue.valueType = v
-
-			default:
-				v := convertNormalStrFromOri(colMeta.Type, cellStr, colMeta.Data)
-				if v == nil {
-					return nil, fmt.Errorf("%s:convert %s to %s failed", ori.SheetName, cellStr, colMeta.Type)
-				}
+		col.data = make([]interface{}, cellsNum)
+		for i, cellStr := range colOri.CellStrings {
+			v := convertNormalStrFromOri(colMeta.Type, cellStr, colMeta.Data)
+			if v == nil {
+				return nil, fmt.Errorf("%s:column %s cell %d is not valid", ori.SheetName, colOri.Name, i)
 			}
 		}
-		excel.cols = append(excel.cols, &col)
 	}
+
+	return &excel, nil
 }

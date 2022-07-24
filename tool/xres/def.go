@@ -15,14 +15,13 @@ const (
 	CtVecDataValue                   //数据列
 )
 
-type SuperValue struct {
+type DataCell struct {
 	// 用来表示类似于 数据类型:数据 的格式
-	valueTypeName string
-	valueType     int
-	valueName     string
-	value         []int
+	valueType int
+	value     int
 }
-type Data []SuperValue
+type Data []DataCell
+
 type ResType interface {
 	int | string | float64 | Data
 }

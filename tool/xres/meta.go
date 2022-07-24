@@ -19,7 +19,7 @@ type ExcelColMeta struct {
 
 //ExcelMeta Excel元数据
 type ExcelMeta struct {
-	Columns map[string]*ExcelColMeta
+	ColumnMeta map[string]*ExcelColMeta
 }
 
 //ExcelMetaOri 从json中读取的原始excel元数据
@@ -93,16 +93,16 @@ func (m *ExcelColMetaOri) GetData() map[string]int {
 //GetMeta 将原始的元数据转换为实际的元数据
 func (m *ExcelMetaOri) GetMeta() *ExcelMeta {
 	meta := ExcelMeta{}
-	meta.Columns = make(map[string]*ExcelColMeta)
+	meta.ColumnMeta = make(map[string]*ExcelColMeta)
 	for sheetName, colMetaOri := range m.Columns {
 		colMeta := ExcelColMeta{}
 		colMeta.Type = colMetaOri.GetColumnType()
 		colMeta.Data = colMetaOri.GetData()
-		meta.Columns[sheetName] = &colMeta
+		meta.ColumnMeta[sheetName] = &colMeta
 	}
 
 	// 增加第一列为自增长ID列
-	meta.Columns["ID"] = &ExcelColMeta{
+	meta.ColumnMeta["ID"] = &ExcelColMeta{
 		Type: CtInt,
 		Data: nil,
 	}
