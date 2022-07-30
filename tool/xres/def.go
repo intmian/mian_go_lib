@@ -13,6 +13,8 @@ const (
 	CtVecDataPKey                    //主枚举列
 	CtVecDataCKey                    //子枚举列
 	CtVecDataValue                   //数据列
+	CtLogicBegin   = 100             //逻辑类型
+	CtData                           // 压缩过后的逻辑数据
 )
 
 type DataCell struct {
