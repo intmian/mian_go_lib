@@ -182,8 +182,10 @@ func (e *ExcelPtl) Save2file(addr string) error {
 			// 获得此列的类型
 			colType := e.ColumnTypes[i]
 			switch colType {
-			case CtInt, CtEnum, CtBitEnum:
+			case CtInt, CtEnum:
 				err = binary.Write(file, binary.LittleEndian, data.(int))
+			case CtBitEnum:
+				err = binary.Write(file, binary.LittleEndian, data.([]int))
 			case CtFloat:
 				err = binary.Write(file, binary.LittleEndian, data.(float64))
 			case CtString:
@@ -258,8 +260,15 @@ func (e *ExcelPtl) LoadFromFile(addr string) error {
 		for _, colType := range e.ColumnTypes {
 			var data interface{}
 			switch colType {
-			case CtInt, CtEnum, CtBitEnum:
+			case CtInt, CtEnum:
 				var d int
+				err = binary.Read(file, binary.LittleEndian, &d)
+				if err != nil {
+					return err
+				}
+				data = d
+			case CtBitEnum:
+				var d []int
 				err = binary.Read(file, binary.LittleEndian, &d)
 				if err != nil {
 					return err
@@ -321,8 +330,10 @@ func (e *ExcelPtl) Convert(datas []interface{}) error {
 			for k := 0; k < typeOfD.NumField(); k++ {
 				if typeOfD.Field(k).Tag.Get("excel") == e.Names[j] {
 					switch colType {
-					case CtInt, CtEnum, CtBitEnum:
+					case CtInt, CtEnum:
 						d.(*reflect.Value).Elem().Field(k).SetInt(int64(cellData.(int)))
+					case CtBitEnum:
+						d.(*reflect.Value).Elem().Field(k).Set(reflect.ValueOf(cellData.([]int)))
 					case CtFloat:
 						d.(*reflect.Value).Elem().Field(k).SetFloat(float64(cellData.(float64)))
 					case CtString:

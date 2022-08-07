@@ -3,6 +3,7 @@ package xres
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type ExcelLogicCol struct {
@@ -32,8 +33,25 @@ func convertNormalStrFromOri(columnType ColumnType, str string, metaEnumMap map[
 			return nil
 		}
 		return v
-	case CtEnum, CtBitEnum, CtVecDataPKey, CtVecDataCKey:
+	case CtEnum, CtVecDataPKey, CtVecDataCKey:
 		return metaEnumMap[str]
+	case CtBitEnum:
+		// 根据逗号分割,并将处理后的值压入一个数组
+		strs := strings.Split(str, ",")
+		bitEnums := make([]int, 0)
+		for _, s := range strs {
+			enum, ok := metaEnumMap[s]
+			if !ok {
+				return nil
+			}
+			realEnumIndex := enum % 32
+			realEnum := 1 << uint(realEnumIndex)
+			for len(bitEnums) <= realEnumIndex {
+				bitEnums = append(bitEnums, 0)
+			}
+			bitEnums[realEnumIndex] |= realEnum
+		}
+		return bitEnums
 	default:
 		return nil
 	}
