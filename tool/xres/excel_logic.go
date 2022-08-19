@@ -66,24 +66,12 @@ func ExcelOri2Logic(ori *ExcelOri, meta *ExcelMeta) (*ExcelLogic, error) {
 	excel.SheetName = ori.SheetName
 	excel.Columns = make([]*ExcelLogicCol, 0)
 
-	// 进行原始检验
-	// 检查原始数据第一列是否为序号列
-	if ori.Columns[0].Name != "ID" {
-		return nil, fmt.Errorf("%s:first column is not 'ID'", ori.SheetName)
+	err := CheckExcelOriLegal(ori, len(meta.ColumnMeta))
+	if err != nil {
+		return nil, err
 	}
-	// 检查原始数据的每一列长度是否一致
-	cellsNum := -1
-	for _, col := range ori.Columns {
-		if cellsNum == -1 {
-			cellsNum = len(col.CellStrings)
-		} else if cellsNum != len(col.CellStrings) {
-			return nil, fmt.Errorf("%s:columns(%s) num is not equal, this column num is %d, last column num is %d", ori.SheetName, col.Name, len(col.CellStrings), cellsNum)
-		}
-	}
-	// 检查原始数据的列数与meta的列数是否一致
-	if len(ori.Columns) != len(meta.ColumnMeta)+1 {
-		return nil, fmt.Errorf("%s:columns length is not equal to meta", ori.SheetName)
-	}
+	// 列长度
+	rawsLen := len(ori.Columns[0].CellStrings)
 
 	// 对每一列的数据进行处理
 	for _, colOri := range ori.Columns {
@@ -94,7 +82,7 @@ func ExcelOri2Logic(ori *ExcelOri, meta *ExcelMeta) (*ExcelLogic, error) {
 		col := ExcelLogicCol{}
 		col.name = colOri.Name
 		col.ExcelType = colMeta.Type
-		col.data = make([]interface{}, cellsNum)
+		col.data = make([]interface{}, rawsLen)
 		for i, cellStr := range colOri.CellStrings {
 			v := convertNormalStrFromOri(colMeta.Type, cellStr, colMeta.Data)
 			if v == nil {
@@ -103,5 +91,62 @@ func ExcelOri2Logic(ori *ExcelOri, meta *ExcelMeta) (*ExcelLogic, error) {
 		}
 	}
 
+	// 删除处于末尾的空行
+	for i := rawsLen - 1; i >= 0; i-- {
+		empty := true
+		for _, col := range excel.Columns {
+			if col.data[i] != nil || col.data[i] != "" {
+				empty = false
+				break
+			}
+		}
+		if empty {
+			for _, col := range excel.Columns {
+				col.data = col.data[:i]
+			}
+		}
+	}
+
 	return &excel, nil
+}
+
+func CheckExcelOriLegal(ori *ExcelOri, metaLen int) error {
+	// 进行原始检验
+	// 检查原始数据第一列是否为序号列
+	if ori.Columns[0].Name != "ID" {
+		return fmt.Errorf("%s:first column is not 'ID'", ori.SheetName)
+	}
+	// 检查原始数据的每一列长度是否一致
+	cellsNum := -1
+	for _, col := range ori.Columns {
+		if cellsNum == -1 {
+			cellsNum = len(col.CellStrings)
+		} else if cellsNum != len(col.CellStrings) {
+			return fmt.Errorf("%s:columns(%s) num is not equal, this column num is %d, last column num is %d", ori.SheetName, col.Name, len(col.CellStrings), cellsNum)
+		}
+	}
+	// 检查原始数据的列数与meta的列数是否一致
+	if len(ori.Columns) != metaLen+1 {
+		return fmt.Errorf("%s:columns length is not equal to meta", ori.SheetName)
+	}
+
+	lastAllNullRawIndex := -1
+	// 检查是否有非末行的空行
+	for i := 0; i < len(ori.Columns[0].CellStrings); i++ {
+		allNull := true
+		for _, col := range ori.Columns {
+			if col.CellStrings[i] != "" {
+				allNull = false
+				break
+			}
+		}
+		if allNull {
+			lastAllNullRawIndex = i
+		}
+		// 有效行上面不准出现空行
+		if !allNull && (lastAllNullRawIndex != -1) {
+			return fmt.Errorf("%s:have invalid row up to valid row", ori.SheetName)
+		}
+	}
+	return nil
 }

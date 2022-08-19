@@ -3,6 +3,7 @@ package xres
 import (
 	"fmt"
 	"github.com/xuri/excelize/v2"
+	"path/filepath"
 )
 
 type ExcelColOri struct {
@@ -17,7 +18,9 @@ type ExcelOri struct {
 
 func GetExcelData(addr, sheet string) (*ExcelOri, error) {
 	excelOri := ExcelOri{}
-	excelOri.SheetName = sheet
+	// 以实际文件名为sheet名
+	_, name := filepath.Split(addr)
+	excelOri.SheetName = name
 	excelOri.Columns = make([]*ExcelColOri, 0)
 	f, err := excelize.OpenFile(addr)
 	if err != nil {
@@ -29,17 +32,21 @@ func GetExcelData(addr, sheet string) (*ExcelOri, error) {
 		}
 	}()
 	// 获取工作表中指定单元格的值
-	rows, err := f.GetRows(sheet)
+	cols, err := f.GetCols(sheet)
 	if err != nil {
 		return nil, err
 	}
-	for _, row := range rows {
-		excelcolOri := ExcelColOri{}
-		excelcolOri.CellStrings = make([]string, 0)
-		for _, colCell := range row {
-			excelcolOri.CellStrings = append(excelcolOri.CellStrings, colCell)
+	for _, col := range cols {
+		excelColOri := ExcelColOri{}
+		excelColOri.CellStrings = make([]string, 0)
+		for i, colCell := range col {
+			if i == 0 {
+				excelColOri.Name = colCell
+				continue
+			}
+			excelColOri.CellStrings = append(excelColOri.CellStrings, colCell)
 		}
-		excelOri.Columns = append(excelOri.Columns, &excelcolOri)
+		excelOri.Columns = append(excelOri.Columns, &excelColOri)
 	}
 	return &excelOri, nil
 }
