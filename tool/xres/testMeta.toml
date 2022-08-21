@@ -1,0 +1,21 @@
+a.type = "enum"
+a.data = """
+[史蒂夫:1]
+[大的期望:2]
+[哈哈哈:3]
+[千万：4]
+"""
+
+b.type = "bitenum"
+b.data = """
+<dfsf:1>
+<上大的:2>
+<xxx:3>
+<aaa:4>
+"""
+
+c.type = "string"
+c.data = ""
+
+d.type = "int"
+d.data = ""

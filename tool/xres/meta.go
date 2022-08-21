@@ -5,10 +5,18 @@ import (
 	"strings"
 )
 
-//ExcelColMetaOri 从json中读取的原始数据
+/* template.toml
+a.type = string
+a.data = """
+[["枚举1:1"]
+["枚举2:2"]]
+"""
+*/
+
+//ExcelColMetaOri 从toml中读取的原始数据
 type ExcelColMetaOri struct {
-	Type string `json:"type"`
-	Data string `json:"data"`
+	Type string `toml:"type"`
+	Data string `toml:"data"`
 }
 
 //ExcelColMeta 转化后的列元数据
@@ -22,7 +30,7 @@ type ExcelMeta struct {
 	ColumnMeta map[string]*ExcelColMeta
 }
 
-//ExcelMetaOri 从json中读取的原始excel元数据
+//ExcelMetaOri 从toml中读取的原始excel元数据
 type ExcelMetaOri struct {
 	Columns map[string]*ExcelColMetaOri
 }
@@ -56,9 +64,11 @@ func (m *ExcelColMetaOri) GetData() map[string]int {
 	/*
 		如果类型是枚举，则解析枚举数据
 		枚举格式如下
-		[枚举1:1],[枚举2:2]
+		[枚举1:1]
+		[枚举2:2]
 		位枚举格式如下
-		[枚举1:1],[枚举2:2]
+		[枚举1:1]
+		[枚举2:2]
 	*/
 	switch m.GetColumnType() {
 	case CtEnum, CtBitEnum, CtVecDataPKey, CtVecDataCKey:
