@@ -16,14 +16,28 @@ func (t *TJsonTool) Data() interface{} {
 	return t.pData
 }
 
-//ReadFile 将data对应的文件反序列化到string中，如果出现问题，会返回err
+//readJsonFile 将filename对应的文件反序列化到data中，如果出现问题，会返回err
 //切记切记一定要传进指针
-func ReadFile(filename string, data interface{}) error {
+func readJsonFile(filename string, data interface{}) error {
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
 	if err := json.Unmarshal(bytes, data); err != nil {
+		return err
+	}
+	return nil
+}
+
+//writeJsonFile 将data序列化到filename中，如果出现问题，会返回err
+//切记切记一定要传进指针
+func writeJsonFile(filename string, data interface{}) error {
+	s, err := json.MarshalIndent(data, "", "\t")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filename, s, 0666)
+	if err != nil {
 		return err
 	}
 	return nil
@@ -47,7 +61,7 @@ func (t *TJsonTool) Load(addr string) bool {
 	if t.addr == "" {
 		return false
 	}
-	err := ReadFile(addr, &t.pData)
+	err := readJsonFile(addr, &t.pData)
 	if err != nil {
 		return false
 	}
@@ -64,12 +78,7 @@ func (t *TJsonTool) Save() bool {
 
 //SaveOther 序列化数据结构到某个文件
 func (t *TJsonTool) SaveOther(addr string) bool {
-	s, err := json.MarshalIndent(t.pData, "", "\t")
-	if err != nil {
-		return false
-	}
-	err = ioutil.WriteFile(addr, s, 0666)
-	if err != nil {
+	if err := writeJsonFile(addr, t.pData); err != nil {
 		return false
 	}
 	return true
