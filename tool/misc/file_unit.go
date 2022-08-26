@@ -96,6 +96,10 @@ func (*JsonTool) Read(addr string, pData interface{}) error {
 	return readJsonFile(addr, pData)
 }
 
+var GJsonTool = &JsonTool{}
+
 func (*JsonTool) Write(addr string, pData interface{}) error {
 	return writeJsonFile(addr, pData)
 }
+
+var GTomlTool = &TomlTool{}

@@ -3,6 +3,7 @@ module github.com/intmian/mian_go_lib
 go 1.18
 
 require (
+	github.com/BurntSushi/toml v1.2.0
 	github.com/go-vgo/robotgo v0.100.10
 	github.com/microcosm-cc/bluemonday v1.0.18
 	github.com/robotn/gohook v0.40.0
@@ -11,7 +12,6 @@ require (
 )
 
 require (
-	github.com/BurntSushi/toml v1.2.0 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
