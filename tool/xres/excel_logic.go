@@ -34,7 +34,11 @@ func convertNormalStrFromOri(columnType ColumnType, str string, metaEnumMap map[
 		}
 		return v
 	case CtEnum, CtVecDataPKey, CtVecDataCKey:
-		return metaEnumMap[str]
+		enum, ok := metaEnumMap[str]
+		if !ok {
+			return nil
+		}
+		return enum
 	case CtBitEnum:
 		// 根据逗号分割,并将处理后的值压入一个数组
 		strs := strings.Split(str, ",")

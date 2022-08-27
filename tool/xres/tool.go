@@ -25,7 +25,7 @@ func (a *Attr) HasAttr(attr AttrSingle) bool {
 func (a *Attr) setAttr(attr AttrSingle) {
 	enumIndex := int(attr / 32)
 	bitIndex := 1 << (attr % 32)
-	if enumIndex >= len(*a) {
+	for enumIndex >= len(*a) {
 		*a = append(*a, 0)
 	}
 	(*a)[enumIndex] |= bitIndex
