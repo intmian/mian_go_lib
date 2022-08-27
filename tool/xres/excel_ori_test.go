@@ -16,7 +16,7 @@ func TestGetExcelData(t *testing.T) {
 				t.Error("have empty col")
 			}
 		}
-		err = CheckExcelOriLegal(o, len(o.Columns)-1)
+		err = CheckExcelOriLegal(o, len(o.Columns))
 		if err != nil {
 			t.Error(err)
 		}
@@ -27,7 +27,7 @@ func TestGetExcelData(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		err = CheckExcelOriLegal(o, len(o.Columns)-1)
+		err = CheckExcelOriLegal(o, len(o.Columns))
 		if err == nil {
 			t.Error("缺ID，应该报错")
 		}
@@ -37,7 +37,7 @@ func TestGetExcelData(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		err = CheckExcelOriLegal(o, len(o.Columns)-1)
+		err = CheckExcelOriLegal(o, len(o.Columns))
 		if err == nil {
 			t.Error("长度不一致，应该报错")
 		}
@@ -47,7 +47,7 @@ func TestGetExcelData(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		err = CheckExcelOriLegal(o, len(o.Columns)-1)
+		err = CheckExcelOriLegal(o, len(o.Columns))
 		if err == nil {
 			t.Error("空行，应该报错")
 		}

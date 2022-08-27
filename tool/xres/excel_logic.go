@@ -44,8 +44,8 @@ func convertNormalStrFromOri(columnType ColumnType, str string, metaEnumMap map[
 			if !ok {
 				return nil
 			}
-			realEnumIndex := enum % 32
-			realEnum := 1 << uint(realEnumIndex)
+			realEnumIndex := enum / 32
+			realEnum := 1 << uint(enum%32)
 			for len(bitEnums) <= realEnumIndex {
 				bitEnums = append(bitEnums, 0)
 			}
@@ -88,7 +88,9 @@ func ExcelOri2Logic(ori *ExcelOri, meta *ExcelMeta) (*ExcelLogic, error) {
 			if v == nil {
 				return nil, fmt.Errorf("%s:column %s cell %d is not valid", ori.SheetName, colOri.Name, i)
 			}
+			col.data[i] = v
 		}
+		excel.Columns = append(excel.Columns, &col)
 	}
 
 	// 删除处于末尾的空行
@@ -126,7 +128,7 @@ func CheckExcelOriLegal(ori *ExcelOri, metaLen int) error {
 		}
 	}
 	// 检查原始数据的列数与meta的列数是否一致
-	if len(ori.Columns) != metaLen+1 {
+	if len(ori.Columns) != metaLen {
 		return fmt.Errorf("%s:columns length is not equal to meta", ori.SheetName)
 	}
 

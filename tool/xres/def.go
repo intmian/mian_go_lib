@@ -27,23 +27,3 @@ type Data []DataCell
 type ResType interface {
 	int | string | float64 | Data
 }
-
-type BitEnum []int
-
-func (b *BitEnum) IsEnumExist(enum int) bool {
-	enumIndex := enum / 32
-	bitIndex := 1 << (enum % 32)
-	if enumIndex >= len(*b) {
-		return false
-	}
-	return (*b)[enumIndex]&bitIndex != 0
-}
-
-func (b *BitEnum) SetEnum(enum int) {
-	enumIndex := enum / 32
-	bitIndex := 1 << (enum % 32)
-	if enumIndex >= len(*b) {
-		*b = append(*b, 0)
-	}
-	(*b)[enumIndex] |= bitIndex
-}

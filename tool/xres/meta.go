@@ -32,7 +32,7 @@ type ExcelMeta struct {
 
 //ExcelMetaOri 从toml中读取的原始excel元数据
 type ExcelMetaOri struct {
-	Columns map[string]*ExcelColMetaOri
+	Columns map[string]*ExcelColMetaOri `toml:"columns"`
 }
 
 //GetColumnType 从原始文本中获得列类型
@@ -71,9 +71,9 @@ func (m *ExcelColMetaOri) GetData() map[string]int {
 		[枚举2:2]
 	*/
 	switch m.GetColumnType() {
-	case CtEnum, CtBitEnum, CtVecDataPKey, CtVecDataCKey:
+	case CtEnum, CtVecDataPKey, CtVecDataCKey:
 		data := make(map[string]int)
-		for _, line := range strings.Split(m.Data, ",") {
+		for _, line := range strings.Split(m.Data, "\n") {
 			line = strings.TrimSpace(line)
 			if line == "" {
 				continue
@@ -83,6 +83,30 @@ func (m *ExcelColMetaOri) GetData() map[string]int {
 			}
 			line = strings.TrimPrefix(line, "[")
 			line = strings.TrimSuffix(line, "]")
+			kv := strings.Split(line, ":")
+			if len(kv) != 2 {
+				continue
+			}
+			key := strings.TrimSpace(kv[0])
+			value, err := strconv.Atoi(strings.TrimSpace(kv[1]))
+			if err != nil {
+				continue
+			}
+			data[key] = value
+		}
+		return data
+	case CtBitEnum:
+		data := make(map[string]int)
+		for _, line := range strings.Split(m.Data, "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" {
+				continue
+			}
+			if !strings.HasPrefix(line, "<") || !strings.HasSuffix(line, ">") {
+				continue
+			}
+			line = strings.TrimPrefix(line, "<")
+			line = strings.TrimSuffix(line, ">")
 			kv := strings.Split(line, ":")
 			if len(kv) != 2 {
 				continue
