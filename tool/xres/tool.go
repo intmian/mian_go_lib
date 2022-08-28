@@ -10,10 +10,10 @@ package xres
 
 // 请注意这里使用int和uint没有区别，因为是位操作
 
-type Attr []int
-type AttrSingle int
+type Attrs []int
+type Attr int
 
-func (a *Attr) HasAttr(attr AttrSingle) bool {
+func (a *Attrs) HasAttr(attr Attr) bool {
 	enumIndex := int(attr / 32)
 	bitIndex := 1 << (attr % 32)
 	if enumIndex >= len(*a) {
@@ -22,7 +22,7 @@ func (a *Attr) HasAttr(attr AttrSingle) bool {
 	return (*a)[enumIndex]&bitIndex != 0
 }
 
-func (a *Attr) setAttr(attr AttrSingle) {
+func (a *Attrs) setAttr(attr Attr) {
 	enumIndex := int(attr / 32)
 	bitIndex := 1 << (attr % 32)
 	for enumIndex >= len(*a) {

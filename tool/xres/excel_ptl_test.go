@@ -1,0 +1,94 @@
+package xres
+
+import (
+	"github.com/intmian/mian_go_lib/tool/misc"
+	"os"
+	"testing"
+)
+
+func TestPtl(t *testing.T) {
+	o, err := GetExcelData("./test.xlsx", "正常")
+	if err != nil {
+		t.Error(err)
+	}
+	pMetaOri := &ExcelMetaOri{}
+	err = misc.GTomlTool.Read(`testMeta.toml`, pMetaOri)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if pMetaOri == nil {
+		t.Error("meta is nil")
+	}
+
+	if pMetaOri.Columns == nil {
+		t.Error("meta.columns is nil")
+	}
+
+	pMeta := pMetaOri.GetMeta()
+	if pMeta == nil {
+		t.Error("meta is nil")
+	}
+
+	pLogic, err := ExcelOri2Logic(o, pMeta)
+	if err != nil {
+		t.Error(err)
+	}
+	if pLogic == nil {
+		t.Error("logic is nil")
+	}
+	if pLogic.SheetName == "" {
+		t.Error("SheetName is empty")
+	}
+	if len(pLogic.Columns) != len(pMeta.ColumnMeta) {
+		t.Error("Columns len not equal")
+	}
+
+	pPtl, err := GetExcelFromLogic(pLogic, pMeta)
+	if err != nil {
+		t.Error(err)
+	}
+	if pPtl == nil {
+		t.Error("ptl is nil")
+	}
+	if pPtl.SheetName == "" {
+		t.Error("SheetName is empty")
+	}
+	if len(pPtl.ColumnTypes) != len(pMeta.ColumnMeta) {
+		t.Error("Columns len not equal")
+	}
+	if len(pPtl.Rows) == 0 {
+		t.Error("Rows is empty")
+	}
+
+	// TODO: 可拓展数据列还没测试
+
+	err = pPtl.Save2file("./test.rxc")
+	if err != nil {
+		t.Error(err)
+	}
+	err = pPtl.LoadFromFile("./test.rxc")
+	if err != nil {
+		t.Error(err)
+	}
+	if pPtl.SheetName == "" {
+		t.Error("After WR sheetName is empty")
+	}
+	if len(pPtl.ColumnTypes) != len(pMeta.ColumnMeta) {
+		t.Error("After WR Columns len not equal")
+	}
+	if len(pPtl.Rows) == 0 {
+		t.Error("After WR Rows is empty")
+	}
+	err = os.Remove("./test.rxc")
+	if err != nil {
+		t.Error(err)
+	}
+	type Test struct {
+		a int    `xlsx:"a"`
+		b Attrs  `xlsx:"b"`
+		v string `xlsx:"v"`
+		k int    `xlsx:"k"`
+	}
+
+}

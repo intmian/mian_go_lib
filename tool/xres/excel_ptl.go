@@ -2,6 +2,7 @@ package xres
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -44,7 +45,7 @@ func GetExcelFromLogic(logic *ExcelLogic, meta *ExcelMeta) (*ExcelPtl, error) {
 		}
 	}
 	// 检查原始数据的列数与meta的列数是否一致
-	if len(logic.Columns) != len(meta.ColumnMeta)+1 {
+	if len(logic.Columns) != len(meta.ColumnMeta) {
 		return nil, fmt.Errorf("%s:columns length is not equal to meta", logic.SheetName)
 	}
 
@@ -60,6 +61,8 @@ func GetExcelFromLogic(logic *ExcelLogic, meta *ExcelMeta) (*ExcelPtl, error) {
 					logic.Columns[i+1].ExcelType != CtVecDataCKey) {
 				excel.ColumnTypes = append(excel.ColumnTypes, CtData)
 			}
+		case CtBitEnum:
+			excel.ColumnTypes = append(excel.ColumnTypes, CtAttrs)
 		default:
 			excel.ColumnTypes = append(excel.ColumnTypes, col.ExcelType)
 		}
@@ -79,14 +82,14 @@ func GetExcelFromLogic(logic *ExcelLogic, meta *ExcelMeta) (*ExcelPtl, error) {
 		var tempDataCell DataCell
 		lastCellType := CtNone
 		idExistMap := make(map[int]bool)
-		for i, col := range logic.Columns {
+		for j, col := range logic.Columns {
 			// 校验ID
-			if i == 0 {
+			if j == 0 {
 				// 序号列
 				if col.name != "ID" {
 					return nil, fmt.Errorf("%s:first column is not 'ID'", logic.SheetName)
 				}
-				id, ok := col.data[i].(int)
+				id, ok := col.data[j].(int)
 				if !ok {
 					return nil, fmt.Errorf("%s:first column is not int type", logic.SheetName)
 				}
@@ -101,7 +104,7 @@ func GetExcelFromLogic(logic *ExcelLogic, meta *ExcelMeta) (*ExcelPtl, error) {
 
 			d := col.data[i] // 读取此列此行的数据
 			if d == nil {
-				return nil, fmt.Errorf("%s:column %s row %d is nil", logic.SheetName, col.name, i)
+				return nil, fmt.Errorf("%s:column %s row %d is nil", logic.SheetName, col.name, j)
 			}
 
 			// 处理值
@@ -114,7 +117,7 @@ func GetExcelFromLogic(logic *ExcelLogic, meta *ExcelMeta) (*ExcelPtl, error) {
 			case CtVecDataCKey:
 				if lastCellType != CtVecDataValue {
 					// 上一个key-value没有闭合
-					return nil, fmt.Errorf("%s:column %s row %d last key do not have value", logic.SheetName, col.name, i)
+					return nil, fmt.Errorf("%s:column %s row %d last key do not have value", logic.SheetName, col.name, j)
 				}
 				tempData = append(tempData, tempDataCell)
 				tempDataCell = DataCell{}
@@ -122,12 +125,14 @@ func GetExcelFromLogic(logic *ExcelLogic, meta *ExcelMeta) (*ExcelPtl, error) {
 			case CtVecDataValue:
 				if lastCellType != CtVecDataPKey && lastCellType != CtVecDataCKey {
 					// 出现了孤立的value
-					return nil, fmt.Errorf("%s:column %s row %d value has no key", logic.SheetName, col.name, i)
+					return nil, fmt.Errorf("%s:column %s row %d value has no key", logic.SheetName, col.name, j)
 				}
 				tempDataCell.value = d.(int)
-				if i == len(logic.Columns)-1 || logic.Columns[i+1].ExcelType != CtVecDataCKey {
+				if j == len(logic.Columns)-1 || logic.Columns[j+1].ExcelType != CtVecDataCKey {
 					row.Data = append(row.Data, tempData)
 				}
+			case CtAttrs:
+				row.Data = append(row.Data, Attrs(d.([]int)))
 			default:
 				row.Data = append(row.Data, d)
 			}
@@ -149,55 +154,66 @@ func (e *ExcelPtl) Save2file(addr string) error {
 	defer file.Close()
 
 	// 写入列类型
-	err = binary.Write(file, binary.LittleEndian, len(e.ColumnTypes))
+	err = binary.Write(file, binary.LittleEndian, int32(len(e.ColumnTypes)))
 	if err != nil {
 		return err
 	}
 	for _, colType := range e.ColumnTypes {
-		err = binary.Write(file, binary.LittleEndian, colType)
+		err = binary.Write(file, binary.LittleEndian, int32(colType))
 		if err != nil {
 			return err
 		}
 	}
 
 	// 写入列名称
-	err = binary.Write(file, binary.LittleEndian, len(e.Names))
+	err = binary.Write(file, binary.LittleEndian, int32(len(e.Names)))
 	if err != nil {
 		return err
 	}
 	for _, name := range e.Names {
-		err = binary.Write(file, binary.LittleEndian, name)
+		err = binary.Write(file, binary.LittleEndian, int32(len(name)))
+		_, err = file.WriteString(name)
 		if err != nil {
 			return err
 		}
 	}
 
 	// 写入每一行的数据
-	err = binary.Write(file, binary.LittleEndian, len(e.Rows))
+	err = binary.Write(file, binary.LittleEndian, int32(len(e.Rows)))
 	if err != nil {
 		return err
 	}
 	for _, row := range e.Rows {
+		var mark int32
+		mark = 23333
+		err = binary.Write(file, binary.LittleEndian, mark)
 		for i, data := range row.Data {
 			// 获得此列的类型
 			colType := e.ColumnTypes[i]
 			switch colType {
 			case CtInt, CtEnum:
-				err = binary.Write(file, binary.LittleEndian, data.(int))
-			case CtBitEnum:
-				err = binary.Write(file, binary.LittleEndian, data.([]int))
+				err = binary.Write(file, binary.LittleEndian, int32(data.(int)))
+			case CtAttrs:
+				err = binary.Write(file, binary.LittleEndian, int32(len(data.([]int))))
+				for _, attr := range data.([]int) {
+					err = binary.Write(file, binary.LittleEndian, int32(attr))
+				}
 			case CtFloat:
 				err = binary.Write(file, binary.LittleEndian, data.(float64))
 			case CtString:
-				err = binary.Write(file, binary.LittleEndian, data.(string))
+				err = binary.Write(file, binary.LittleEndian, int32(len(data.(string))))
+				if err != nil {
+					return err
+				}
+				_, err = file.WriteString(data.(string))
 			case CtData:
-				err = binary.Write(file, binary.LittleEndian, len(data.([]DataCell)))
+				err = binary.Write(file, binary.LittleEndian, int32(len(data.([]DataCell))))
 				for _, cell := range data.(Data) {
-					err = binary.Write(file, binary.LittleEndian, int(cell.valueType))
+					err = binary.Write(file, binary.LittleEndian, int32(cell.valueType))
 					if err != nil {
 						return err
 					}
-					err = binary.Write(file, binary.LittleEndian, cell.value)
+					err = binary.Write(file, binary.LittleEndian, int32(cell.value))
 					if err != nil {
 						return err
 					}
@@ -214,6 +230,11 @@ func (e *ExcelPtl) Save2file(addr string) error {
 
 //LoadFromFile 从文件中加载excel数据
 func (e *ExcelPtl) LoadFromFile(addr string) error {
+	// 清空自身
+	e.ColumnTypes = nil
+	e.Names = nil
+	e.Rows = nil
+
 	// 打开文件
 	file, err := os.Open(addr)
 	if err != nil {
@@ -222,58 +243,87 @@ func (e *ExcelPtl) LoadFromFile(addr string) error {
 	defer file.Close()
 
 	// 读取列类型
-	var colTypeLen int
+	var colTypeLen int32
 	err = binary.Read(file, binary.LittleEndian, &colTypeLen)
 	if err != nil {
 		return err
 	}
 	e.ColumnTypes = make([]ColumnType, colTypeLen)
-	for i := 0; i < colTypeLen; i++ {
-		err = binary.Read(file, binary.LittleEndian, &e.ColumnTypes[i])
+	for i := 0; i < int(colTypeLen); i++ {
+		var colType int32
+		err = binary.Read(file, binary.LittleEndian, &colType)
+		e.ColumnTypes[i] = ColumnType(colType)
 		if err != nil {
 			return err
 		}
 	}
 
 	// 读取列名称
-	var nameLen int
+	var nameLen int32
 	err = binary.Read(file, binary.LittleEndian, &nameLen)
 	if err != nil {
 		return err
 	}
 	e.Names = make([]string, nameLen)
-	for i := 0; i < nameLen; i++ {
-		err = binary.Read(file, binary.LittleEndian, &e.Names[i])
+	for i := 0; i < int(nameLen); i++ {
+		var nameLen int32
+		err = binary.Read(file, binary.LittleEndian, &nameLen)
 		if err != nil {
 			return err
 		}
+		buf := make([]byte, nameLen)
+		_, err = file.Read(buf)
+		if err != nil {
+			return err
+		}
+		e.Names[i] = string(buf)
 	}
 
 	// 读取每一行的数据
-	var rowLen int
+	var rowLen int32
 	err = binary.Read(file, binary.LittleEndian, &rowLen)
 	if err != nil {
 		return err
 	}
 	e.Rows = make([]*ExcelPtlRow, rowLen)
-	for i := 0; i < rowLen; i++ {
-		for _, colType := range e.ColumnTypes {
+	for i := 0; i < int(rowLen); i++ {
+		e.Rows[i] = &ExcelPtlRow{}
+		e.Rows[i].Data = make([]interface{}, len(e.ColumnTypes))
+	}
+	for i := 0; i < int(rowLen); i++ {
+		var mark int32
+		err = binary.Read(file, binary.LittleEndian, &mark)
+		if err != nil {
+			return err
+		}
+		if mark != 23333 {
+			return errors.New("协议错位")
+		}
+		for j, colType := range e.ColumnTypes {
 			var data interface{}
 			switch colType {
 			case CtInt, CtEnum:
-				var d int
+				var d int32
 				err = binary.Read(file, binary.LittleEndian, &d)
 				if err != nil {
 					return err
 				}
-				data = d
-			case CtBitEnum:
-				var d []int
+				data = int(d)
+			case CtAttrs:
+				var d int32
 				err = binary.Read(file, binary.LittleEndian, &d)
 				if err != nil {
 					return err
 				}
-				data = d
+				data = make([]int, d)
+				for k := 0; k < int(d); k++ {
+					var num int32
+					err = binary.Read(file, binary.LittleEndian, &num)
+					if err != nil {
+						return err
+					}
+					data.([]int)[k] = int(num)
+				}
 			case CtFloat:
 				var d float64
 				err = binary.Read(file, binary.LittleEndian, &d)
@@ -282,20 +332,24 @@ func (e *ExcelPtl) LoadFromFile(addr string) error {
 				}
 				data = d
 			case CtString:
-				var d string
+				var d int32
 				err = binary.Read(file, binary.LittleEndian, &d)
 				if err != nil {
 					return err
 				}
-				data = d
+				buf := make([]byte, d)
+				_, err = file.Read(buf)
+				if err != nil {
+					return err
+				}
 			case CtData:
-				var d int
+				var d int32
 				err = binary.Read(file, binary.LittleEndian, &d)
 				if err != nil {
 					return err
 				}
 				data = make(Data, d)
-				for i := 0; i < d; i++ {
+				for i := 0; i < int(d); i++ {
 					var cellDataType int
 					err = binary.Read(file, binary.LittleEndian, &cellDataType)
 					if err != nil {
@@ -312,17 +366,17 @@ func (e *ExcelPtl) LoadFromFile(addr string) error {
 			if err != nil {
 				return err
 			}
-			e.Rows[i].Data = append(e.Rows[i].Data, data)
+			e.Rows[i].Data[j] = data
 		}
 	}
 	return nil
 }
 
 //Convert 将excel数据转换为任意结构体，根据Tag进行转换
-func (e *ExcelPtl) Convert(datas []interface{}) error {
-	datas = make([]interface{}, len(e.Rows))
+func (e *ExcelPtl) Convert(Rec []interface{}) error {
+	Rec = make([]interface{}, len(e.Rows))
 	for i := 0; i < len(e.Rows); i++ {
-		d := datas[i]
+		d := Rec[i]
 		typeOfD := reflect.TypeOf(d)
 		for j := 0; j < len(e.Rows[i].Data); j++ {
 			cellData := e.Rows[i].Data[j]
