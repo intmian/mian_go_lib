@@ -402,3 +402,39 @@ func (e *ExcelPtl) Convert(Rec []interface{}) error {
 	}
 	return nil
 }
+
+func GetResFromExcelPtl[t any](ptl *ExcelPtl) (error, map[int]t) {
+	if ptl == nil {
+		return errors.New("ptl is nil"), nil
+	}
+	resultMap := make(map[int]t)
+	var tempT t
+	tType := reflect.TypeOf(tempT)
+	name2Index := make(map[string]int)
+	for i := 0; i < len(ptl.Names); i++ {
+		name2Index[ptl.Names[i]] = i
+	}
+	excelIndex2fieldIndex := make(map[int]int)
+	for i := 0; i < tType.NumField(); i++ {
+		field := tType.Field(i)
+		// Tag 与 Name 一一对应
+		if field.Tag.Get("excel") != "" {
+			excelIndex2fieldIndex[name2Index[field.Tag.Get("excel")]] = i
+		}
+	}
+	// 将excel数据转换为任意结构体，根据Tag进行转换
+	for i := 0; i < len(ptl.Rows); i++ {
+		tempT = reflect.New(tType).Elem().Interface().(t)
+		for j := 0; j < len(ptl.Rows[i].Data); j++ {
+			cellData := ptl.Rows[i].Data[j]
+			colType := ptl.ColumnTypes[j]
+			fieldIndex := excelIndex2fieldIndex[j]
+			field := tType.Field(fieldIndex)
+			valueOfField := reflect.ValueOf(field)
+			switch colType {
+			case CtInt, CtEnum:
+				valueOfField.SetInt(int64(cellData.(int)))
+			}
+		}
+	}
+}
