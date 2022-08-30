@@ -67,28 +67,40 @@ func TestPtl(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = pPtl.LoadFromFile("./test.rxc")
+	pPtl2 := &ExcelPtl{}
+	err = pPtl2.LoadFromFile("./test.rxc")
 	if err != nil {
 		t.Error(err)
 	}
-	if pPtl.SheetName == "" {
+	if pPtl2.SheetName == "" {
 		t.Error("After WR sheetName is empty")
 	}
-	if len(pPtl.ColumnTypes) != len(pMeta.ColumnMeta) {
+	if len(pPtl2.ColumnTypes) != len(pMeta.ColumnMeta) {
 		t.Error("After WR Columns len not equal")
 	}
-	if len(pPtl.Rows) == 0 {
+	if len(pPtl2.Rows) == 0 {
 		t.Error("After WR Rows is empty")
+	}
+	for i, c := range pPtl2.ColumnTypes {
+		if c != pPtl.ColumnTypes[i] {
+			t.Error("After WR ColumnTypes not equal")
+		}
 	}
 	err = os.Remove("./test.rxc")
 	if err != nil {
 		t.Error(err)
 	}
 	type Test struct {
-		a int    `xlsx:"a"`
-		b Attrs  `xlsx:"b"`
-		v string `xlsx:"v"`
-		k int    `xlsx:"k"`
+		A int    `excel:"a"`
+		B Attrs  `excel:"b"`
+		V string `excel:"v"`
+		K int    `excel:"k"`
 	}
-
+	tm, err := GetResFromExcelPtl[Test](pPtl)
+	if err != nil {
+		t.Error(err)
+	}
+	if tm == nil {
+		t.Error("tm is nil")
+	}
 }

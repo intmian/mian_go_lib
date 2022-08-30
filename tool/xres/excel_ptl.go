@@ -153,6 +153,16 @@ func (e *ExcelPtl) Save2file(addr string) error {
 	}
 	defer file.Close()
 
+	// 写入表名称长度和表名称（写字符串竟然不会写\0...）
+	err = binary.Write(file, binary.LittleEndian, int32(len(e.SheetName)))
+	if err != nil {
+		return err
+	}
+	_, err = file.WriteString(e.SheetName)
+	if err != nil {
+		return err
+	}
+
 	// 写入列类型
 	err = binary.Write(file, binary.LittleEndian, int32(len(e.ColumnTypes)))
 	if err != nil {
@@ -241,6 +251,19 @@ func (e *ExcelPtl) LoadFromFile(addr string) error {
 		return err
 	}
 	defer file.Close()
+
+	// 读取表名称长度和表名称
+	var sheetNameLen int32
+	err = binary.Read(file, binary.LittleEndian, &sheetNameLen)
+	if err != nil {
+		return err
+	}
+	sheetName := make([]byte, sheetNameLen)
+	_, err = file.Read(sheetName)
+	if err != nil {
+		return err
+	}
+	e.SheetName = string(sheetName)
 
 	// 读取列类型
 	var colTypeLen int32
@@ -342,6 +365,7 @@ func (e *ExcelPtl) LoadFromFile(addr string) error {
 				if err != nil {
 					return err
 				}
+				data = string(buf)
 			case CtData:
 				var d int32
 				err = binary.Read(file, binary.LittleEndian, &d)
@@ -403,9 +427,9 @@ func (e *ExcelPtl) Convert(Rec []interface{}) error {
 	return nil
 }
 
-func GetResFromExcelPtl[t any](ptl *ExcelPtl) (error, map[int]t) {
+func GetResFromExcelPtl[t any](ptl *ExcelPtl) (map[int]t, error) {
 	if ptl == nil {
-		return errors.New("ptl is nil"), nil
+		return nil, errors.New("ptl is nil")
 	}
 	resultMap := make(map[int]t)
 	var tempT t
@@ -427,14 +451,20 @@ func GetResFromExcelPtl[t any](ptl *ExcelPtl) (error, map[int]t) {
 		tempT = reflect.New(tType).Elem().Interface().(t)
 		for j := 0; j < len(ptl.Rows[i].Data); j++ {
 			cellData := ptl.Rows[i].Data[j]
-			colType := ptl.ColumnTypes[j]
-			fieldIndex := excelIndex2fieldIndex[j]
-			field := tType.Field(fieldIndex)
-			valueOfField := reflect.ValueOf(field)
-			switch colType {
-			case CtInt, CtEnum:
-				valueOfField.SetInt(int64(cellData.(int)))
+			fieldIndex, ok := excelIndex2fieldIndex[j]
+			if !ok {
+				continue
 			}
+			field := tType.Field(fieldIndex)
+			if reflect.TypeOf(cellData).Kind() != field.Type.Kind() {
+				return nil, errors.New("cellData type is not equal to field type")
+			}
+			if !field.IsExported() {
+				return nil, fmt.Errorf("field %s is not exported", field.Name)
+			}
+			reflect.ValueOf(&tempT).Elem().Field(fieldIndex).Set(reflect.ValueOf(cellData))
 		}
+		resultMap[ptl.Rows[i].Data[0].(int)] = tempT
 	}
+	return resultMap, nil
 }
