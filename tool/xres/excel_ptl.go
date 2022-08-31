@@ -2,8 +2,10 @@ package xres
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/intmian/mian_go_lib/tool/misc"
 	"os"
 	"reflect"
 )
@@ -427,6 +429,18 @@ func (e *ExcelPtl) Convert(Rec []interface{}) error {
 	return nil
 }
 
+func (e *ExcelPtl) CheckUsePython(pyAddr string) (bool, string) {
+	jsonData, err := json.Marshal(e)
+	if err != nil {
+		return false, fmt.Sprintf("%s", err)
+	}
+	result, err := misc.CmdPy(pyAddr, string(jsonData))
+	if err != nil {
+		return false, result
+	}
+	return true, ""
+}
+
 func GetResFromExcelPtl[t any](ptl *ExcelPtl) (map[int]t, error) {
 	if ptl == nil {
 		return nil, errors.New("ptl is nil")
@@ -451,6 +465,9 @@ func GetResFromExcelPtl[t any](ptl *ExcelPtl) (map[int]t, error) {
 		tempT = reflect.New(tType).Elem().Interface().(t)
 		for j := 0; j < len(ptl.Rows[i].Data); j++ {
 			cellData := ptl.Rows[i].Data[j]
+			if cellData == nil {
+				return nil, fmt.Errorf("cellData is nil, row: %d, col: %d", i, j)
+			}
 			fieldIndex, ok := excelIndex2fieldIndex[j]
 			if !ok {
 				continue

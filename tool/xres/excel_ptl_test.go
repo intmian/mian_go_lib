@@ -62,6 +62,12 @@ func TestPtl(t *testing.T) {
 	}
 
 	// TODO: 可拓展数据列还没测试
+	// TODO: python脚本检查待确认
+
+	// 将ptl的列扩展10000行模拟真实情况
+	for i := 0; i < 10000; i++ {
+		pPtl.Rows = append(pPtl.Rows, pPtl.Rows[0])
+	}
 
 	err = pPtl.Save2file("./test.rxc")
 	if err != nil {
