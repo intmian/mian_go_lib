@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/intmian/mian_go_lib/tool/misc"
 	"os"
 	"reflect"
+
+	"github.com/intmian/mian_go_lib/tool/misc"
 )
 
 //ExcelPtlRow 单行数据
@@ -434,7 +435,17 @@ func (e *ExcelPtl) CheckUsePython(pyAddr string) (bool, string) {
 	if err != nil {
 		return false, fmt.Sprintf("%s", err)
 	}
-	result, err := misc.CmdPy(pyAddr, string(jsonData))
+	// 存储jsonData
+	fileName := fmt.Sprintf("%s_%s.json", pyAddr, e.SheetName)
+	file, err := os.Create(fileName)
+	if err != nil {
+		return false, fmt.Sprintf("%s", err)
+	}
+	file.Write(jsonData)
+	defer file.Close()
+	result, err := misc.CmdPy(pyAddr, fileName)
+	// 删除jsonData
+	os.Remove(fileName)
 	if err != nil {
 		return false, result
 	}
