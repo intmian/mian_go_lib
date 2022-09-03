@@ -19,6 +19,10 @@ type ExcelColMetaOri struct {
 	Data string `toml:"data"`
 }
 
+type ExcelSheetMetaOri struct {
+	expressions []string `toml:"limit"`
+}
+
 //ExcelColMeta 转化后的列元数据
 type ExcelColMeta struct {
 	Type ColumnType
@@ -27,12 +31,14 @@ type ExcelColMeta struct {
 
 //ExcelMeta Excel元数据
 type ExcelMeta struct {
-	ColumnMeta map[string]*ExcelColMeta
+	ColumnMeta  map[string]*ExcelColMeta
+	expressions []string
 }
 
 //ExcelMetaOri 从toml中读取的原始excel元数据
 type ExcelMetaOri struct {
 	Columns map[string]*ExcelColMetaOri `toml:"columns"`
+	Sheet   ExcelSheetMetaOri           `toml:"sheet"`
 }
 
 //GetColumnType 从原始文本中获得列类型
@@ -141,5 +147,6 @@ func (m *ExcelMetaOri) GetMeta() *ExcelMeta {
 		Data: nil,
 	}
 
+	meta.expressions = m.Sheet.expressions
 	return &meta
 }

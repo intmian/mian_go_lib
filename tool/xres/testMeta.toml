@@ -21,3 +21,9 @@ data = ""
 [columns.k]
 type = "int"
 data = ""
+[sheet]
+limit = [
+    "k<100",
+    "length(v)<10",
+    "int(a)=1 && k>100",
+]
