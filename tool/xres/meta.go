@@ -149,6 +149,11 @@ func (m *ExcelMetaOri) GetMeta() (*ExcelMeta, error) {
 		Type: CtInt,
 		Data: nil,
 	}
+
+	// ID列相关校验
+	m.Sheet.expressions = append(m.Sheet.expressions, "ID>0")
+	m.Sheet.expressions = append(m.Sheet.expressions, "unique(ID)")
+
 	functions := map[string]govaluate.ExpressionFunction{
 		"strlen": strLen,
 		"unique": makeUniqueFunc(),
