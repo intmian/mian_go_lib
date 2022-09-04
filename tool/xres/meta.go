@@ -1,6 +1,9 @@
 package xres
 
 import (
+	"errors"
+	"fmt"
+	"github.com/Knetic/govaluate"
 	"strconv"
 	"strings"
 )
@@ -32,7 +35,7 @@ type ExcelColMeta struct {
 //ExcelMeta Excel元数据
 type ExcelMeta struct {
 	ColumnMeta  map[string]*ExcelColMeta
-	expressions []string
+	expressions []*govaluate.EvaluableExpression
 }
 
 //ExcelMetaOri 从toml中读取的原始excel元数据
@@ -131,7 +134,7 @@ func (m *ExcelColMetaOri) GetData() map[string]int {
 }
 
 //GetMeta 将原始的元数据转换为实际的元数据
-func (m *ExcelMetaOri) GetMeta() *ExcelMeta {
+func (m *ExcelMetaOri) GetMeta() (*ExcelMeta, error) {
 	meta := ExcelMeta{}
 	meta.ColumnMeta = make(map[string]*ExcelColMeta)
 	for sheetName, colMetaOri := range m.Columns {
@@ -146,7 +149,89 @@ func (m *ExcelMetaOri) GetMeta() *ExcelMeta {
 		Type: CtInt,
 		Data: nil,
 	}
+	functions := map[string]govaluate.ExpressionFunction{
+		"strlen": strLen,
+		"unique": makeUniqueFunc(),
+		"inc":    makeIncFunc(),
+		"dec":    makeDecFunc(),
+	}
+	exprs := make([]*govaluate.EvaluableExpression, 0)
+	for _, expr := range m.Sheet.expressions {
+		exprL, err := govaluate.NewEvaluableExpressionWithFunctions(expr, functions)
+		if err != nil {
+			return nil, errors.New("GetMeta expr error：" + expr)
+		}
+		exprs = append(exprs, exprL)
+	}
+	meta.expressions = exprs
+	return &meta, nil
+}
 
-	meta.expressions = m.Sheet.expressions
-	return &meta
+func strLen(args ...interface{}) (interface{}, error) {
+	v, ok := args[0].(string)
+	if !ok {
+		return nil, errors.New("strLen args error")
+	}
+	length := len(v)
+	return (float64)(length), nil
+}
+
+func makeUniqueFunc() func(args ...interface{}) (interface{}, error) {
+	uniqueMap := make(map[string]bool)
+	return func(args ...interface{}) (interface{}, error) {
+		key := args[0].(string)
+		if _, ok := uniqueMap[key]; ok {
+			return false, nil
+		}
+		uniqueMap[key] = true
+		return true, nil
+	}
+}
+
+func makeIncFunc() func(args ...interface{}) (interface{}, error) {
+	lastI := 0
+	lastF := 0.0
+	return func(args ...interface{}) (interface{}, error) {
+		v, ok := args[0].(int)
+		if ok {
+			if v < lastI {
+				return false, nil
+			}
+			lastI = v
+			return true, nil
+		}
+		vf, ok := args[0].(float64)
+		if ok {
+			if vf < lastF {
+				return false, nil
+			}
+			lastF = vf
+			return true, nil
+		}
+		return false, fmt.Errorf("makeIncIntFunc type error")
+	}
+}
+
+func makeDecFunc() func(args ...interface{}) (interface{}, error) {
+	lastI := 0
+	lastF := 0.0
+	return func(args ...interface{}) (interface{}, error) {
+		v, ok := args[0].(int)
+		if ok {
+			if v > lastI {
+				return false, nil
+			}
+			lastI = v
+			return true, nil
+		}
+		vf, ok := args[0].(float64)
+		if ok {
+			if vf > lastF {
+				return false, nil
+			}
+			lastF = vf
+			return true, nil
+		}
+		return false, fmt.Errorf("makeDecIntFunc type error")
+	}
 }

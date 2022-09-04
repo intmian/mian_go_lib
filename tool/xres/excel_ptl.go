@@ -23,6 +23,34 @@ type ExcelPtl struct {
 	Rows        []*ExcelPtlRow
 }
 
+//CheckByMeta 使用meta中的公式检查数据是否合法
+func (e *ExcelPtl) CheckByMeta(meta *ExcelMeta) (bool, error) {
+	if meta == nil {
+		return false, errors.New("meta is nil")
+	}
+	var params map[string]interface{}
+	for _, row := range e.Rows {
+		params = make(map[string]interface{})
+		for i, name := range e.Names {
+			params[name] = row.Data[i]
+		}
+		for _, formula := range meta.expressions {
+			if formula == nil {
+				continue
+			}
+			v, err := formula.Evaluate(params)
+			result := v.(bool)
+			if err != nil {
+				return false, err
+			}
+			if result != true {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
+}
+
 //GetExcelFromLogic 将以列组织的数据重整为以行组织的数据
 func GetExcelFromLogic(logic *ExcelLogic, meta *ExcelMeta) (*ExcelPtl, error) {
 	if (logic == nil) || (meta == nil) {
