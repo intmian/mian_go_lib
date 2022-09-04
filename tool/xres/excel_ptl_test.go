@@ -25,7 +25,10 @@ func TestPtl(t *testing.T) {
 		t.Error("meta.columns is nil")
 	}
 
-	pMeta := pMetaOri.GetMeta()
+	pMeta, err := pMetaOri.GetMeta()
+	if err != nil {
+		t.Error(err)
+	}
 	if pMeta == nil {
 		t.Error("meta is nil")
 	}
