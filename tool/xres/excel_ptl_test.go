@@ -66,18 +66,22 @@ func TestPtl(t *testing.T) {
 
 	// TODO: 可拓展数据列还没测试
 	// TODO: python脚本检查待确认
-
-	// 将ptl的列扩展10000行模拟真实情况
-	for i := 0; i < 10000; i++ {
-		pPtl.Rows = append(pPtl.Rows, pPtl.Rows[0])
+	pPtl.CheckUsePython(`./test.py`)
+	_, err = pPtl.CheckByMeta(pMeta)
+	if err != nil {
+		return
 	}
+	//// 将ptl的列扩展10000行模拟真实情况
+	//for i := 0; i < 10000; i++ {
+	//	pPtl.Rows = append(pPtl.Rows, pPtl.Rows[0])
+	//}
 
-	err = pPtl.Save2file("./test.rxc")
+	err = pPtl.Save2file("./test.excel")
 	if err != nil {
 		t.Error(err)
 	}
 	pPtl2 := &ExcelPtl{}
-	err = pPtl2.LoadFromFile("./test.rxc")
+	err = pPtl2.LoadFromFile("./test.excel")
 	if err != nil {
 		t.Error(err)
 	}

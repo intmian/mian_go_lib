@@ -182,9 +182,9 @@ func strLen(args ...interface{}) (interface{}, error) {
 }
 
 func makeUniqueFunc() func(args ...interface{}) (interface{}, error) {
-	uniqueMap := make(map[string]bool)
+	uniqueMap := make(map[interface{}]bool)
 	return func(args ...interface{}) (interface{}, error) {
-		key := args[0].(string)
+		key := args[0]
 		if _, ok := uniqueMap[key]; ok {
 			return false, nil
 		}
@@ -194,47 +194,29 @@ func makeUniqueFunc() func(args ...interface{}) (interface{}, error) {
 }
 
 func makeIncFunc() func(args ...interface{}) (interface{}, error) {
-	lastI := 0
 	lastF := 0.0
 	return func(args ...interface{}) (interface{}, error) {
-		v, ok := args[0].(int)
+		v, ok := args[0].(float64)
 		if ok {
-			if v < lastI {
+			if v < lastF {
 				return false, nil
 			}
-			lastI = v
+			lastF = v
 			return true, nil
 		}
-		vf, ok := args[0].(float64)
-		if ok {
-			if vf < lastF {
-				return false, nil
-			}
-			lastF = vf
-			return true, nil
-		}
-		return false, fmt.Errorf("makeIncIntFunc type error")
+		return false, fmt.Errorf("makeDecIntFunc type error")
 	}
 }
 
 func makeDecFunc() func(args ...interface{}) (interface{}, error) {
-	lastI := 0
 	lastF := 0.0
 	return func(args ...interface{}) (interface{}, error) {
-		v, ok := args[0].(int)
+		v, ok := args[0].(float64)
 		if ok {
-			if v > lastI {
+			if v > lastF {
 				return false, nil
 			}
-			lastI = v
-			return true, nil
-		}
-		vf, ok := args[0].(float64)
-		if ok {
-			if vf > lastF {
-				return false, nil
-			}
-			lastF = vf
+			lastF = v
 			return true, nil
 		}
 		return false, fmt.Errorf("makeDecIntFunc type error")
