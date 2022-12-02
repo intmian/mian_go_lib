@@ -1,6 +1,7 @@
 package spider
 
 import (
+	"github.com/antlabs/strsim"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -15,6 +16,7 @@ type BaiduNew struct {
 	content string
 	source  string
 	time    string
+	valid   float64
 }
 
 func timeValid(timeStr string) bool {
@@ -109,6 +111,19 @@ func GetBaiduNews(keyword string, limitHour bool) (newsReturn []BaiduNew, reErro
 			}
 		}
 		newsReturn = append(newsReturn, bn)
+	}
+	for i := 0; i < len(newsReturn); i++ {
+		for j := i + 1; j < len(newsReturn); j++ {
+			valid1 := strsim.Compare(newsReturn[i].title, newsReturn[j].title)
+			valid2 := strsim.Compare(newsReturn[i].content, newsReturn[j].content)
+			maxValid := valid1
+			if valid2 > maxValid {
+				maxValid = valid2
+			}
+			if maxValid > 0.1 && maxValid > newsReturn[j].valid {
+				newsReturn[j].valid = maxValid
+			}
+		}
 	}
 	return
 }

@@ -2,17 +2,16 @@ package spider
 
 import (
 	"testing"
-
-	"github.com/intmian/mian_go_lib/tool/xpush"
 )
 
 func TestGetBaiduNews(t *testing.T) {
 	params := []string{
-		"nuc",
-		"群晖",
-		"macbook air",
-		"扫地机器人 发布",
-		"kindle",
+		//"nuc",
+		//"群晖",
+		//"macbook air",
+		//"扫地机器人 发布",
+		//"kindle",
+		"苹果",
 	}
 	keywords := []string{}
 	newss := [][]BaiduNew{}
@@ -25,11 +24,24 @@ func TestGetBaiduNews(t *testing.T) {
 		keywords = append(keywords, v)
 		newss = append(newss, news)
 	}
-
-	s := ParseNewToMarkdown(keywords, newss)
-	println(s)
-	p := xpush.Mgr{}
-	p.SetTag("auto")
-	p.SetPushDeerToken("PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ")
-	p.PushPushDeer("新闻", s, true)
+	for _, news := range newss {
+		for _, baiduNew := range news {
+			//t.Log(baiduNew.title)
+			//t.Log(baiduNew.content)
+			//t.Log(baiduNew.source)
+			//t.Log(baiduNew.time)
+			//t.Log(baiduNew.valid)
+			println(baiduNew.title)
+			println(baiduNew.content)
+			println(baiduNew.source)
+			println(baiduNew.time)
+			println(baiduNew.valid)
+		}
+	}
+	//s := ParseNewToMarkdown(keywords, newss)
+	//println(s)
+	//p := xpush.Mgr{}
+	//p.SetTag("auto")
+	//p.SetPushDeerToken("PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ")
+	//p.PushPushDeer("新闻", s, true)
 }
