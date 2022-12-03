@@ -66,6 +66,16 @@ func ParseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 	return s
 }
 
+func CutInvalidNews(news []BaiduNew) []BaiduNew {
+	newsReturn := make([]BaiduNew, 0)
+	for _, baiduNew := range news {
+		if baiduNew.valid < 0.5 {
+			newsReturn = append(newsReturn, baiduNew)
+		}
+	}
+	return newsReturn
+}
+
 func GetBaiduNews(keyword string, limitHour bool) (newsReturn []BaiduNew, reErrorExist bool, noNews bool) {
 	newsReturn = make([]BaiduNew, 0)
 	reErrorExist = false
