@@ -11,7 +11,7 @@ func TestGetBaiduNews(t *testing.T) {
 		//"macbook air",
 		//"扫地机器人 发布",
 		//"kindle",
-		"苹果",
+		"维生素",
 	}
 	keywords := []string{}
 	newss := [][]BaiduNew{}
