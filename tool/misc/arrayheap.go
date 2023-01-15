@@ -3,7 +3,7 @@ package misc
 import "container/heap"
 
 type Comparable interface {
-	Less(other interface{}) bool
+	Less(other Comparable) bool
 }
 
 type ArrayHeap []Comparable
