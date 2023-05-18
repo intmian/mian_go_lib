@@ -1,8 +1,12 @@
 package xpush
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
 	"github.com/intmian/mian_go_lib/tool/cipher"
+	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -13,13 +17,17 @@ type DingRobotToken struct {
 
 type DingRobotMgr struct {
 	dingRobotToken DingRobotToken
-	message        chan string
+	message        chan DingMessageCall
+	isInit         bool
 }
 
 type DingMessage interface {
-	QuickAddIdAt(id string)
-	QuickAddMobileAt(mobile string)
 	ToJson() string
+}
+
+type DingMessageCall struct {
+	DingMessage
+	ret chan error
 }
 
 const ApiUrl = "https://oapi.dingtalk.com/robot/send"
@@ -32,5 +40,107 @@ func GetDingSign(token string) (timestamp string, sign string) {
 	*/
 	s := timestamp + "\n" + token
 	s2 := cipher.Sha2562String(s)
-	return timestamp, s2
+	sign = base64.StdEncoding.EncodeToString([]byte(s2))
+	sign = url.QueryEscape(sign)
+	return
+}
+
+type DingSetting struct {
+	SendInterval      int64 // 每隔多少时间
+	IntervalSendCount int64 // 有多少次发送机会
+}
+
+func (m *DingRobotMgr) Init(token string, secret string) {
+	m.dingRobotToken.accessToken = token
+	m.dingRobotToken.secret = secret
+	m.message = make(chan DingMessageCall)
+	m.isInit = true
+}
+
+func SendDingMessage(accessToken, secret string, message DingMessage) error {
+	timestamp, sign := GetDingSign(secret)
+	messageStr := message.ToJson()
+	// 以post的形式发送，header中Content-Type为application/json，access_token\timestamp\sign为url中的参数，请求body中为json格式的数据
+	url := ApiUrl + "?access_token=" + accessToken + "&timestamp=" + timestamp + "&sign=" + sign
+	respond, err := http.Post(url, "application/json", bytes.NewBufferString(messageStr))
+	if err != nil {
+		return fmt.Errorf("SendDingMessage: %v", err)
+	}
+	if respond.StatusCode != 200 {
+		return fmt.Errorf("SendDingMessage: %d %v", respond.StatusCode, respond.Body)
+	}
+	return nil
+}
+
+func (m *DingRobotMgr) Run(setting DingSetting, end <-chan bool) error {
+	if !m.isInit {
+		return fmt.Errorf("DingRobotMgr not init")
+	}
+	if setting.SendInterval < 0 || setting.IntervalSendCount < 0 {
+		return fmt.Errorf("DingRobotMgr setting error %v", setting)
+	}
+	if setting.SendInterval == 0 && setting.IntervalSendCount > 0 {
+		return fmt.Errorf("DingRobotMgr setting error %v", setting)
+	}
+	allowSendChan := make(chan bool, setting.IntervalSendCount)
+	end1, end2 := make(chan bool), make(chan bool)
+	go func() {
+		select {
+		case <-end:
+			end1 <- true
+			end2 <- true
+		}
+	}()
+	go func() {
+		if setting.SendInterval == 0 {
+			for true {
+				select {
+				case <-end1:
+					return
+				default:
+					allowSendChan <- true
+				}
+			}
+		} else {
+			for true {
+				select {
+				case <-end1:
+					return
+				default:
+					for i := int64(0); i < setting.IntervalSendCount; i++ {
+						allowSendChan <- true
+					}
+					time.Sleep(time.Duration(setting.SendInterval) * time.Second)
+				}
+			}
+		}
+	}()
+	go func() {
+		for true {
+			select {
+			case message := <-m.message:
+				go func() {
+					err := SendDingMessage(m.dingRobotToken.accessToken, m.dingRobotToken.secret, message)
+					if err != nil {
+						message.ret <- err
+					} else {
+						message.ret <- nil
+					}
+				}()
+			case <-end2:
+				return
+			}
+		}
+	}()
+	return nil
+}
+
+func (m *DingRobotMgr) Send(message DingMessage) error {
+	if !m.isInit {
+		return fmt.Errorf("DingRobotMgr not init")
+	}
+	messageCall := DingMessageCall{DingMessage: message, ret: make(chan error)}
+	m.message <- messageCall
+	err := <-messageCall.ret
+	return err
 }
