@@ -82,42 +82,12 @@ func (m *DingRobotMgr) Run(setting DingSetting, end <-chan bool) error {
 	if setting.SendInterval == 0 && setting.IntervalSendCount > 0 {
 		return fmt.Errorf("DingRobotMgr setting error %v", setting)
 	}
-	allowSendChan := make(chan bool, setting.IntervalSendCount)
-	end1, end2 := make(chan bool), make(chan bool)
-	go func() {
-		select {
-		case <-end:
-			end1 <- true
-			end2 <- true
-		}
-	}()
-	go func() {
-		if setting.SendInterval == 0 {
-			for true {
-				select {
-				case <-end1:
-					return
-				default:
-					allowSendChan <- true
-				}
-			}
-		} else {
-			for true {
-				select {
-				case <-end1:
-					return
-				default:
-					for i := int64(0); i < setting.IntervalSendCount; i++ {
-						allowSendChan <- true
-					}
-					time.Sleep(time.Duration(setting.SendInterval) * time.Second)
-				}
-			}
-		}
-	}()
 	go func() {
 		for true {
+			count := setting.IntervalSendCount
 			select {
+			case <-time.After(time.Duration(setting.SendInterval) * time.Second):
+				continue
 			case message := <-m.message:
 				go func() {
 					err := SendDingMessage(m.dingRobotToken.accessToken, m.dingRobotToken.secret, message)
@@ -127,7 +97,7 @@ func (m *DingRobotMgr) Run(setting DingSetting, end <-chan bool) error {
 						message.ret <- nil
 					}
 				}()
-			case <-end2:
+			case <-end:
 				return
 			}
 		}
