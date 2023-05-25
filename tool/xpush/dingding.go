@@ -3,11 +3,13 @@ package xpush
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/intmian/mian_go_lib/tool/cipher"
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -42,13 +44,15 @@ func GetDingSign(token string) (timestamp string, sign string) {
 }
 
 type DingSetting struct {
+	Token             string
+	Secret            string
 	SendInterval      int32 // 每隔多少时间
 	IntervalSendCount int32 // 有多少次发送机会
 }
 
-func (m *DingRobotMgr) Init(token string, secret string, setting DingSetting) {
-	m.dingRobotToken.accessToken = token
-	m.dingRobotToken.secret = secret
+func (m *DingRobotMgr) Init(setting DingSetting) {
+	m.dingRobotToken.accessToken = setting.Token
+	m.dingRobotToken.secret = setting.Secret
 	m.isInit = true
 	m.goMgr.Init(misc.LimitMCoCallFuncMgrSetting{
 		TimeInterval:         setting.SendInterval,
@@ -81,4 +85,134 @@ func (m *DingRobotMgr) Send(message DingMessage) error {
 		err <- err2
 	})
 	return <-err
+}
+
+type DingText struct {
+	MsgType   string   `json:"msgtype"`
+	Content   string   `json:"content"`
+	AtMobiles []string `json:"atMobiles"`
+	AtUserIds []string `json:"atUserIds"`
+	IsAtAll   bool     `json:"isAtAll"`
+}
+
+func (m *DingText) ToJson() string {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func NewDingText() *DingText {
+	return &DingText{
+		MsgType: "text",
+	}
+}
+
+type DingLink struct {
+	MsgType    string `json:"msgtype"`
+	Title      string `json:"title"`
+	Text       string `json:"text"`
+	MessageUrl string `json:"messageUrl"`
+	PicUrl     string `json:"picUrl"`
+}
+
+func (m *DingLink) ToJson() string {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func NewDingLink() *DingLink {
+	return &DingLink{
+		MsgType: "link",
+	}
+}
+
+type DingMarkdown struct {
+	MsgType   string   `json:"msgtype"`
+	Title     string   `json:"title"`
+	Text      string   `json:"text"`
+	AtMobiles []string `json:"atMobiles"`
+	AtUserIds []string `json:"atUserIds"`
+	IsAtAll   bool     `json:"isAtAll"`
+}
+
+func (m *DingMarkdown) ToJson() string {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+func NewDingMarkdown() *DingMarkdown {
+	return &DingMarkdown{
+		MsgType: "markdown",
+	}
+}
+
+type btn struct {
+	Title     string `json:"title"`
+	ActionURL string `json:"actionURL"`
+}
+
+type DingActionCard struct {
+	MsgType        string `json:"msgtype"`
+	Title          string `json:"title"`
+	Text           string `json:"text"`
+	SingleTitle    string `json:"singleTitle"`
+	SingleURL      string `json:"singleURL"`
+	btns           []btn  `json:"btns"`
+	BtnOrientation int32  `json:"btnOrientation"`
+}
+
+func (m *DingActionCard) ToJson() string {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func NewDingActionCard() *DingActionCard {
+	return &DingActionCard{
+		MsgType: "actionCard",
+	}
+}
+
+type FeedCardLink struct {
+	Title      string `json:"title"`
+	MessageURL string `json:"messageURL"`
+	PicURL     string `json:"picURL"`
+}
+
+type FeedCard struct {
+	Links []FeedCardLink `json:"links"`
+}
+
+type DingFeedCard struct {
+	MsgType  string `json:"msgtype"`
+	FeedCard `json:"feedCard"`
+}
+
+var dingMgr DingRobotMgr
+var dingDefaultPushOnce sync.Once
+
+func (m *Mgr) PushDing(title string, content string, markDown bool) error {
+	dingDefaultPushOnce.Do(func() {
+		dingMgr.Init(*m.pushDingSetting)
+	})
+	var mes DingMessage
+	if markDown {
+		mesT := NewDingMarkdown()
+		mesT.Text = "##" + title + "\n" + content
+		mes = mesT
+	} else {
+		mesT := NewDingText()
+		mesT.Content = title + "\n" + content
+		mes = mesT
+	}
+	return dingMgr.Send(mes)
 }
