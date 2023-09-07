@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/intmian/mian_go_lib/tool/cipher"
 	"github.com/intmian/mian_go_lib/tool/misc"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
@@ -32,13 +33,13 @@ const ApiUrl = "https://oapi.dingtalk.com/robot/send"
 
 // GetDingSign 获得签名
 func GetDingSign(token string) (timestamp string, sign string) {
-	timestamp = fmt.Sprintf("%d", time.Now().UnixNano()/1e6)
+	timestamp = fmt.Sprintf("%d", time.Now().UnixMilli())
 	/*
 		把timestamp+"\n"+密钥当做签名字符串，使用HmacSHA256算法计算签名，然后进行Base64 encode，最后再把签名参数再进行urlEncode，得到最终的签名（需要使用UTF-8字符集）。
 	*/
 	s := timestamp + "\n" + token
-	s2 := cipher.Sha2562String(s)
-	sign = base64.StdEncoding.EncodeToString([]byte(s2))
+	s2 := cipher.HmacSha256Sign(token, s)
+	sign = base64.StdEncoding.EncodeToString(s2)
 	sign = url.QueryEscape(sign)
 	return
 }
@@ -72,6 +73,8 @@ func SendDingMessage(accessToken, secret string, message DingMessage) error {
 	if respond.StatusCode != 200 {
 		return fmt.Errorf("SendDingMessage: %d %v", respond.StatusCode, respond.Body)
 	}
+	body, _ := ioutil.ReadAll(respond.Body)
+	print(string(body))
 	return nil
 }
 
@@ -88,11 +91,15 @@ func (m *DingRobotMgr) Send(message DingMessage) error {
 }
 
 type DingText struct {
-	MsgType   string   `json:"msgtype"`
-	Content   string   `json:"content"`
-	AtMobiles []string `json:"atMobiles"`
-	AtUserIds []string `json:"atUserIds"`
-	IsAtAll   bool     `json:"isAtAll"`
+	At struct {
+		AtMobiles []string `json:"atMobiles"`
+		AtUserIds []string `json:"atUserIds"`
+		IsAtAll   bool     `json:"isAtAll"`
+	} `json:"at"`
+	Text struct {
+		Content string `json:"content"`
+	} `json:"text"`
+	MsgType string `json:"msgtype"`
 }
 
 func (m *DingText) ToJson() string {
@@ -106,6 +113,9 @@ func (m *DingText) ToJson() string {
 func NewDingText() *DingText {
 	return &DingText{
 		MsgType: "text",
+		Text: struct {
+			Content string `json:"content"`
+		}(struct{ Content string }{Content: ""}),
 	}
 }
 
@@ -211,7 +221,7 @@ func (m *Mgr) PushDing(title string, content string, markDown bool) error {
 		mes = mesT
 	} else {
 		mesT := NewDingText()
-		mesT.Content = title + "\n" + content
+		mesT.Text.Content = title + "\n" + content
 		mes = mesT
 	}
 	return dingMgr.Send(mes)
