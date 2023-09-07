@@ -56,6 +56,12 @@ func (m *LimitMcoCallFuncMgr) run(setting LimitMCoCallFuncMgrSetting) {
 				atomic.AddInt32(&NowCallNum, 1)
 				f()
 				atomic.AddInt32(&NowCallNum, -1)
+				// recover()
+				defer func() {
+					if err := recover(); err != nil {
+						// log.Printf("panic: %v\n", err)
+					}
+				}()
 			}()
 		}
 	}
