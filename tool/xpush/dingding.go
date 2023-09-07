@@ -74,7 +74,18 @@ func SendDingMessage(accessToken, secret string, message DingMessage) error {
 		return fmt.Errorf("SendDingMessage: %d %v", respond.StatusCode, respond.Body)
 	}
 	body, _ := ioutil.ReadAll(respond.Body)
-	print(string(body))
+	// {"errcode":0,"errmsg":"ok"}
+	jsonData := struct {
+		ErrCode int32  `json:"errcode"`
+		ErrMsg  string `json:"errmsg"`
+	}{}
+	err = json.Unmarshal(body, &jsonData)
+	if err != nil {
+		return fmt.Errorf("SendDingMessage: %v", err)
+	}
+	if jsonData.ErrCode != 0 {
+		return fmt.Errorf("SendDingMessage: %d|%s", jsonData.ErrCode, jsonData.ErrMsg)
+	}
 	return nil
 }
 
