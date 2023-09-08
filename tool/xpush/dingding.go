@@ -101,12 +101,14 @@ func (m *DingRobotMgr) Send(message DingMessage) error {
 	return <-err
 }
 
+type At struct {
+	AtMobiles []string `json:"atMobiles"`
+	AtUserIds []string `json:"atUserIds"`
+	IsAtAll   bool     `json:"isAtAll"`
+}
+
 type DingText struct {
-	At struct {
-		AtMobiles []string `json:"atMobiles"`
-		AtUserIds []string `json:"atUserIds"`
-		IsAtAll   bool     `json:"isAtAll"`
-	} `json:"at"`
+	At   At `json:"at"`
 	Text struct {
 		Content string `json:"content"`
 	} `json:"text"`
@@ -127,11 +129,7 @@ func NewDingText() *DingText {
 		Text: struct {
 			Content string `json:"content"`
 		}{},
-		At: struct {
-			AtMobiles []string `json:"atMobiles"`
-			AtUserIds []string `json:"atUserIds"`
-			IsAtAll   bool     `json:"isAtAll"`
-		}{},
+		At: At{},
 	}
 }
 
@@ -165,11 +163,7 @@ type DingMarkdown struct {
 		Title string `json:"title"`
 		Text  string `json:"text"`
 	} `json:"markdown"`
-	At struct {
-		AtMobiles []string `json:"atMobiles"`
-		AtUserIds []string `json:"atUserIds"`
-		IsAtAll   bool     `json:"isAtAll"`
-	} `json:"at"`
+	At At `json:"at"`
 }
 
 func (m *DingMarkdown) ToJson() string {
@@ -186,11 +180,7 @@ func NewDingMarkdown() *DingMarkdown {
 			Title string `json:"title"`
 			Text  string `json:"text"`
 		}{},
-		At: struct {
-			AtMobiles []string `json:"atMobiles"`
-			AtUserIds []string `json:"atUserIds"`
-			IsAtAll   bool     `json:"isAtAll"`
-		}{},
+		At: At{},
 	}
 }
 
