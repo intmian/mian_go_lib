@@ -11,91 +11,77 @@ import (
 
 type Printer func(string) bool
 
+type LogStrategy struct {
+	IfMisc  bool
+	IfDebug bool
+}
+
+type LogRecordStrategy struct {
+	IfPrint bool
+	IfPush  bool
+	IfFile  bool
+}
+
+type PushInfo struct {
+	EmailTargetAddr string // 用;分割
+	EmailFromAddr   string
+	PushMgr         *xpush.Mgr
+	PushStyle       []xpush.PushType
+}
+
+type LogPrint struct {
+	Printer    Printer
+	IfUseColor bool
+}
+
+type LogInfo struct {
+	LogAddr string
+	LogTag  string // 标记日志的类型，用于在推送中区分不同的日志
+}
+
 type Mgr struct {
-	logAddr         string
-	printer         Printer
-	pushMgr         *xpush.Mgr
-	pushStyle       []xpush.PushType
-	ifMisc          bool
-	ifDebug         bool
-	ifPrint         bool
-	ifPush          bool
-	ifFile          bool
-	ifUseColor      bool
-	emailTargetAddr string // 用;分割
-	emailFromAddr   string
-	logTag          string // 标记日志的类型，用于在推送中区分不同的日志
-}
-
-func (receiver *Mgr) SetLogAddr(logAddr string) {
-	receiver.logAddr = logAddr
-}
-
-func (receiver *Mgr) SetPrinter(printer Printer) {
-	receiver.printer = printer
-}
-
-func (receiver *Mgr) SetPushMgr(pushMgr *xpush.Mgr) {
-	receiver.pushMgr = pushMgr
-}
-
-func (receiver *Mgr) SetPushStyle(pushStyle []xpush.PushType) {
-	receiver.pushStyle = pushStyle
-}
-
-func (receiver *Mgr) SetIfMisc(ifMisc bool) {
-	receiver.ifMisc = ifMisc
-}
-
-func (receiver *Mgr) SetIfDebug(ifDebug bool) {
-	receiver.ifDebug = ifDebug
-}
-
-func (receiver *Mgr) SetIfPrint(ifPrint bool) {
-	receiver.ifPrint = ifPrint
-}
-
-func (receiver *Mgr) SetIfPush(ifPush bool) {
-	receiver.ifPush = ifPush
-}
-
-func (receiver *Mgr) SetIfFile(ifFile bool) {
-	receiver.ifFile = ifFile
-}
-
-func (receiver *Mgr) SetEmailTargetAddr(emailTargetAddr string) {
-	receiver.emailTargetAddr = emailTargetAddr
-}
-
-func (receiver *Mgr) SetEmailFromAddr(emailFromAddr string) {
-	receiver.emailFromAddr = emailFromAddr
-}
-
-func (receiver *Mgr) SetLogTag(logTag string) {
-	receiver.logTag = logTag
+	LogInfo
+	LogPrint
+	LogStrategy
+	LogRecordStrategy
+	PushInfo
 }
 
 func SimpleNewMgr(pushMgr *xpush.Mgr, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
-	m := &Mgr{pushMgr: pushMgr, emailTargetAddr: emailTargetAddr, emailFromAddr: emailFromAddr, logTag: logTag}
-	m.printer = func(s string) bool {
+	m := &Mgr{}
+	m.PushMgr = pushMgr
+	m.EmailTargetAddr = emailTargetAddr
+	m.EmailFromAddr = emailFromAddr
+	m.LogTag = logTag
+	m.Printer = func(s string) bool {
 		fmt.Println(s)
 		return true
 	}
-	m.logAddr = "\\log"
-	m.pushStyle = []xpush.PushType{xpush.PushType_PUSH_PUSH_DEER}
-	m.ifMisc = true
-	m.ifPrint = true
-	m.ifPush = true
-	m.ifFile = true
+	m.LogAddr = "\\log"
+	m.PushStyle = []xpush.PushType{xpush.PushType_PUSH_PUSH_DEER}
+	m.IfMisc = true
+	m.IfPrint = true
+	m.IfPush = true
+	m.IfFile = true
 
 	return m
 }
 
 func NewMgr(logAddr string, printer Printer, pushMgr *xpush.Mgr, pushStyle []xpush.PushType, ifMisc bool, ifDebug bool, ifPrint bool, ifPush bool, ifFile bool, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
-	return &Mgr{logAddr: logAddr, printer: printer, pushMgr: pushMgr, pushStyle: pushStyle, ifMisc: ifMisc, ifDebug: ifDebug, ifPrint: ifPrint, ifPush: ifPush, ifFile: ifFile, emailTargetAddr: emailTargetAddr, emailFromAddr: emailFromAddr, logTag: logTag}
-}
-
-type Setting struct {
+	m := &Mgr{}
+	m.LogAddr = logAddr
+	m.Printer = printer
+	m.PushMgr = pushMgr
+	m.PushStyle = pushStyle
+	m.IfMisc = ifMisc
+	m.IfDebug = ifDebug
+	m.IfPrint = ifPrint
+	m.IfPush = ifPush
+	m.IfFile = ifFile
+	m.EmailTargetAddr = emailTargetAddr
+	m.EmailFromAddr = emailFromAddr
+	m.LogTag = logTag
+	return m
 }
 
 var logLevel2Str map[TLogLevel]string = map[TLogLevel]string{
@@ -136,24 +122,24 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 			printContent = content
 		}
 
-		if !receiver.printer(printContent) {
+		if !receiver.Printer(printContent) {
 			errors = append(errors, fmt.Errorf("print failed"))
 		}
 	}
 
 	if ifPush && level <= EWarning {
-		for _, pushType := range receiver.pushStyle {
+		for _, pushType := range receiver.PushStyle {
 			switch pushType {
 			case xpush.PushType_PUSH_EMAIL:
-				if !receiver.pushMgr.PushEmail(receiver.emailFromAddr, receiver.logTag, receiver.emailTargetAddr, receiver.logTag+" "+sLevel+" log", content, false) {
+				if !receiver.PushMgr.PushEmail(receiver.EmailFromAddr, receiver.LogTag, receiver.EmailTargetAddr, receiver.LogTag+" "+sLevel+" log", content, false) {
 					errors = append(errors, fmt.Errorf("push failed"))
 				}
 			case xpush.PushType_PUSH_PUSH_DEER:
-				if _, suc := receiver.pushMgr.PushPushDeer(receiver.logTag+" "+sLevel+" log", content, false); !suc {
+				if _, suc := receiver.PushMgr.PushPushDeer(receiver.LogTag+" "+sLevel+" log", content, false); !suc {
 					errors = append(errors, fmt.Errorf("push failed"))
 				}
 			case xpush.PushType_PUSH_DING:
-				err := receiver.pushMgr.PushDing(receiver.logTag+" "+sLevel+" log", content, false)
+				err := receiver.PushMgr.PushDing(receiver.LogTag+" "+sLevel+" log", content, false)
 				if err != nil {
 					errors = append(errors, fmt.Errorf("push failed"))
 				}
@@ -162,7 +148,7 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 	}
 
 	if ifFile {
-		fp, err := os.OpenFile(receiver.logAddr+`/`+geneLogAddr(t),
+		fp, err := os.OpenFile(receiver.LogAddr+`/`+geneLogAddr(t),
 			os.O_WRONLY|os.O_APPEND|os.O_CREATE,
 			0666)
 		isErr := false
@@ -187,12 +173,12 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 
 // Log 记录一条日志， from 中应填入来源模块的大写
 func (receiver *Mgr) Log(level TLogLevel, from string, info string) {
-	errors := receiver.detailLog(level, from, info, receiver.ifMisc, receiver.ifDebug, receiver.ifPrint, receiver.ifPush, receiver.ifFile)
+	errors := receiver.detailLog(level, from, info, receiver.IfMisc, receiver.IfDebug, receiver.IfPrint, receiver.IfPush, receiver.IfFile)
 
 	// 如果有错误，则排除发生错误的那一种记录方式并将剩余的记录方式记录，同时发送一个日志错误日志
-	canPrint := receiver.ifPrint
-	canPush := receiver.ifPush
-	canFile := receiver.ifFile
+	canPrint := receiver.IfPrint
+	canPush := receiver.IfPush
+	canFile := receiver.IfFile
 	errorReason := ""
 	if errors != nil && len(errors) > 0 {
 		for _, err := range errors {
