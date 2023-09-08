@@ -106,7 +106,7 @@ var logLevel2Str map[TLogLevel]string = map[TLogLevel]string{
 	EDebug:   "DEBUG",
 }
 
-//detailLog 记录详细日志，并返回失败的模块
+// detailLog 记录详细日志，并返回失败的模块
 func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc, ifDebug, ifPrint, ifPush, ifFile bool) []error {
 	errors := make([]error, 0)
 	if !ifMisc && level == EMisc {
@@ -152,6 +152,11 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 				if _, suc := receiver.pushMgr.PushPushDeer(receiver.logTag+" "+sLevel+" log", content, false); !suc {
 					errors = append(errors, fmt.Errorf("push failed"))
 				}
+			case xpush.PushType_PUSH_DING:
+				err := receiver.pushMgr.PushDing(receiver.logTag+" "+sLevel+" log", content, false)
+				if err != nil {
+					errors = append(errors, fmt.Errorf("push failed"))
+				}
 			}
 		}
 	}
@@ -180,7 +185,7 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 	return errors
 }
 
-//Log 记录一条日志， from 中应填入来源模块的大写
+// Log 记录一条日志， from 中应填入来源模块的大写
 func (receiver *Mgr) Log(level TLogLevel, from string, info string) {
 	errors := receiver.detailLog(level, from, info, receiver.ifMisc, receiver.ifDebug, receiver.ifPrint, receiver.ifPush, receiver.ifFile)
 

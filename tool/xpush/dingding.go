@@ -126,16 +126,23 @@ func NewDingText() *DingText {
 		MsgType: "text",
 		Text: struct {
 			Content string `json:"content"`
-		}(struct{ Content string }{Content: ""}),
+		}{},
+		At: struct {
+			AtMobiles []string `json:"atMobiles"`
+			AtUserIds []string `json:"atUserIds"`
+			IsAtAll   bool     `json:"isAtAll"`
+		}{},
 	}
 }
 
 type DingLink struct {
-	MsgType    string `json:"msgtype"`
-	Title      string `json:"title"`
-	Text       string `json:"text"`
-	MessageUrl string `json:"messageUrl"`
-	PicUrl     string `json:"picUrl"`
+	MsgType string `json:"msgtype"`
+	Link    struct {
+		Text       string `json:"text"`
+		Title      string `json:"title"`
+		PicUrl     string `json:"picUrl"`
+		MessageUrl string `json:"messageUrl"`
+	} `json:"link"`
 }
 
 func (m *DingLink) ToJson() string {
@@ -153,12 +160,16 @@ func NewDingLink() *DingLink {
 }
 
 type DingMarkdown struct {
-	MsgType   string   `json:"msgtype"`
-	Title     string   `json:"title"`
-	Text      string   `json:"text"`
-	AtMobiles []string `json:"atMobiles"`
-	AtUserIds []string `json:"atUserIds"`
-	IsAtAll   bool     `json:"isAtAll"`
+	MsgType  string `json:"msgtype"`
+	Markdown struct {
+		Title string `json:"title"`
+		Text  string `json:"text"`
+	} `json:"markdown"`
+	At struct {
+		AtMobiles []string `json:"atMobiles"`
+		AtUserIds []string `json:"atUserIds"`
+		IsAtAll   bool     `json:"isAtAll"`
+	} `json:"at"`
 }
 
 func (m *DingMarkdown) ToJson() string {
@@ -171,6 +182,15 @@ func (m *DingMarkdown) ToJson() string {
 func NewDingMarkdown() *DingMarkdown {
 	return &DingMarkdown{
 		MsgType: "markdown",
+		Markdown: struct {
+			Title string `json:"title"`
+			Text  string `json:"text"`
+		}{},
+		At: struct {
+			AtMobiles []string `json:"atMobiles"`
+			AtUserIds []string `json:"atUserIds"`
+			IsAtAll   bool     `json:"isAtAll"`
+		}{},
 	}
 }
 
@@ -180,13 +200,18 @@ type btn struct {
 }
 
 type DingActionCard struct {
-	MsgType        string `json:"msgtype"`
-	Title          string `json:"title"`
-	Text           string `json:"text"`
-	SingleTitle    string `json:"singleTitle"`
-	SingleURL      string `json:"singleURL"`
-	btns           []btn  `json:"btns"`
-	BtnOrientation int32  `json:"btnOrientation"`
+	MsgType    string `json:"msgtype"`
+	ActionCard struct {
+		Title          string `json:"title"`
+		Text           string `json:"text"`
+		BtnOrientation string `json:"btnOrientation"`
+		Btns           []struct {
+			Title     string `json:"title"`
+			ActionURL string `json:"actionURL"`
+		} `json:"btns"`
+		SingleTitle string `json:"singleTitle"`
+		SingleURL   string `json:"singleURL"`
+	} `json:"actionCard"`
 }
 
 func (m *DingActionCard) ToJson() string {
@@ -203,19 +228,15 @@ func NewDingActionCard() *DingActionCard {
 	}
 }
 
-type FeedCardLink struct {
-	Title      string `json:"title"`
-	MessageURL string `json:"messageURL"`
-	PicURL     string `json:"picURL"`
-}
-
-type FeedCard struct {
-	Links []FeedCardLink `json:"links"`
-}
-
 type DingFeedCard struct {
 	MsgType  string `json:"msgtype"`
-	FeedCard `json:"feedCard"`
+	FeedCard struct {
+		Links []struct {
+			Title      string `json:"title"`
+			MessageURL string `json:"messageURL"`
+			PicURL     string `json:"picURL"`
+		} `json:"links"`
+	} `json:"feedCard"`
 }
 
 var dingMgr DingRobotMgr
@@ -228,7 +249,8 @@ func (m *Mgr) PushDing(title string, content string, markDown bool) error {
 	var mes DingMessage
 	if markDown {
 		mesT := NewDingMarkdown()
-		mesT.Text = "##" + title + "\n" + content
+		mesT.Markdown.Title = title
+		mesT.Markdown.Text = content
 		mes = mesT
 	} else {
 		mesT := NewDingText()

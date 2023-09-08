@@ -34,4 +34,9 @@ func TestDingRobotMgr_Send(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	md := NewDingMarkdown()
+	md.Markdown.Title = "test title"
+	md.Markdown.Text = "# test\n\n- test1\n- test2\n\n> test3\n\n```c++\nint main() {\n\treturn 0;\n}\n```"
+	err = m.Send(md)
 }
