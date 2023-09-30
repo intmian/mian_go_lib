@@ -1,5 +1,8 @@
 package xstorage
 
-type keyValueUnit struct {
-	map[string]string
+type ValueUnit struct {
+	Type ValueType
+	Data interface{}
 }
+
+type

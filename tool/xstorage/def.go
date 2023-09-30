@@ -10,7 +10,12 @@ const (
 type KeyValueProperty uint32
 
 const (
-	RWLocal KeyValueProperty = 1 << iota
+	// RWLock 需加入读写锁
+	RWLock KeyValueProperty = 1 << iota
+	// NoCache 不缓存
+	NoCache
+	// JustCache 只缓存
+	JustCache
 )
 
 type keyValueSaveType uint32
@@ -18,6 +23,7 @@ type keyValueSaveType uint32
 const (
 	null keyValueSaveType = iota
 	sqlite
+	file
 )
 
 type KeyValueSetting struct {
@@ -29,3 +35,16 @@ type Setting interface {
 	Load() bool
 	Save() bool
 }
+
+type ValueType int
+
+const (
+	STRING ValueType = iota
+	INT
+	FLOAT
+	BOOL
+	SLICE_STRING
+	SLICE_INT
+	SLICE_FLOAT
+	SLICE_BOOL
+)
