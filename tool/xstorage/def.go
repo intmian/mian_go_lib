@@ -4,7 +4,7 @@ type BindFileType int
 
 const (
 	JSON BindFileType = iota
-	TOML
+	XML
 )
 
 type KeyValueProperty uint32
@@ -16,6 +16,8 @@ const (
 	NoCache
 	// JustCache 只缓存
 	JustCache
+	// Async 异步存储
+	Async
 )
 
 type keyValueSaveType uint32
@@ -29,11 +31,6 @@ const (
 type KeyValueSetting struct {
 	Property KeyValueProperty
 	SaveType keyValueSaveType
-}
-
-type Setting interface {
-	Load() bool
-	Save() bool
 }
 
 type ValueType int
