@@ -9,6 +9,7 @@ import (
 type Mgr struct {
 	dbCore  IDBCore
 	setting KeyValueSetting
+	sync.RWMutex
 	misc.InitTag
 	kvMap map[string]*ValueUnit // 后面不放指针，避免影响gc，此为唯一数据，取出时取指针
 	pool  sync.Pool
@@ -72,18 +73,25 @@ func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
 	if !m.IsInitialized() {
 		return false, nil, errors.New("mgr not init")
 	}
+	if m.setting.Property&MultiSafe != 0 {
+		m.RLock()
+		defer m.RUnlock()
+	}
 	if m.setting.Property&UseCache != 0 {
 		if valueUnit, ok := m.kvMap[key]; ok {
 			if valueUnit.dirty {
 				return false, nil, errors.New("value is dirty")
 			}
-			return false, valueUnit, nil
+			return true, valueUnit, nil
 		}
 	}
 	if m.setting.Property&UseDB != 0 {
-		valueUnit, err := m.dbCore.Get(key)
+		ok, valueUnit, err := m.dbCore.Get(key)
 		if err != nil {
 			return false, nil, errors.Join(errors.New("get value error"), err)
+		}
+		if !ok {
+			return false, nil, nil
 		}
 		if m.setting.Property&UseCache != 0 {
 			err := m.RecordToMap(key, valueUnit)
@@ -91,7 +99,7 @@ func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
 				return false, nil, errors.Join(errors.New("record to map error"), err)
 			}
 		}
-		return false, valueUnit, nil
+		return true, valueUnit, nil
 	}
 	return false, nil, errors.New("not use cache and not use db")
 }
@@ -106,6 +114,10 @@ func (m *Mgr) Set(key string, value *ValueUnit) error {
 	if value == nil {
 		return errors.New("value is nil")
 	}
+	if m.setting.Property&MultiSafe != 0 {
+		m.Lock()
+		defer m.Unlock()
+	}
 	if m.setting.Property&UseCache != 0 {
 		err := m.RecordToMap(key, value)
 		if err != nil {
@@ -119,6 +131,40 @@ func (m *Mgr) Set(key string, value *ValueUnit) error {
 		}
 	}
 	return nil
+}
+
+func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
+	if !m.IsInitialized() {
+		return errors.New("mgr not init"), nil
+	}
+	if key == "" {
+		return errors.New("key is empty"), nil
+	}
+	if value == nil {
+		return errors.New("value is nil"), nil
+	}
+	if m.setting.Property&UseDB == 0 {
+		return errors.New("not use db"), nil
+	}
+	if m.setting.Property&MultiSafe != 0 {
+		m.Lock()
+		defer m.Unlock()
+	}
+	if m.setting.Property&UseCache != 0 {
+		err := m.RecordToMap(key, value)
+		if err != nil {
+			return errors.Join(errors.New("record to map error"), err), nil
+		}
+	}
+	errChan := make(chan error)
+	go func() {
+		err := m.dbCore.Set(key, value)
+		if err != nil {
+			errChan <- errors.Join(errors.New("set value error"), err)
+		}
+		errChan <- nil
+	}()
+	return nil, errChan
 }
 
 func (m *Mgr) Delete(key string) error {

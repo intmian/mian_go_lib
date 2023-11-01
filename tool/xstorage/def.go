@@ -16,10 +16,8 @@ const (
 	UseCache
 	// UseDB 落盘
 	UseDB
-	// FullInitLoad 全量初始化加载，没有的话即懒加载，仅在同时使用缓存和数据库时有效，建议与AsyncDB一起使用
+	// FullInitLoad 全量初始化加载，没有的话即懒加载，仅在同时使用缓存和数据库时有效，建议与MultiSafe一起使用，并使用setAsync方法进行set
 	FullInitLoad
-	// AsyncDB 异步存储
-	AsyncDB // TODO:
 )
 
 type keyValueSaveType uint32
