@@ -88,7 +88,7 @@ func TestMgrBase(t *testing.T) {
 	cases := []*ValueUnit{v1, v2, v3, v4, v5, v6, v7, v8}
 	for i, v := range cases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			// get-》set-》get-》remove -》get -》set-》get
+			// get-》set-》get-》remove -》get -》set-》get -》remove -》get_default -》set-》get_default
 			ok, _, err := m.Get(strconv.Itoa(i))
 			if err != nil {
 				t.Error(err)
@@ -138,6 +138,51 @@ func TestMgrBase(t *testing.T) {
 			ok, result, err = m.Get(strconv.Itoa(i))
 			if err != nil {
 				t.Error(err)
+				return
+			}
+			if !ok || result == nil {
+				t.Error("get error")
+				return
+			}
+			err = m.Delete(strconv.Itoa(i))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			ok, result, err = m.GetAndSetDefault(strconv.Itoa(i), v)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !ok || result == nil {
+				t.Error("get error")
+				return
+			}
+			if result.Type != v.Type {
+				t.Error("type error")
+				return
+			}
+			err = m.Set(strconv.Itoa(i), v)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			v2 := ToUnit("23333", VALUE_TYPE_STRING)
+			ok, result, err = m.GetAndSetDefault(strconv.Itoa(i), v2)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !ok || result == nil {
+				t.Error("get error")
+				return
+			}
+			if result.Type != v.Type {
+				t.Error("type error")
+				return
+			}
+			if result.Type == VALUE_TYPE_STRING && ToBase[string](result) == "23333" {
+				t.Error("value error")
 				return
 			}
 		})

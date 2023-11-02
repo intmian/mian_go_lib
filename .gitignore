@@ -2,3 +2,4 @@
 /.git
 /tool/xres/~$test.xlsx
 tool/xstorage/tset.db
+*.db

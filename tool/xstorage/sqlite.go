@@ -356,26 +356,29 @@ func sqliteData2Model(key string, value *ValueUnit) ([]*KeyValueModel, error) {
 		//	})
 		//}
 		for i, v := range ToBase[[]int](value) {
+			newV := v
 			result = append(result, &KeyValueModel{
 				Key:       key + "[" + strconv.Itoa(i) + "]",
 				ValueType: int(VALUE_TYPE_INT),
-				ValueInt:  &v,
+				ValueInt:  &newV,
 			})
 		}
 	case VALUE_TYPE_SLICE_STRING:
 		for i, v := range ToBase[[]string](value) {
+			newV := v
 			result = append(result, &KeyValueModel{
 				Key:         key + "[" + strconv.Itoa(i) + "]",
 				ValueType:   int(VALUE_TYPE_STRING),
-				ValueString: &v,
+				ValueString: &newV,
 			})
 		}
 	case VALUE_TYPE_SLICE_FLOAT:
 		for i, v := range ToBase[[]float32](value) {
+			newV := v
 			result = append(result, &KeyValueModel{
 				Key:        key + "[" + strconv.Itoa(i) + "]",
 				ValueType:  int(VALUE_TYPE_FLOAT),
-				ValueFloat: &v,
+				ValueFloat: &newV,
 			})
 		}
 	case VALUE_TYPE_SLICE_BOOL:

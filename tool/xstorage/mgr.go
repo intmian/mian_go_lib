@@ -105,6 +105,26 @@ func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
 	return false, nil, errors.New("not use cache and not use db")
 }
 
+// GetAndSetDefault get值，如果没有就设置并返回默认值，返回 是否setdefault数据，数据，错误
+func (m *Mgr) GetAndSetDefault(key string, defaultValue *ValueUnit) (bool, *ValueUnit, error) {
+	if !m.initTag.IsInitialized() {
+		return false, nil, errors.New("mgr not init")
+	}
+	ok, val, err := m.Get(key)
+	if err != nil {
+		return false, nil, errors.Join(errors.New("get value error"), err)
+	}
+	if ok {
+		return true, val, nil
+	}
+	err = m.Set(key, defaultValue)
+	if err != nil {
+		return false, nil, errors.Join(errors.New("set value error"), err)
+	}
+	return true, defaultValue, nil
+
+}
+
 func (m *Mgr) Set(key string, value *ValueUnit) error {
 	if !m.initTag.IsInitialized() {
 		return errors.New("mgr not init")
