@@ -50,15 +50,16 @@ func TestMgrSimple(t *testing.T) {
 		t.Error("value error")
 		return
 	}
+	os.Remove("test.db")
 }
 
 func TestMgrBase(t *testing.T) {
 	// 删除test.db文件
-	os.Remove("test.db")
+	os.Remove("test2.db")
 	m, err := NewMgr(KeyValueSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache, UseDB, FullInitLoad),
 		SaveType: SqlLiteDB,
-		DBAddr:   "test.db",
+		DBAddr:   "test2.db",
 	})
 	if err != nil {
 		t.Error(err)
@@ -141,9 +142,11 @@ func TestMgrBase(t *testing.T) {
 			}
 		})
 	}
-	os.Remove("test.db")
+	os.Remove("test2.db")
 }
 
 // test 多线程
 
 // test slice
+
+// test 重启getall
