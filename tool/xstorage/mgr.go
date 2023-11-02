@@ -110,7 +110,7 @@ func (m *Mgr) Set(key string, value *ValueUnit) error {
 		return errors.New("mgr not init")
 	}
 	if key == "" {
-		return errors.New("key is empty")
+		return errors.New("Key is empty")
 	}
 	if value == nil {
 		return errors.New("value is nil")
@@ -139,7 +139,7 @@ func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
 		return errors.New("mgr not init"), nil
 	}
 	if key == "" {
-		return errors.New("key is empty"), nil
+		return errors.New("Key is empty"), nil
 	}
 	if value == nil {
 		return errors.New("value is nil"), nil
@@ -173,7 +173,7 @@ func (m *Mgr) Delete(key string) error {
 		return errors.New("mgr not init")
 	}
 	if key == "" {
-		return errors.New("key is empty")
+		return errors.New("Key is empty")
 	}
 	if misc.HasProperty(m.setting.Property, UseCache) {
 		err := m.removeFromMap(key)
@@ -195,7 +195,7 @@ func (m *Mgr) recordToMap(key string, value *ValueUnit) error {
 		return errors.New("mgr not init")
 	}
 	if key == "" {
-		return errors.New("key is empty")
+		return errors.New("Key is empty")
 	}
 	if value == nil {
 		return errors.New("value is nil")
@@ -217,7 +217,7 @@ func (m *Mgr) removeFromMap(key string) error {
 		return errors.New("mgr not init")
 	}
 	if key == "" {
-		return errors.New("key is empty")
+		return errors.New("Key is empty")
 	}
 	if !misc.HasProperty(m.setting.Property, UseCache) {
 		return errors.New("not use cache")
