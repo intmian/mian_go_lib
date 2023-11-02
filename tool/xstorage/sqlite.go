@@ -131,7 +131,7 @@ func (m *SqliteCore) Get(key string) (bool, *ValueUnit, error) {
 
 // sqliteModel2Data 将从数据库取出来的model转化为ValueUnit，但是需要注意的是，如果是slice类型，只返回slice的长度，不返回具体的值
 func sqliteModel2Data(keyValueModel KeyValueModel) (int, *ValueUnit, error) {
-	var value *ValueUnit
+	value := &ValueUnit{}
 	sliceNum := 0
 	// 判断合法性
 	switch ValueType(keyValueModel.ValueType) {
@@ -314,8 +314,29 @@ func sqliteData2Model(key string, value *ValueUnit) ([]*KeyValueModel, error) {
 	case VALUE_TYPE_FLOAT:
 		valueFloat := ToBase[float32](value)
 		keyValueModel.ValueFloat = &valueFloat
-	case VALUE_TYPE_SLICE_INT, VALUE_TYPE_SLICE_STRING, VALUE_TYPE_SLICE_FLOAT, VALUE_TYPE_SLICE_BOOL:
+	case VALUE_TYPE_SLICE_INT:
 		sliceNum := len(value.Data.([]int))
+		if sliceNum <= 0 {
+			return nil, fmt.Errorf("slice but sliceNum is %d", sliceNum)
+		}
+		valueInt := sliceNum
+		keyValueModel.ValueInt = &valueInt
+	case VALUE_TYPE_SLICE_STRING:
+		sliceNum := len(value.Data.([]string))
+		if sliceNum <= 0 {
+			return nil, fmt.Errorf("slice but sliceNum is %d", sliceNum)
+		}
+		valueInt := sliceNum
+		keyValueModel.ValueInt = &valueInt
+	case VALUE_TYPE_SLICE_FLOAT:
+		sliceNum := len(value.Data.([]float32))
+		if sliceNum <= 0 {
+			return nil, fmt.Errorf("slice but sliceNum is %d", sliceNum)
+		}
+		valueInt := sliceNum
+		keyValueModel.ValueInt = &valueInt
+	case VALUE_TYPE_SLICE_BOOL:
+		sliceNum := len(value.Data.([]bool))
 		if sliceNum <= 0 {
 			return nil, fmt.Errorf("slice but sliceNum is %d", sliceNum)
 		}

@@ -191,9 +191,6 @@ func (m *Mgr) Delete(key string) error {
 }
 
 func (m *Mgr) recordToMap(key string, value *ValueUnit) error {
-	if !m.initTag.IsInitialized() {
-		return errors.New("mgr not init")
-	}
 	if key == "" {
 		return errors.New("Key is empty")
 	}
@@ -213,9 +210,6 @@ func (m *Mgr) recordToMap(key string, value *ValueUnit) error {
 }
 
 func (m *Mgr) removeFromMap(key string) error {
-	if !m.initTag.IsInitialized() {
-		return errors.New("mgr not init")
-	}
 	if key == "" {
 		return errors.New("Key is empty")
 	}
