@@ -9,8 +9,8 @@ import (
 type Mgr struct {
 	dbCore  IDBCore
 	setting KeyValueSetting
-	sync.RWMutex
-	misc.InitTag
+	rwLock  sync.RWMutex
+	initTag misc.InitTag
 	//map尽量不要包非pool指针，不然可能在频繁调用的情况下出现大量的内存垃圾，影响内存，gc也无法快速回收，如果低峰期依然有访问可能会出现同访问量、数据量的情况下，每天内存占用越来越高，直到内存耗尽才频繁gc，性能会有问题，特别是在单机多进程的情况下。
 	kvMap map[string]*ValueUnit // 后面不放指针，避免影响gc，此为唯一数据，取出时取指针
 	pool  sync.Pool
@@ -25,10 +25,10 @@ func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 	if setting.SaveType == SqlLiteDB && setting.DBAddr == "" {
 		return nil, errors.New("sqlite db file addr is empty")
 	}
-	if setting.Property&UseCache == 0 && setting.Property&UseDB == 0 {
+	if !misc.HasOneProperty(setting.Property, UseCache, UseDB) {
 		return nil, errors.New("not use cache and not use db")
 	}
-	if setting.Property&FullInitLoad != 0 && (setting.Property&UseCache == 0 || setting.Property&UseDB == 0) {
+	if misc.HasProperty(setting.Property, FullInitLoad) && !misc.HasProperty(setting.Property, UseCache, UseDB) {
 		return nil, errors.New("not use cache or not use db and full init load")
 	}
 	mgr := &Mgr{
@@ -42,21 +42,21 @@ func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 		}
 		mgr.dbCore = dbCore
 	}
-	if setting.Property&UseCache != 0 {
+	if misc.HasProperty(setting.Property, UseCache) {
 		mgr.kvMap = make(map[string]*ValueUnit)
 		mgr.pool.New = func() interface{} {
 			return &ValueUnit{}
 		}
 	}
-	if setting.Property&FullInitLoad != 0 {
-		if setting.Property&UseDB != 0 {
+	if misc.HasProperty(setting.Property, FullInitLoad) {
+		if misc.HasProperty(setting.Property, UseDB) {
 			kvMap, err := mgr.dbCore.GetAll()
 			if err != nil {
 				return nil, errors.Join(errors.New("get all value error"), err)
 			}
 			for key, valueUnit := range kvMap {
-				if setting.Property&UseCache != 0 {
-					err := mgr.RecordToMap(key, valueUnit)
+				if misc.HasProperty(setting.Property, UseCache) {
+					err := mgr.recordToMap(key, valueUnit)
 					if err != nil {
 						return nil, errors.Join(errors.New("record to map error"), err)
 					}
@@ -66,19 +66,19 @@ func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 			return nil, errors.New("not use db and full init load")
 		}
 	}
-	mgr.SetInitialized()
+	mgr.initTag.SetInitialized()
 	return mgr, nil
 }
 
 func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
-	if !m.IsInitialized() {
+	if !m.initTag.IsInitialized() {
 		return false, nil, errors.New("mgr not init")
 	}
-	if m.setting.Property&MultiSafe != 0 {
-		m.RLock()
-		defer m.RUnlock()
+	if misc.HasProperty(m.setting.Property, MultiSafe) {
+		m.rwLock.RLock()
+		defer m.rwLock.RUnlock()
 	}
-	if m.setting.Property&UseCache != 0 {
+	if misc.HasProperty(m.setting.Property, UseCache) {
 		if valueUnit, ok := m.kvMap[key]; ok {
 			if valueUnit.dirty {
 				return false, nil, errors.New("value is dirty")
@@ -86,7 +86,7 @@ func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
 			return true, valueUnit, nil
 		}
 	}
-	if m.setting.Property&UseDB != 0 {
+	if misc.HasProperty(m.setting.Property, UseDB) {
 		ok, valueUnit, err := m.dbCore.Get(key)
 		if err != nil {
 			return false, nil, errors.Join(errors.New("get value error"), err)
@@ -94,8 +94,8 @@ func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
 		if !ok {
 			return false, nil, nil
 		}
-		if m.setting.Property&UseCache != 0 {
-			err := m.RecordToMap(key, valueUnit)
+		if misc.HasProperty(m.setting.Property, UseCache) {
+			err := m.recordToMap(key, valueUnit)
 			if err != nil {
 				return false, nil, errors.Join(errors.New("record to map error"), err)
 			}
@@ -106,7 +106,7 @@ func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
 }
 
 func (m *Mgr) Set(key string, value *ValueUnit) error {
-	if !m.IsInitialized() {
+	if !m.initTag.IsInitialized() {
 		return errors.New("mgr not init")
 	}
 	if key == "" {
@@ -115,17 +115,17 @@ func (m *Mgr) Set(key string, value *ValueUnit) error {
 	if value == nil {
 		return errors.New("value is nil")
 	}
-	if m.setting.Property&MultiSafe != 0 {
-		m.Lock()
-		defer m.Unlock()
+	if misc.HasProperty(m.setting.Property, MultiSafe) {
+		m.rwLock.Lock()
+		defer m.rwLock.Unlock()
 	}
-	if m.setting.Property&UseCache != 0 {
-		err := m.RecordToMap(key, value)
+	if misc.HasProperty(m.setting.Property, UseCache) {
+		err := m.recordToMap(key, value)
 		if err != nil {
 			return errors.Join(errors.New("record to map error"), err)
 		}
 	}
-	if m.setting.Property&UseDB != 0 {
+	if misc.HasProperty(m.setting.Property, UseDB) {
 		err := m.dbCore.Set(key, value)
 		if err != nil {
 			return errors.Join(errors.New("set value error"), err)
@@ -135,7 +135,7 @@ func (m *Mgr) Set(key string, value *ValueUnit) error {
 }
 
 func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
-	if !m.IsInitialized() {
+	if !m.initTag.IsInitialized() {
 		return errors.New("mgr not init"), nil
 	}
 	if key == "" {
@@ -144,15 +144,15 @@ func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
 	if value == nil {
 		return errors.New("value is nil"), nil
 	}
-	if m.setting.Property&UseDB == 0 {
+	if !misc.HasProperty(m.setting.Property, UseDB) {
 		return errors.New("not use db"), nil
 	}
-	if m.setting.Property&MultiSafe != 0 {
-		m.Lock()
-		defer m.Unlock()
+	if misc.HasProperty(m.setting.Property, MultiSafe) {
+		m.rwLock.Lock()
+		defer m.rwLock.Unlock()
 	}
-	if m.setting.Property&UseCache != 0 {
-		err := m.RecordToMap(key, value)
+	if misc.HasProperty(m.setting.Property, UseCache) {
+		err := m.recordToMap(key, value)
 		if err != nil {
 			return errors.Join(errors.New("record to map error"), err), nil
 		}
@@ -169,19 +169,19 @@ func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
 }
 
 func (m *Mgr) Delete(key string) error {
-	if !m.IsInitialized() {
+	if !m.initTag.IsInitialized() {
 		return errors.New("mgr not init")
 	}
 	if key == "" {
 		return errors.New("key is empty")
 	}
-	if m.setting.Property&UseCache != 0 {
-		err := m.RemoveFromMap(key)
+	if misc.HasProperty(m.setting.Property, UseCache) {
+		err := m.removeFromMap(key)
 		if err != nil {
 			return errors.Join(errors.New("remove from map error"), err)
 		}
 	}
-	if m.setting.Property&UseDB != 0 {
+	if misc.HasProperty(m.setting.Property, UseDB) {
 		err := m.dbCore.Delete(key)
 		if err != nil {
 			return errors.Join(errors.New("delete value error"), err)
@@ -190,8 +190,8 @@ func (m *Mgr) Delete(key string) error {
 	return nil
 }
 
-func (m *Mgr) RecordToMap(key string, value *ValueUnit) error {
-	if !m.IsInitialized() {
+func (m *Mgr) recordToMap(key string, value *ValueUnit) error {
+	if !m.initTag.IsInitialized() {
 		return errors.New("mgr not init")
 	}
 	if key == "" {
@@ -200,7 +200,7 @@ func (m *Mgr) RecordToMap(key string, value *ValueUnit) error {
 	if value == nil {
 		return errors.New("value is nil")
 	}
-	if m.setting.Property&UseCache == 0 {
+	if !misc.HasProperty(m.setting.Property, UseCache) {
 		return errors.New("not use cache")
 	}
 	newValue, ok := m.pool.Get().(*ValueUnit)
@@ -212,14 +212,14 @@ func (m *Mgr) RecordToMap(key string, value *ValueUnit) error {
 	return nil
 }
 
-func (m *Mgr) RemoveFromMap(key string) error {
-	if !m.IsInitialized() {
+func (m *Mgr) removeFromMap(key string) error {
+	if !m.initTag.IsInitialized() {
 		return errors.New("mgr not init")
 	}
 	if key == "" {
 		return errors.New("key is empty")
 	}
-	if m.setting.Property&UseCache == 0 {
+	if !misc.HasProperty(m.setting.Property, UseCache) {
 		return errors.New("not use cache")
 	}
 	// 释放

@@ -202,13 +202,13 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 	sliceNum := 0
 	switch dbValue.Type {
 	case VALUE_TYPE_SLICE_INT:
-		sliceNum = len(Get[[]int](dbValue))
+		sliceNum = len(ToBase[[]int](dbValue))
 	case VALUE_TYPE_SLICE_STRING:
-		sliceNum = len(Get[[]string](dbValue))
+		sliceNum = len(ToBase[[]string](dbValue))
 	case VALUE_TYPE_SLICE_FLOAT:
-		sliceNum = len(Get[[]float32](dbValue))
+		sliceNum = len(ToBase[[]float32](dbValue))
 	case VALUE_TYPE_SLICE_BOOL:
-		sliceNum = len(Get[[]bool](dbValue))
+		sliceNum = len(ToBase[[]bool](dbValue))
 	}
 
 	if !exist || dbValue.Type < VALUE_TYPE_SLICE_BEGIN {
@@ -229,7 +229,7 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 			// 判断值
 			switch ValueType(keyValueModel.valueType) {
 			case VALUE_TYPE_INT:
-				if *keyValueModel.valueInt != Get[int](dbValue) {
+				if *keyValueModel.valueInt != ToBase[int](dbValue) {
 					needSet = append(needSet, keyValueModel)
 				}
 			case VALUE_TYPE_BOOL:
@@ -237,15 +237,15 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 				if *keyValueModel.valueInt != 0 {
 					b = true
 				}
-				if b != Get[bool](dbValue) {
+				if b != ToBase[bool](dbValue) {
 					needSet = append(needSet, keyValueModel)
 				}
 			case VALUE_TYPE_STRING:
-				if *keyValueModel.valueString != Get[string](dbValue) {
+				if *keyValueModel.valueString != ToBase[string](dbValue) {
 					needSet = append(needSet, keyValueModel)
 				}
 			case VALUE_TYPE_FLOAT:
-				if *keyValueModel.valueFloat != Get[float32](dbValue) {
+				if *keyValueModel.valueFloat != ToBase[float32](dbValue) {
 					needSet = append(needSet, keyValueModel)
 				}
 			}
@@ -290,10 +290,10 @@ func sqliteData2Model(key string, value *ValueUnit) ([]*KeyValueModel, error) {
 	}
 	switch value.Type {
 	case VALUE_TYPE_INT:
-		valueInt := Get[int](value)
+		valueInt := ToBase[int](value)
 		keyValueModel.valueInt = &valueInt
 	case VALUE_TYPE_BOOL:
-		valueBool := Get[bool](value)
+		valueBool := ToBase[bool](value)
 		if valueBool {
 			valueInt := 1
 			keyValueModel.valueInt = &valueInt
@@ -302,10 +302,10 @@ func sqliteData2Model(key string, value *ValueUnit) ([]*KeyValueModel, error) {
 			keyValueModel.valueInt = &valueInt
 		}
 	case VALUE_TYPE_STRING:
-		valueString := Get[string](value)
+		valueString := ToBase[string](value)
 		keyValueModel.valueString = &valueString
 	case VALUE_TYPE_FLOAT:
-		valueFloat := Get[float32](value)
+		valueFloat := ToBase[float32](value)
 		keyValueModel.valueFloat = &valueFloat
 	case VALUE_TYPE_SLICE_INT, VALUE_TYPE_SLICE_STRING, VALUE_TYPE_SLICE_FLOAT, VALUE_TYPE_SLICE_BOOL:
 		sliceNum := len(value.Data.([]int))
@@ -321,13 +321,13 @@ func sqliteData2Model(key string, value *ValueUnit) ([]*KeyValueModel, error) {
 
 	switch value.Type {
 	case VALUE_TYPE_SLICE_INT:
-		//for i, v := range Get[[]int](value) {
+		//for i, v := range ToBase[[]int](value) {
 		//	sliceErr = m.Set(key+"["+strconv.Itoa(i)+"]", &ValueUnit{
 		//		Type: VALUE_TYPE_INT,
 		//		Data: v,
 		//	})
 		//}
-		for i, v := range Get[[]int](value) {
+		for i, v := range ToBase[[]int](value) {
 			result = append(result, &KeyValueModel{
 				key:       key + "[" + strconv.Itoa(i) + "]",
 				valueType: int(VALUE_TYPE_INT),
@@ -335,7 +335,7 @@ func sqliteData2Model(key string, value *ValueUnit) ([]*KeyValueModel, error) {
 			})
 		}
 	case VALUE_TYPE_SLICE_STRING:
-		for i, v := range Get[[]string](value) {
+		for i, v := range ToBase[[]string](value) {
 			result = append(result, &KeyValueModel{
 				key:         key + "[" + strconv.Itoa(i) + "]",
 				valueType:   int(VALUE_TYPE_STRING),
@@ -343,7 +343,7 @@ func sqliteData2Model(key string, value *ValueUnit) ([]*KeyValueModel, error) {
 			})
 		}
 	case VALUE_TYPE_SLICE_FLOAT:
-		for i, v := range Get[[]float32](value) {
+		for i, v := range ToBase[[]float32](value) {
 			result = append(result, &KeyValueModel{
 				key:        key + "[" + strconv.Itoa(i) + "]",
 				valueType:  int(VALUE_TYPE_FLOAT),
@@ -351,7 +351,7 @@ func sqliteData2Model(key string, value *ValueUnit) ([]*KeyValueModel, error) {
 			})
 		}
 	case VALUE_TYPE_SLICE_BOOL:
-		for i, v := range Get[[]bool](value) {
+		for i, v := range ToBase[[]bool](value) {
 			ti := 0
 			if v {
 				ti = 1

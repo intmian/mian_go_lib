@@ -7,8 +7,8 @@ type ValueUnit struct {
 	dirty bool
 }
 
-// Get 直接转换为基础类型，一方面是为了避免频繁的类型转换，另一方面是为了限制类型
-func Get[T IValueType](unit *ValueUnit) T {
+// ToBase 直接转换为基础类型，一方面是为了避免频繁的类型转换，另一方面是为了限制类型
+func ToBase[T IValueType](unit *ValueUnit) T {
 	// 判断类型是否正确
 	t, ok := unit.Data.(T)
 	if !ok {
@@ -16,4 +16,12 @@ func Get[T IValueType](unit *ValueUnit) T {
 		return empty
 	}
 	return t
+}
+
+func ToUnit[T IValueType](value T, valueType ValueType) *ValueUnit {
+	return &ValueUnit{
+		Type:  valueType,
+		Data:  value,
+		dirty: false,
+	}
 }
