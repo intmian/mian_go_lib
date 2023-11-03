@@ -1,5 +1,4 @@
 /.idea
 /.git
 /tool/xres/~$test.xlsx
-tool/xstorage/tset.db
-*.db
+tool/xstorage/*.db
