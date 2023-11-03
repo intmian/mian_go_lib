@@ -203,7 +203,7 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 
 	exist, dbValue, err := m.Get(key)
 
-	if err != nil {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.Join(errors.New("get value error"), err)
 	}
 
