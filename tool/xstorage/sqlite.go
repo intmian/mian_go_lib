@@ -1,14 +1,18 @@
 package xstorage
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/intmian/mian_go_lib/tool/misc"
 	_ "github.com/mattn/go-sqlite3"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 /*
@@ -23,10 +27,28 @@ import (
 type SqliteCore struct {
 	db *gorm.DB
 	misc.InitTag
+	rwLock sync.RWMutex
+}
+
+type EmptyLogger struct {
+}
+
+func (e EmptyLogger) LogMode(level logger.LogLevel) logger.Interface {
+	return e
+}
+
+func (e EmptyLogger) Info(ctx context.Context, s string, i ...interface{}) {}
+
+func (e EmptyLogger) Warn(ctx context.Context, s string, i ...interface{}) {}
+
+func (e EmptyLogger) Error(ctx context.Context, s string, i ...interface{}) {}
+
+func (e EmptyLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
 }
 
 func NewSqliteCore(DbFileAddr string) (*SqliteCore, error) {
-	db, err := gorm.Open(sqlite.Open(DbFileAddr), &gorm.Config{})
+	// 依靠外层进行日志交互，为了避免本地打印日志过多，这里不使用日志库
+	db, err := gorm.Open(sqlite.Open(DbFileAddr), &gorm.Config{Logger: EmptyLogger{}})
 	if err != nil {
 		return nil, errors.Join(errors.New("open sqlite error"), err)
 	}
@@ -42,9 +64,18 @@ func NewSqliteCore(DbFileAddr string) (*SqliteCore, error) {
 }
 
 func (m *SqliteCore) Get(key string) (bool, *ValueUnit, error) {
+	return m.GetInner(key, true)
+}
+
+func (m *SqliteCore) GetInner(key string, needLock bool) (bool, *ValueUnit, error) {
 	if !m.IsInitialized() {
 		return false, nil, errors.New("sqlite core not init")
 	}
+	if needLock {
+		m.rwLock.RLock()
+		defer m.rwLock.RUnlock()
+	}
+
 	var keyValueModel KeyValueModel
 	result := m.db.Where("Key = ?", key).First(&keyValueModel)
 	// 如果没有这个
@@ -186,7 +217,6 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 	if !m.IsInitialized() {
 		return errors.New("sqlite core not init")
 	}
-
 	// 为避免GetAll时，取出slice的成员作为单独的主键，这里不允许key中包含[]
 	if strings.Contains(key, "[") || strings.Contains(key, "]") {
 		return errors.New("Key can not contain []")
@@ -201,7 +231,7 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 		return errors.Join(errors.New("sqliteData2Model"), err)
 	}
 
-	exist, dbValue, err := m.Get(key)
+	exist, dbValue, err := m.GetInner(key, false)
 
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.Join(errors.New("get value error"), err)
@@ -265,6 +295,8 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 
 	}
 
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
 	for _, keyValueModel := range needCreate {
 		result := m.db.Create(keyValueModel)
 		if result.Error != nil {
@@ -402,6 +434,8 @@ func (m *SqliteCore) Delete(key string) error {
 	if !m.IsInitialized() {
 		return errors.New("sqlite core not init")
 	}
+	m.rwLock.Lock()
+	defer m.rwLock.Unlock()
 	return m.db.Where("Key = ?", key).Delete(&KeyValueModel{}).Error
 }
 
@@ -409,6 +443,8 @@ func (m *SqliteCore) Have(key string) (bool, error) {
 	if !m.IsInitialized() {
 		return false, errors.New("sqlite core not init")
 	}
+	m.rwLock.RLock()
+	defer m.rwLock.RUnlock()
 	var keyValueModel KeyValueModel
 	result := m.db.Where("Key = ?", key).First(&keyValueModel)
 	if result.Error != nil {
@@ -421,6 +457,8 @@ func (m *SqliteCore) GetAll() (map[string]*ValueUnit, error) {
 	if !m.IsInitialized() {
 		return nil, errors.New("sqlite core not init")
 	}
+	m.rwLock.RLock()
+	defer m.rwLock.RUnlock()
 	var keyValueModelList []KeyValueModel
 	result := m.db.Find(&keyValueModelList)
 	if result.Error != nil {

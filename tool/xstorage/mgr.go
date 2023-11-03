@@ -125,6 +125,26 @@ func (m *Mgr) GetAndSetDefault(key string, defaultValue *ValueUnit) (bool, *Valu
 
 }
 
+// GetAndSetDefaultAsync get值，如果没有就设置并返回默认值，返回 是否setdefault数据，数据，错误
+func (m *Mgr) GetAndSetDefaultAsync(key string, defaultValue *ValueUnit) (bool, *ValueUnit, error, chan error) {
+	if !m.initTag.IsInitialized() {
+		return false, nil, errors.New("mgr not init"), nil
+	}
+	ok, val, err := m.Get(key)
+	if err != nil {
+		return false, nil, errors.Join(errors.New("get value error"), err), nil
+	}
+	if ok {
+		return true, val, nil, nil
+	}
+	err, c := m.SetAsyncDB(key, defaultValue)
+	if err != nil {
+		return false, nil, errors.Join(errors.New("set value error"), err), nil
+	}
+	return true, defaultValue, nil, c
+
+}
+
 func (m *Mgr) Set(key string, value *ValueUnit) error {
 	if !m.initTag.IsInitialized() {
 		return errors.New("mgr not init")
