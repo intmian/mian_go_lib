@@ -198,13 +198,13 @@ func TestMgrMulti(t *testing.T) {
 	m, err := NewMgr(KeyValueSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache, UseDB, FullInitLoad),
 		SaveType: SqlLiteDB,
-		DBAddr:   "test2.db",
+		DBAddr:   "test3.db",
 	})
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	testNum := 10
+	testNum := 1000
 	datas := make([]*ValueUnit, testNum)
 	for i := 0; i < testNum; i++ {
 		datas[i] = ToUnit(i, VALUE_TYPE_INT)
@@ -244,9 +244,9 @@ func TestMgrMulti(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		if i%10 == 0 {
-			t.Logf("set %d", i)
-		}
+		//if i%10 == 0 {
+		//	t.Logf("set %d", i)
+		//}
 	}
 	t3 := time.Now()
 	t.Logf("set time %v, real set time %v", t2.Sub(t1), t3.Sub(t2))
