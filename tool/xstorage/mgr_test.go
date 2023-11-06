@@ -250,6 +250,10 @@ func TestMgrMulti(t *testing.T) {
 	}
 	t3 := time.Now()
 	t.Logf("set time %v, real set time %v", t2.Sub(t1), t3.Sub(t2))
+	if (t2.Sub(t1) > time.Second*2) || (t3.Sub(t2) > time.Second*10) {
+		t.Error("time error")
+		return
+	}
 	//time.Sleep(time.Second * 2)
 	for i := 0; i < testNum; i++ {
 		// 取出来判断是否正确

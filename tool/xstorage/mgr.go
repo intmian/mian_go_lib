@@ -244,7 +244,7 @@ func (m *Mgr) recordToMap(key string, value *ValueUnit) error {
 	if !ok {
 		return errors.New("pool type error")
 	}
-	*newValue = *value
+	Copy(value, newValue)
 	m.kvMap[key] = newValue
 	return nil
 }

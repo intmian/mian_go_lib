@@ -92,3 +92,26 @@ func Compare(unit1 *ValueUnit, unit2 *ValueUnit) bool {
 	}
 	return true
 }
+
+func Copy(srcValue *ValueUnit, newValue *ValueUnit) {
+	switch srcValue.Type {
+	case VALUE_TYPE_STRING, VALUE_TYPE_INT, VALUE_TYPE_FLOAT, VALUE_TYPE_BOOL:
+		*newValue = *srcValue
+	case VALUE_TYPE_SLICE_INT:
+		newValue.Type = VALUE_TYPE_SLICE_INT
+		newValue.Data = make([]int, len(srcValue.Data.([]int)))
+		copy(newValue.Data.([]int), srcValue.Data.([]int))
+	case VALUE_TYPE_SLICE_STRING:
+		newValue.Type = VALUE_TYPE_SLICE_STRING
+		newValue.Data = make([]string, len(srcValue.Data.([]string)))
+		copy(newValue.Data.([]string), srcValue.Data.([]string))
+	case VALUE_TYPE_SLICE_FLOAT:
+		newValue.Type = VALUE_TYPE_SLICE_FLOAT
+		newValue.Data = make([]float32, len(srcValue.Data.([]float32)))
+		copy(newValue.Data.([]float32), srcValue.Data.([]float32))
+	case VALUE_TYPE_SLICE_BOOL:
+		newValue.Type = VALUE_TYPE_SLICE_BOOL
+		newValue.Data = make([]bool, len(srcValue.Data.([]bool)))
+		copy(newValue.Data.([]bool), srcValue.Data.([]bool))
+	}
+}
