@@ -48,7 +48,9 @@ func (e EmptyLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql 
 
 func NewSqliteCore(DbFileAddr string) (*SqliteCore, error) {
 	// 依靠外层进行日志交互，为了避免本地打印日志过多，这里不使用日志库
-	db, err := gorm.Open(sqlite.Open(DbFileAddr), &gorm.Config{Logger: EmptyLogger{}})
+	db, err := gorm.Open(sqlite.Open(DbFileAddr), &gorm.Config{
+		Logger: EmptyLogger{},
+	})
 	if err != nil {
 		return nil, errors.Join(errors.New("open sqlite error"), err)
 	}
@@ -64,10 +66,10 @@ func NewSqliteCore(DbFileAddr string) (*SqliteCore, error) {
 }
 
 func (m *SqliteCore) Get(key string) (bool, *ValueUnit, error) {
-	return m.GetInner(key, true)
+	return m.getInner(key, true)
 }
 
-func (m *SqliteCore) GetInner(key string, needLock bool) (bool, *ValueUnit, error) {
+func (m *SqliteCore) getInner(key string, needLock bool) (bool, *ValueUnit, error) {
 	if !m.IsInitialized() {
 		return false, nil, errors.New("sqlite core not init")
 	}
@@ -103,53 +105,57 @@ func (m *SqliteCore) GetInner(key string, needLock bool) (bool, *ValueUnit, erro
 		valueUnit.Data = make([]int, sliceNum)
 		valueUnit.Type = VALUE_TYPE_SLICE_INT
 		for i := 0; i < sliceNum; i++ {
-			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel)
+			var keyValueModel2 KeyValueModel
+			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel2)
 			if result.Error != nil {
 				return false, nil, errors.Join(errors.New("get value error"), result.Error)
 			}
-			if keyValueModel.ValueInt == nil {
+			if keyValueModel2.ValueInt == nil {
 				return false, nil, fmt.Errorf("slice but ValueInt is nil, Key: %s[%d]", key, i)
 			}
-			valueUnit.Data.([]int)[i] = *keyValueModel.ValueInt
+			valueUnit.Data.([]int)[i] = *keyValueModel2.ValueInt
 		}
 	case VALUE_TYPE_SLICE_STRING:
 		valueUnit.Data = make([]string, sliceNum)
 		valueUnit.Type = VALUE_TYPE_SLICE_STRING
 		for i := 0; i < sliceNum; i++ {
-			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel)
+			var keyValueModel2 KeyValueModel
+			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel2)
 			if result.Error != nil {
 				return false, nil, errors.Join(errors.New("get value error"), result.Error)
 			}
-			if keyValueModel.ValueString == nil {
+			if keyValueModel2.ValueString == nil {
 				return false, nil, fmt.Errorf("slice but ValueString is nil, Key: %s[%d]", key, i)
 			}
-			valueUnit.Data.([]string)[i] = *keyValueModel.ValueString
+			valueUnit.Data.([]string)[i] = *keyValueModel2.ValueString
 		}
 	case VALUE_TYPE_SLICE_FLOAT:
 		valueUnit.Data = make([]float32, sliceNum)
 		valueUnit.Type = VALUE_TYPE_SLICE_FLOAT
 		for i := 0; i < sliceNum; i++ {
-			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel)
+			var keyValueModel2 KeyValueModel
+			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel2)
 			if result.Error != nil {
 				return false, nil, errors.Join(errors.New("get value error"), result.Error)
 			}
-			if keyValueModel.ValueFloat == nil {
+			if keyValueModel2.ValueFloat == nil {
 				return false, nil, fmt.Errorf("slice but ValueFloat is nil, Key: %s[%d]", key, i)
 			}
-			valueUnit.Data.([]float32)[i] = *keyValueModel.ValueFloat
+			valueUnit.Data.([]float32)[i] = *keyValueModel2.ValueFloat
 		}
 	case VALUE_TYPE_SLICE_BOOL:
 		valueUnit.Data = make([]bool, sliceNum)
 		valueUnit.Type = VALUE_TYPE_SLICE_BOOL
 		for i := 0; i < sliceNum; i++ {
-			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel)
+			var keyValueModel2 KeyValueModel
+			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel2)
 			if result.Error != nil {
 				return false, nil, errors.Join(errors.New("get value error"), result.Error)
 			}
-			if keyValueModel.ValueInt == nil {
+			if keyValueModel2.ValueInt == nil {
 				return false, nil, fmt.Errorf("slice but ValueInt is nil, Key: %s[%d]", key, i)
 			}
-			if *keyValueModel.ValueInt == 0 {
+			if *keyValueModel2.ValueInt == 0 {
 				valueUnit.Data.([]bool)[i] = false
 			} else {
 				valueUnit.Data.([]bool)[i] = true
@@ -157,7 +163,7 @@ func (m *SqliteCore) GetInner(key string, needLock bool) (bool, *ValueUnit, erro
 		}
 	}
 
-	return false, valueUnit, nil
+	return true, valueUnit, nil
 }
 
 // sqliteModel2Data 将从数据库取出来的model转化为ValueUnit，但是需要注意的是，如果是slice类型，只返回slice的长度，不返回具体的值
@@ -231,7 +237,7 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 		return errors.Join(errors.New("sqliteData2Model"), err)
 	}
 
-	exist, dbValue, err := m.GetInner(key, false)
+	exist, dbValue, err := m.getInner(key, false)
 
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return errors.Join(errors.New("get value error"), err)
@@ -266,7 +272,7 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 			// 判断值
 			switch ValueType(keyValueModel.ValueType) {
 			case VALUE_TYPE_INT:
-				if *keyValueModel.ValueInt != ToBase[int](dbValue) {
+				if *keyValueModel.ValueInt != ToBase[[]int](dbValue)[i-1] {
 					needSet = append(needSet, keyValueModel)
 				}
 			case VALUE_TYPE_BOOL:
@@ -274,22 +280,22 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 				if *keyValueModel.ValueInt != 0 {
 					b = true
 				}
-				if b != ToBase[bool](dbValue) {
+				if b != ToBase[[]bool](dbValue)[i-1] {
 					needSet = append(needSet, keyValueModel)
 				}
 			case VALUE_TYPE_STRING:
-				if *keyValueModel.ValueString != ToBase[string](dbValue) {
+				if *keyValueModel.ValueString != ToBase[[]string](dbValue)[i-1] {
 					needSet = append(needSet, keyValueModel)
 				}
 			case VALUE_TYPE_FLOAT:
-				if *keyValueModel.ValueFloat != ToBase[float32](dbValue) {
+				if *keyValueModel.ValueFloat != ToBase[[]float32](dbValue)[i-1] {
 					needSet = append(needSet, keyValueModel)
 				}
 			}
 		}
 		for i := len(keyValueModels) - 1; i < sliceNum; i++ {
 			needRemove = append(needRemove, &KeyValueModel{
-				Key: key + "[" + strconv.Itoa(i-1) + "]",
+				Key: key + "[" + strconv.Itoa(i) + "]",
 			})
 		}
 

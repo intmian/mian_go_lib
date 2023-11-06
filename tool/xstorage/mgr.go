@@ -18,7 +18,7 @@ type Mgr struct {
 
 func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 	// 检查有效性
-	if setting.SaveType != SqlLiteDB {
+	if misc.HasProperty(setting.Property, UseDB) && setting.SaveType != SqlLiteDB {
 		return nil, errors.New("not support save type, only support sqlite")
 	}
 	// 如果使用sqlite存储，需要判断地址是否为空
