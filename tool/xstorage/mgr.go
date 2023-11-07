@@ -18,10 +18,6 @@ type Mgr struct {
 }
 
 func NewMgr(setting KeyValueSetting) (*Mgr, error) {
-	// 检查有效性
-	if misc.HasProperty(setting.Property, UseDisk) && setting.SaveType != SqlLiteDB {
-		return nil, errors.New("not support save type, only support sqlite")
-	}
 	// 检查路径
 	if setting.SaveType > DBBegin && setting.SaveType < FileBegin && setting.DBAddr == "" {
 		return nil, errors.New("sqlite db file addr is empty")
@@ -138,7 +134,7 @@ func (m *Mgr) OnGetFromDisk(key string) (bool, *ValueUnit, error) {
 	case t > DBBegin && t < FileBegin:
 		ok, valueUnit, err = m.dbCore.Get(key)
 	case t > FileBegin:
-		return false, nil, errors.New("get not support file")
+		return false, nil, nil
 	}
 	return ok, valueUnit, err
 }
