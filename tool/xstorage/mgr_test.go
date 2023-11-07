@@ -415,18 +415,15 @@ func TestMgrSlice(t *testing.T) {
 	}
 }
 
-func TestMgrJson(t *testing.T) {
+func TestMgrToml(t *testing.T) {
 	// 删除test.db文件
-	os.Remove("test6.json")
-	m, err := NewMgr(KeyValueSetting{
+	os.Remove("test6.toml")
+	os.Remove("test7.toml")
+	m, _ := NewMgr(KeyValueSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
-		SaveType: Json,
+		SaveType: Toml,
 		FileAddr: "test6.json",
 	})
-	if err != nil {
-		t.Error(err)
-		return
-	}
 	type set struct {
 		key string
 		v   *ValueUnit
@@ -547,7 +544,155 @@ func TestMgrJson(t *testing.T) {
 				t.Error("value error")
 				return
 			}
+
+			m2, _ := NewMgr(KeyValueSetting{
+				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
+				SaveType: Toml,
+				FileAddr: "test7.json",
+			})
+			ok, _, err = m2.Get(strconv.Itoa(i))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if ok {
+				t.Error("get error")
+				return
+			}
+			m2, _ = NewMgr(KeyValueSetting{
+				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
+				SaveType: Toml,
+				FileAddr: "test7.json",
+			})
+			err = m2.Set(strconv.Itoa(i), v)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			m2, _ = NewMgr(KeyValueSetting{
+				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
+				SaveType: Toml,
+				FileAddr: "test7.json",
+			})
+			ok, result, err = m2.Get(strconv.Itoa(i))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !ok || result == nil {
+				t.Error("get error")
+				return
+			}
+			if result.Type != v.Type {
+				t.Error("type error")
+				return
+			}
+			m2, _ = NewMgr(KeyValueSetting{
+				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
+				SaveType: Toml,
+				FileAddr: "test7.json",
+			})
+			err = m2.Delete(strconv.Itoa(i))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			m2, _ = NewMgr(KeyValueSetting{
+				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
+				SaveType: Toml,
+				FileAddr: "test7.json",
+			})
+			ok, _, err = m2.Get(strconv.Itoa(i))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if ok {
+				t.Error("get error")
+				return
+			}
+			m2, _ = NewMgr(KeyValueSetting{
+				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
+				SaveType: Toml,
+				FileAddr: "test7.json",
+			})
+			err = m2.Set(strconv.Itoa(i), v)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			m2, _ = NewMgr(KeyValueSetting{
+				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
+				SaveType: Toml,
+				FileAddr: "test7.json",
+			})
+			ok, result, err = m2.Get(strconv.Itoa(i))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !ok || result == nil {
+				t.Error("get error")
+				return
+			}
+			m2, _ = NewMgr(KeyValueSetting{
+				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
+				SaveType: Toml,
+				FileAddr: "test7.json",
+			})
+			err = m2.Delete(strconv.Itoa(i))
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			m2, _ = NewMgr(KeyValueSetting{
+				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
+				SaveType: Toml,
+				FileAddr: "test7.json",
+			})
+			ok, result, err = m2.GetAndSetDefault(strconv.Itoa(i), v)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !ok || result == nil {
+				t.Error("get error")
+				return
+			}
+			if result.Type != v.Type {
+				t.Error("type error")
+				return
+			}
+			m2, _ = NewMgr(KeyValueSetting{
+				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
+				SaveType: Toml,
+				FileAddr: "test7.json",
+			})
+			err = m2.Set(strconv.Itoa(i), v)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			v2 = ToUnit("23333", VALUE_TYPE_STRING)
+			ok, result, err = m2.GetAndSetDefault(strconv.Itoa(i), v2)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !ok || result == nil {
+				t.Error("get error")
+				return
+			}
+			if result.Type != v.Type {
+				t.Error("type error")
+				return
+			}
+			if result.Type == VALUE_TYPE_STRING && ToBase[string](result) == "23333" {
+				t.Error("value error")
+				return
+			}
 		})
 	}
-	os.Remove("test6.json")
+	os.Remove("test6.toml")
+	os.Remove("test7.toml")
 }

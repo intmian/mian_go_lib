@@ -19,7 +19,7 @@ const (
 	DBBegin keyValueSaveType = iota
 	SqlLiteDB
 	FileBegin
-	Json // 为保证效率，必须开启UseCache、FullInitLoad
+	Toml // 为保证效率，必须开启UseCache、FullInitLoad
 )
 
 type KeyValueSetting struct {

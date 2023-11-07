@@ -1,10 +1,35 @@
 package xstorage
 
+import (
+	"strconv"
+	"strings"
+)
+
 // ValueUnit 加入类型，用于在非反射的情况下直接处理类型
 type ValueUnit struct {
 	Type  ValueType
 	Data  interface{}
 	dirty bool
+}
+
+func UnitToString(unit *ValueUnit) string {
+	s := ""
+	switch unit.Type {
+	case VALUE_TYPE_STRING:
+		s = ToBase[string](unit)
+	case VALUE_TYPE_INT:
+		s = strconv.Itoa(ToBase[int](unit))
+	case VALUE_TYPE_FLOAT:
+		s = strconv.FormatFloat(float64(ToBase[float32](unit)), 'f', -1, 32)
+		// 如果不含小数点，就加上小数点
+		if !strings.Contains(s, ".") {
+			s += ".0"
+		}
+	case VALUE_TYPE_BOOL:
+		s = strconv.FormatBool(ToBase[bool](unit))
+
+	}
+	return ""
 }
 
 // ToBase 直接转换为基础类型，一方面是为了避免频繁的类型转换，另一方面是为了限制类型
@@ -99,19 +124,75 @@ func Copy(srcValue *ValueUnit, newValue *ValueUnit) {
 		*newValue = *srcValue
 	case VALUE_TYPE_SLICE_INT:
 		newValue.Type = VALUE_TYPE_SLICE_INT
-		newValue.Data = make([]int, len(srcValue.Data.([]int)))
-		copy(newValue.Data.([]int), srcValue.Data.([]int))
+		_, ok := srcValue.Data.([]int)
+		var newData []int
+		if !ok {
+			// 将类型强制转换为[]int
+			newData = make([]int, len(srcValue.Data.([]interface{})))
+			for i, val := range srcValue.Data.([]interface{}) {
+				newData[i] = int(val.(int64))
+			}
+		} else {
+			newData = make([]int, len(srcValue.Data.([]int)))
+			copy(newData, srcValue.Data.([]int))
+		}
+		newValue.Data = newData
 	case VALUE_TYPE_SLICE_STRING:
 		newValue.Type = VALUE_TYPE_SLICE_STRING
-		newValue.Data = make([]string, len(srcValue.Data.([]string)))
-		copy(newValue.Data.([]string), srcValue.Data.([]string))
+		_, ok := srcValue.Data.([]string)
+		var newData []string
+		if !ok {
+			// 将类型强制转换为[]string
+			newData = make([]string, len(srcValue.Data.([]interface{})))
+			for i, val := range srcValue.Data.([]interface{}) {
+				newData[i] = val.(string)
+			}
+		} else {
+			newData = make([]string, len(srcValue.Data.([]string)))
+			copy(newData, srcValue.Data.([]string))
+		}
+		newValue.Data = newData
 	case VALUE_TYPE_SLICE_FLOAT:
 		newValue.Type = VALUE_TYPE_SLICE_FLOAT
-		newValue.Data = make([]float32, len(srcValue.Data.([]float32)))
-		copy(newValue.Data.([]float32), srcValue.Data.([]float32))
+		_, ok := srcValue.Data.([]float32)
+		var newData []float32
+		if !ok {
+			// 将类型强制转换为[]float32
+			newData = make([]float32, len(srcValue.Data.([]interface{})))
+			for i, val := range srcValue.Data.([]interface{}) {
+				newData[i] = float32(val.(float64))
+			}
+		} else {
+			newData = make([]float32, len(srcValue.Data.([]float32)))
+			copy(newData, srcValue.Data.([]float32))
+		}
+		newValue.Data = newData
 	case VALUE_TYPE_SLICE_BOOL:
 		newValue.Type = VALUE_TYPE_SLICE_BOOL
-		newValue.Data = make([]bool, len(srcValue.Data.([]bool)))
-		copy(newValue.Data.([]bool), srcValue.Data.([]bool))
+		_, ok := srcValue.Data.([]bool)
+		var newData []bool
+		if !ok {
+			// 将类型强制转换为[]bool
+			newData = make([]bool, len(srcValue.Data.([]interface{})))
+			for i, val := range srcValue.Data.([]interface{}) {
+				newData[i] = val.(bool)
+			}
+		} else {
+			newData = make([]bool, len(srcValue.Data.([]bool)))
+			copy(newData, srcValue.Data.([]bool))
+		}
+		newValue.Data = newData
 	}
+}
+
+func Join(src ...string) string {
+	var result string
+	for _, s := range src {
+		result += "." + s
+	}
+	return result
+}
+
+func Split(src string) []string {
+	return strings.Split(src, ".")
 }

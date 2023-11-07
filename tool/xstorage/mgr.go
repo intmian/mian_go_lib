@@ -32,7 +32,7 @@ func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 	if misc.HasProperty(setting.Property, FullInitLoad) && !misc.HasProperty(setting.Property, UseCache, UseDisk) {
 		return nil, errors.New("not use cache or not use db and full init load")
 	}
-	if setting.SaveType == Json && !misc.HasProperty(setting.Property, UseCache, FullInitLoad) {
+	if setting.SaveType == Toml && !misc.HasProperty(setting.Property, UseCache, FullInitLoad) {
 		return nil, errors.New("use json, but not use cache and not full init load")
 	}
 	mgr := &Mgr{
@@ -45,8 +45,8 @@ func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 			return nil, errors.Join(errors.New("new sqlite core error"), err)
 		}
 		mgr.dbCore = dbCore
-	case Json:
-		fileCore := NewJsonCore(setting.FileAddr)
+	case Toml:
+		fileCore := NewTomlCore(setting.FileAddr)
 		mgr.fileCore = fileCore
 	}
 	if misc.HasProperty(setting.Property, UseCache) {
