@@ -13,7 +13,7 @@ func TestMgrSimple(t *testing.T) {
 	// 删除test.db文件
 	os.Remove("test.db")
 	m, err := NewMgr(KeyValueSetting{
-		Property: misc.CreateProperty(MultiSafe, UseCache, UseDB, FullInitLoad),
+		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 		SaveType: SqlLiteDB,
 		DBAddr:   "test.db",
 	})
@@ -59,7 +59,7 @@ func TestMgrBase(t *testing.T) {
 	// 删除test.db文件
 	os.Remove("test2.db")
 	m, err := NewMgr(KeyValueSetting{
-		Property: misc.CreateProperty(MultiSafe, UseCache, UseDB, FullInitLoad),
+		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 		SaveType: SqlLiteDB,
 		DBAddr:   "test2.db",
 	})
@@ -196,7 +196,7 @@ func TestMgrBase(t *testing.T) {
 func TestMgrMulti(t *testing.T) {
 	os.Remove("test3.db")
 	m, err := NewMgr(KeyValueSetting{
-		Property: misc.CreateProperty(MultiSafe, UseCache, UseDB, FullInitLoad),
+		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 		SaveType: SqlLiteDB,
 		DBAddr:   "test3.db",
 	})
@@ -287,7 +287,7 @@ func TestMgrReBoot(t *testing.T) {
 	m, err := NewMgr(KeyValueSetting{
 		SaveType: SqlLiteDB,
 		DBAddr:   "test4.db",
-		Property: misc.CreateProperty(MultiSafe, UseCache, UseDB, FullInitLoad),
+		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 	})
 	if err != nil {
 		t.Error(err)
@@ -313,7 +313,7 @@ func TestMgrReBoot(t *testing.T) {
 	m2, err := NewMgr(KeyValueSetting{
 		SaveType: SqlLiteDB,
 		DBAddr:   "test4.db",
-		Property: misc.CreateProperty(MultiSafe, UseCache, UseDB, FullInitLoad),
+		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 	})
 	if err != nil {
 		t.Error(err)
@@ -344,12 +344,12 @@ func TestMgrSlice(t *testing.T) {
 	mgr1, _ := NewMgr(KeyValueSetting{
 		SaveType: SqlLiteDB,
 		DBAddr:   "test5.db",
-		Property: misc.CreateProperty(MultiSafe, UseCache, UseDB, FullInitLoad),
+		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 	})
 	mgr2, _ := NewMgr(KeyValueSetting{
 		SaveType: SqlLiteDB,
 		DBAddr:   "test5.db",
-		Property: misc.CreateProperty(MultiSafe, UseDB),
+		Property: misc.CreateProperty(MultiSafe, UseDisk),
 	})
 	mgr3, _ := NewMgr(KeyValueSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache),

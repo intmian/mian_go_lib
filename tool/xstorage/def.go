@@ -1,12 +1,5 @@
 package xstorage
 
-type BindFileType int
-
-const (
-	JSON BindFileType = iota
-	XML
-)
-
 type KeyValueProperty uint32
 
 const (
@@ -14,8 +7,8 @@ const (
 	MultiSafe KeyValueProperty = 1 << iota // TODO:
 	// UseCache 缓存
 	UseCache
-	// UseDB 落盘
-	UseDB
+	// UseDisk 落盘
+	UseDisk
 	// FullInitLoad 全量初始化加载，没有的话即懒加载，仅在同时使用缓存和数据库时有效，建议与MultiSafe一起使用，并使用setAsync方法进行set
 	FullInitLoad
 )
@@ -23,15 +16,17 @@ const (
 type keyValueSaveType uint32
 
 const (
-	null keyValueSaveType = iota
+	DBBegin keyValueSaveType = iota
 	SqlLiteDB
-	Json
+	FileBegin
+	Json // 为保证效率，必须开启UseCache、FullInitLoad
 )
 
 type KeyValueSetting struct {
 	Property KeyValueProperty
 	SaveType keyValueSaveType
 	DBAddr   string
+	FileAddr string
 }
 
 type ValueType int

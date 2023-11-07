@@ -7,10 +7,11 @@ import (
 )
 
 type Mgr struct {
-	dbCore  IDBCore
-	setting KeyValueSetting
-	rwLock  sync.RWMutex
-	initTag misc.InitTag
+	dbCore   IDBCore
+	fileCore IFileCore
+	setting  KeyValueSetting
+	rwLock   sync.RWMutex
+	initTag  misc.InitTag
 	//map尽量不要包非pool指针，不然可能在频繁调用的情况下出现大量的内存垃圾，影响内存，gc也无法快速回收，如果低峰期依然有访问可能会出现同访问量、数据量的情况下，每天内存占用越来越高，直到内存耗尽才频繁gc，性能会有问题，特别是在单机多进程的情况下。
 	kvMap map[string]*ValueUnit // 后面不放指针，避免影响gc，此为唯一数据，取出时取指针
 	pool  sync.Pool
@@ -18,18 +19,25 @@ type Mgr struct {
 
 func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 	// 检查有效性
-	if misc.HasProperty(setting.Property, UseDB) && setting.SaveType != SqlLiteDB {
+	if misc.HasProperty(setting.Property, UseDisk) && setting.SaveType != SqlLiteDB {
 		return nil, errors.New("not support save type, only support sqlite")
 	}
-	// 如果使用sqlite存储，需要判断地址是否为空
-	if setting.SaveType == SqlLiteDB && setting.DBAddr == "" {
+	// 检查路径
+	if setting.SaveType > DBBegin && setting.SaveType < FileBegin && setting.DBAddr == "" {
 		return nil, errors.New("sqlite db file addr is empty")
 	}
-	if !misc.HasOneProperty(setting.Property, UseCache, UseDB) {
+	if setting.SaveType > FileBegin && setting.FileAddr == "" {
+		return nil, errors.New("sqlite db file addr is empty")
+	}
+
+	if !misc.HasOneProperty(setting.Property, UseCache, UseDisk) {
 		return nil, errors.New("not use cache and not use db")
 	}
-	if misc.HasProperty(setting.Property, FullInitLoad) && !misc.HasProperty(setting.Property, UseCache, UseDB) {
+	if misc.HasProperty(setting.Property, FullInitLoad) && !misc.HasProperty(setting.Property, UseCache, UseDisk) {
 		return nil, errors.New("not use cache or not use db and full init load")
+	}
+	if setting.SaveType == Json && !misc.HasProperty(setting.Property, UseCache, FullInitLoad) {
+		return nil, errors.New("use json, but not use cache and not full init load")
 	}
 	mgr := &Mgr{
 		setting: setting,
@@ -41,6 +49,9 @@ func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 			return nil, errors.Join(errors.New("new sqlite core error"), err)
 		}
 		mgr.dbCore = dbCore
+	case Json:
+		fileCore := NewJsonCore(setting.FileAddr)
+		mgr.fileCore = fileCore
 	}
 	if misc.HasProperty(setting.Property, UseCache) {
 		mgr.kvMap = make(map[string]*ValueUnit)
@@ -49,8 +60,8 @@ func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 		}
 	}
 	if misc.HasProperty(setting.Property, FullInitLoad) {
-		if misc.HasProperty(setting.Property, UseDB) {
-			kvMap, err := mgr.dbCore.GetAll()
+		if misc.HasProperty(setting.Property, UseDisk) {
+			kvMap, err := FromDiskGetAll(mgr)
 			if err != nil {
 				return nil, errors.Join(errors.New("get all value error"), err)
 			}
@@ -70,6 +81,19 @@ func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 	return mgr, nil
 }
 
+func FromDiskGetAll(mgr *Mgr) (map[string]*ValueUnit, error) {
+	t := mgr.setting.SaveType
+	var kvMap map[string]*ValueUnit
+	var err error
+	switch {
+	case t > DBBegin && t < FileBegin:
+		kvMap, err = mgr.dbCore.GetAll()
+	case t > FileBegin:
+		kvMap, err = mgr.fileCore.GetAll()
+	}
+	return kvMap, err
+}
+
 func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
 	if !m.initTag.IsInitialized() {
 		return false, nil, errors.New("mgr not init")
@@ -86,8 +110,8 @@ func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
 			return true, valueUnit, nil
 		}
 	}
-	if misc.HasProperty(m.setting.Property, UseDB) {
-		ok, valueUnit, err := m.dbCore.Get(key)
+	if misc.HasProperty(m.setting.Property, UseDisk) {
+		ok, valueUnit, err := m.OnGetFromDisk(key)
 		if err != nil {
 			return false, nil, errors.Join(errors.New("get value error"), err)
 		}
@@ -103,6 +127,20 @@ func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
 		return true, valueUnit, nil
 	}
 	return false, nil, errors.New("not use cache and not use db")
+}
+
+func (m *Mgr) OnGetFromDisk(key string) (bool, *ValueUnit, error) {
+	t := m.setting.SaveType
+	var ok bool
+	var valueUnit *ValueUnit
+	var err error
+	switch {
+	case t > DBBegin && t < FileBegin:
+		ok, valueUnit, err = m.dbCore.Get(key)
+	case t > FileBegin:
+		return false, nil, errors.New("get not support file")
+	}
+	return ok, valueUnit, err
 }
 
 // GetAndSetDefault get值，如果没有就设置并返回默认值，返回 是否setdefault数据，数据，错误
@@ -165,13 +203,25 @@ func (m *Mgr) Set(key string, value *ValueUnit) error {
 			return errors.Join(errors.New("record to map error"), err)
 		}
 	}
-	if misc.HasProperty(m.setting.Property, UseDB) {
-		err := m.dbCore.Set(key, value)
+	if misc.HasProperty(m.setting.Property, UseDisk) {
+		err := m.OnSave2Disk(key, value)
 		if err != nil {
 			return errors.Join(errors.New("set value error"), err)
 		}
 	}
 	return nil
+}
+
+func (m *Mgr) OnSave2Disk(key string, value *ValueUnit) error {
+	t := m.setting.SaveType
+	var err error
+	switch {
+	case t > DBBegin && t < FileBegin:
+		err = m.dbCore.Set(key, value)
+	case t > FileBegin:
+		err = m.fileCore.SaveAll(m.kvMap)
+	}
+	return err
 }
 
 func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
@@ -184,7 +234,7 @@ func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
 	if value == nil {
 		return errors.New("value is nil"), nil
 	}
-	if !misc.HasProperty(m.setting.Property, UseDB) {
+	if !misc.HasProperty(m.setting.Property, UseDisk) {
 		return errors.New("not use db"), nil
 	}
 	if misc.HasProperty(m.setting.Property, MultiSafe) {
@@ -199,7 +249,7 @@ func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
 	}
 	errChan := make(chan error)
 	go func() {
-		err := m.dbCore.Set(key, value)
+		err := m.OnSave2Disk(key, value)
 		if err != nil {
 			errChan <- errors.Join(errors.New("set value error"), err)
 		}
@@ -221,13 +271,25 @@ func (m *Mgr) Delete(key string) error {
 			return errors.Join(errors.New("remove from map error"), err)
 		}
 	}
-	if misc.HasProperty(m.setting.Property, UseDB) {
-		err := m.dbCore.Delete(key)
+	if misc.HasProperty(m.setting.Property, UseDisk) {
+		err := m.FromDiskDelete(key)
 		if err != nil {
 			return errors.Join(errors.New("delete value error"), err)
 		}
 	}
 	return nil
+}
+
+func (m *Mgr) FromDiskDelete(key string) error {
+	t := m.setting.SaveType
+	var err error
+	switch {
+	case t > DBBegin && t < FileBegin:
+		err = m.dbCore.Delete(key)
+	case t > FileBegin:
+		err = m.fileCore.SaveAll(m.kvMap)
+	}
+	return err
 }
 
 func (m *Mgr) recordToMap(key string, value *ValueUnit) error {
