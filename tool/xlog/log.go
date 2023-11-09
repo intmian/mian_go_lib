@@ -203,6 +203,10 @@ func (receiver *Mgr) Log(level TLogLevel, from string, info string) {
 	}
 }
 
+func (receiver *Mgr) LogWithErr(level TLogLevel, from string, err error) {
+	receiver.Log(EError, from, err.Error())
+}
+
 func parseLog(sLevel string, ts string, from string, info string) string {
 	perm := "[%s]\t[%s]\t[%s]\t%s\n"
 	perm = fmt.Sprintf(perm, sLevel, ts, from, info)

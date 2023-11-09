@@ -125,6 +125,18 @@ func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
 	return false, nil, errors.New("not use cache and not use db")
 }
 
+func Get[T IValueType](mgr *Mgr, key string) (bool, T, error) {
+	ok, valueUnit, err := mgr.Get(key)
+	var value T
+	if err != nil {
+		return false, value, errors.Join(errors.New("get value error"), err)
+	}
+	if !ok {
+		return false, value, nil
+	}
+	return true, ToBase[T](valueUnit), nil
+}
+
 func (m *Mgr) OnGetFromDisk(key string) (bool, *ValueUnit, error) {
 	t := m.setting.SaveType
 	var ok bool
