@@ -1,5 +1,7 @@
 package xstorage
 
+import "github.com/intmian/mian_go_lib/tool/xlog"
+
 type KeyValueProperty uint32
 
 const (
@@ -11,6 +13,8 @@ const (
 	UseDisk
 	// FullInitLoad 全量初始化加载，没有的话即懒加载，仅在同时使用缓存和数据库时有效，建议与MultiSafe一起使用，并使用setAsync方法进行set
 	FullInitLoad
+	// OpenWeb 启用web端口，建议不要使用内置的web服务，而是自己启动一个web服务，然后调用GetGinEngine方法获取gin引擎，然后自己注册路由
+	OpenWeb
 )
 
 type keyValueSaveType uint32
@@ -27,6 +31,9 @@ type KeyValueSetting struct {
 	SaveType keyValueSaveType
 	DBAddr   string
 	FileAddr string
+	logFrom  string
+	log      *xlog.Mgr
+	webPort  int
 }
 
 type ValueType int

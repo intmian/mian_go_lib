@@ -2,7 +2,9 @@ package xstorage
 
 import (
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/intmian/mian_go_lib/tool/misc"
+	"github.com/intmian/mian_go_lib/tool/xlog"
 	"sync"
 )
 
@@ -13,8 +15,9 @@ type Mgr struct {
 	rwLock   sync.RWMutex
 	initTag  misc.InitTag
 	//map尽量不要包非pool指针，不然可能在频繁调用的情况下出现大量的内存垃圾，影响内存，gc也无法快速回收，如果低峰期依然有访问可能会出现同访问量、数据量的情况下，每天内存占用越来越高，直到内存耗尽才频繁gc，性能会有问题，特别是在单机多进程的情况下。
-	kvMap map[string]*ValueUnit // 后面不放指针，避免影响gc，此为唯一数据，取出时取指针
-	pool  sync.Pool
+	kvMap     map[string]*ValueUnit // 后面不放指针，避免影响gc，此为唯一数据，取出时取指针
+	pool      sync.Pool
+	ginEngine *gin.Engine
 }
 
 func NewMgr(setting KeyValueSetting) (*Mgr, error) {
@@ -57,7 +60,7 @@ func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 	}
 	if misc.HasProperty(setting.Property, FullInitLoad) {
 		if misc.HasProperty(setting.Property, UseDisk) {
-			kvMap, err := FromDiskGetAll(mgr)
+			kvMap, err := mgr.FromDiskGetAll()
 			if err != nil {
 				return nil, errors.Join(errors.New("get all value error"), err)
 			}
@@ -77,15 +80,15 @@ func NewMgr(setting KeyValueSetting) (*Mgr, error) {
 	return mgr, nil
 }
 
-func FromDiskGetAll(mgr *Mgr) (map[string]*ValueUnit, error) {
-	t := mgr.setting.SaveType
+func (m *Mgr) FromDiskGetAll() (map[string]*ValueUnit, error) {
+	t := m.setting.SaveType
 	var kvMap map[string]*ValueUnit
 	var err error
 	switch {
 	case t > DBBegin && t < FileBegin:
-		kvMap, err = mgr.dbCore.GetAll()
+		kvMap, err = m.dbCore.GetAll()
 	case t > FileBegin:
-		kvMap, err = mgr.fileCore.GetAll()
+		kvMap, err = m.fileCore.GetAll()
 	}
 	return kvMap, err
 }
@@ -330,4 +333,43 @@ func (m *Mgr) removeFromMap(key string) error {
 	m.pool.Put(m.kvMap[key])
 	delete(m.kvMap, key)
 	return nil
+}
+
+func (m *Mgr) GetAll() (map[string]*ValueUnit, error) {
+	if !m.initTag.IsInitialized() {
+		return nil, errors.New("mgr not init")
+	}
+	if misc.HasProperty(m.setting.Property, MultiSafe) {
+		m.rwLock.RLock()
+		defer m.rwLock.RUnlock()
+	}
+	if misc.HasProperty(m.setting.Property, UseCache) {
+		return m.kvMap, nil
+	}
+	if misc.HasProperty(m.setting.Property, UseDisk) {
+		kvMap, err := m.FromDiskGetAll()
+		if err != nil {
+			return nil, errors.Join(errors.New("get all value error"), err)
+		}
+		return kvMap, nil
+	}
+	return nil, errors.New("not use cache and not use db")
+}
+
+func (m *Mgr) Log(level xlog.TLogLevel, info string) {
+	if !m.initTag.IsInitialized() {
+		return
+	}
+	if m.log != nil {
+		m.log.Log(level, m.logFrom, info)
+	}
+}
+
+func (m *Mgr) Error(info string) {
+	if !m.initTag.IsInitialized() {
+		return
+	}
+	if m.log != nil {
+		m.log.Log(xlog.EError, m.logFrom, info)
+	}
 }
