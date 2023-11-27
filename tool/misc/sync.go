@@ -3,16 +3,16 @@ package misc
 import (
 	"errors"
 	"github.com/golang/protobuf/proto"
+	"go.uber.org/atomic"
 	"net"
 	"reflect"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
 type ISyncProtoSend interface {
 	proto.Message
-	GetRecallID(uint32) // 为了反射修改RecallID，其proto文件中必须有RecallID字段，则必有GetRecallID方法
+	GetRecallID() uint32 // 为了反射修改RecallID，其proto文件中必须有RecallID字段，则必有GetRecallID方法
 }
 type ISyncProtoRec interface {
 	proto.Message
@@ -28,9 +28,16 @@ type Sync struct {
 func (s *Sync) Wait(send func(cConn net.Conn, areaID uint32, data ISyncProtoSend) error, cConn net.Conn, areaID uint32, data ISyncProtoSend, timeout time.Duration) (ISyncProtoRec, error) {
 	// 生成一个id
 	id := s.ID.Add(1)
-	// 使用反射修改data的RecallID
-	v := reflect.ValueOf(data)
-	v.Elem().FieldByName("RecallID").SetUint(uint64(id))
+	// 使用反射修改data的RecallID，*uint32
+	v := reflect.ValueOf(data).Elem()
+	recallID := v.FieldByName("RecallID")
+	if recallID.Kind() != reflect.Ptr || !recallID.IsValid() {
+		return nil, errors.New("not found RecallID ptr")
+	}
+	newValue := reflect.New(recallID.Type().Elem())
+	newValue.Elem().SetUint(uint64(id))
+	recallID.Set(newValue)
+
 	// 创建一个chan
 	ch := make(chan ISyncProtoRec)
 	s.syncChanMap.Store(id, ch)
