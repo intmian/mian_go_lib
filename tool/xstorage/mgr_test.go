@@ -21,17 +21,17 @@ func TestMgrSimple(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	err = m.Set("1", ToUnit("1", VALUE_TYPE_STRING))
+	err = m.Set("1", ToUnit("1", ValueTypeString))
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	err = m.Set("2", ToUnit(2, VALUE_TYPE_INT))
+	err = m.Set("2", ToUnit(2, ValueTypeInt))
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	err = m.Set("3", ToUnit(float32(3.0), VALUE_TYPE_FLOAT))
+	err = m.Set("3", ToUnit(float32(3.0), ValueTypeFloat))
 	if err != nil {
 		t.Error(err)
 		return
@@ -44,7 +44,7 @@ func TestMgrSimple(t *testing.T) {
 		t.Error("not ok")
 		return
 	}
-	if v.Type != VALUE_TYPE_STRING {
+	if v.Type != ValueTypeString {
 		t.Error("type error")
 		return
 	}
@@ -78,14 +78,14 @@ func TestMgrBase(t *testing.T) {
 		key string
 	}
 
-	v1 := ToUnit("1", VALUE_TYPE_STRING)
-	v2 := ToUnit(2, VALUE_TYPE_INT)
-	v3 := ToUnit(float32(3.0), VALUE_TYPE_FLOAT)
-	v4 := ToUnit(true, VALUE_TYPE_BOOL)
-	v5 := ToUnit([]int{1, 2, 3}, VALUE_TYPE_SLICE_INT)
-	v6 := ToUnit([]string{"1", "2", "3"}, VALUE_TYPE_SLICE_STRING)
-	v7 := ToUnit([]float32{1.0, 2.0, 3.0}, VALUE_TYPE_SLICE_FLOAT)
-	v8 := ToUnit([]bool{true, false, true}, VALUE_TYPE_SLICE_BOOL)
+	v1 := ToUnit("1", ValueTypeString)
+	v2 := ToUnit(2, ValueTypeInt)
+	v3 := ToUnit(float32(3.0), ValueTypeFloat)
+	v4 := ToUnit(true, ValueTypeBool)
+	v5 := ToUnit([]int{1, 2, 3}, ValueTypeSliceInt)
+	v6 := ToUnit([]string{"1", "2", "3"}, ValueTypeSliceString)
+	v7 := ToUnit([]float32{1.0, 2.0, 3.0}, ValueTypeSliceFloat)
+	v8 := ToUnit([]bool{true, false, true}, ValueTypeSliceBool)
 
 	cases := []*ValueUnit{v1, v2, v3, v4, v5, v6, v7, v8}
 	for i, v := range cases {
@@ -169,7 +169,7 @@ func TestMgrBase(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			v2 := ToUnit("23333", VALUE_TYPE_STRING)
+			v2 := ToUnit("23333", ValueTypeString)
 			ok, result, err = m.GetAndSetDefault(strconv.Itoa(i), v2)
 			if err != nil {
 				t.Error(err)
@@ -183,7 +183,7 @@ func TestMgrBase(t *testing.T) {
 				t.Error("type error")
 				return
 			}
-			if result.Type == VALUE_TYPE_STRING && ToBase[string](result) == "23333" {
+			if result.Type == ValueTypeString && ToBase[string](result) == "23333" {
 				t.Error("value error")
 				return
 			}
@@ -207,7 +207,7 @@ func TestMgrMulti(t *testing.T) {
 	testNum := 1000
 	datas := make([]*ValueUnit, testNum)
 	for i := 0; i < testNum; i++ {
-		datas[i] = ToUnit(i, VALUE_TYPE_INT)
+		datas[i] = ToUnit(i, ValueTypeInt)
 	}
 	t1 := time.Now()
 	c := make(chan chan error, testNum)
@@ -266,7 +266,7 @@ func TestMgrMulti(t *testing.T) {
 			t.Errorf("get error %d", i)
 			return
 		}
-		if result.Type != VALUE_TYPE_INT {
+		if result.Type != ValueTypeInt {
 			t.Error("type error")
 			return
 		}
@@ -294,14 +294,14 @@ func TestMgrReBoot(t *testing.T) {
 		return
 	}
 	models := make([]*ValueUnit, 0)
-	models = append(models, ToUnit("1", VALUE_TYPE_STRING))
-	models = append(models, ToUnit(2, VALUE_TYPE_INT))
-	models = append(models, ToUnit(float32(3.0), VALUE_TYPE_FLOAT))
-	models = append(models, ToUnit(true, VALUE_TYPE_BOOL))
-	models = append(models, ToUnit([]int{1, 2, 3}, VALUE_TYPE_SLICE_INT))
-	models = append(models, ToUnit([]string{"1", "2", "3"}, VALUE_TYPE_SLICE_STRING))
-	models = append(models, ToUnit([]float32{1.0, 2.0, 3.0}, VALUE_TYPE_SLICE_FLOAT))
-	models = append(models, ToUnit([]bool{true, false, true}, VALUE_TYPE_SLICE_BOOL))
+	models = append(models, ToUnit("1", ValueTypeString))
+	models = append(models, ToUnit(2, ValueTypeInt))
+	models = append(models, ToUnit(float32(3.0), ValueTypeFloat))
+	models = append(models, ToUnit(true, ValueTypeBool))
+	models = append(models, ToUnit([]int{1, 2, 3}, ValueTypeSliceInt))
+	models = append(models, ToUnit([]string{"1", "2", "3"}, ValueTypeSliceString))
+	models = append(models, ToUnit([]float32{1.0, 2.0, 3.0}, ValueTypeSliceFloat))
+	models = append(models, ToUnit([]bool{true, false, true}, ValueTypeSliceBool))
 	for i, v := range models {
 		err := m.Set(strconv.Itoa(i), v)
 		if err != nil {
@@ -363,7 +363,7 @@ func TestMgrSlice(t *testing.T) {
 	a7 := []int{1, 2, 3, 3, 5}
 	as := [][]int{a1, a2, a3, a4, a5, a6, a7}
 	for _, a := range as {
-		err := mgr1.Set(`testSlice`, ToUnit(a, VALUE_TYPE_SLICE_INT))
+		err := mgr1.Set(`testSlice`, ToUnit(a, ValueTypeSliceInt))
 		if err != nil {
 			t.Error(err)
 			return
@@ -377,7 +377,7 @@ func TestMgrSlice(t *testing.T) {
 			t.Error("get error")
 			return
 		}
-		if !Compare(ToUnit(a, VALUE_TYPE_SLICE_INT), v2) {
+		if !Compare(ToUnit(a, ValueTypeSliceInt), v2) {
 			t.Error("value error")
 			return
 		}
@@ -390,11 +390,11 @@ func TestMgrSlice(t *testing.T) {
 			t.Error("get error")
 			return
 		}
-		if !Compare(ToUnit(a, VALUE_TYPE_SLICE_INT), v2) {
+		if !Compare(ToUnit(a, ValueTypeSliceInt), v2) {
 			t.Error("value error")
 			return
 		}
-		err = mgr3.Set(`testSlice`, ToUnit(a, VALUE_TYPE_SLICE_INT))
+		err = mgr3.Set(`testSlice`, ToUnit(a, ValueTypeSliceInt))
 		if err != nil {
 			t.Error(err)
 			return
@@ -408,7 +408,7 @@ func TestMgrSlice(t *testing.T) {
 			t.Error("get error")
 			return
 		}
-		if !Compare(ToUnit(a, VALUE_TYPE_SLICE_INT), v2) {
+		if !Compare(ToUnit(a, ValueTypeSliceInt), v2) {
 			t.Error("value error")
 			return
 		}
@@ -435,14 +435,14 @@ func TestMgrToml(t *testing.T) {
 		key string
 	}
 
-	v1 := ToUnit("1", VALUE_TYPE_STRING)
-	v2 := ToUnit(2, VALUE_TYPE_INT)
-	v3 := ToUnit(float32(3.0), VALUE_TYPE_FLOAT)
-	v4 := ToUnit(true, VALUE_TYPE_BOOL)
-	v5 := ToUnit([]int{1, 2, 3}, VALUE_TYPE_SLICE_INT)
-	v6 := ToUnit([]string{"1", "2", "3"}, VALUE_TYPE_SLICE_STRING)
-	v7 := ToUnit([]float32{1.0, 2.0, 3.0}, VALUE_TYPE_SLICE_FLOAT)
-	v8 := ToUnit([]bool{true, false, true}, VALUE_TYPE_SLICE_BOOL)
+	v1 := ToUnit("1", ValueTypeString)
+	v2 := ToUnit(2, ValueTypeInt)
+	v3 := ToUnit(float32(3.0), ValueTypeFloat)
+	v4 := ToUnit(true, ValueTypeBool)
+	v5 := ToUnit([]int{1, 2, 3}, ValueTypeSliceInt)
+	v6 := ToUnit([]string{"1", "2", "3"}, ValueTypeSliceString)
+	v7 := ToUnit([]float32{1.0, 2.0, 3.0}, ValueTypeSliceFloat)
+	v8 := ToUnit([]bool{true, false, true}, ValueTypeSliceBool)
 
 	cases := []*ValueUnit{v1, v2, v3, v4, v5, v6, v7, v8}
 	for i, v := range cases {
@@ -526,7 +526,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			v2 := ToUnit("23333", VALUE_TYPE_STRING)
+			v2 := ToUnit("23333", ValueTypeString)
 			ok, result, err = m.GetAndSetDefault(strconv.Itoa(i), v2)
 			if err != nil {
 				t.Error(err)
@@ -540,7 +540,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error("type error")
 				return
 			}
-			if result.Type == VALUE_TYPE_STRING && ToBase[string](result) == "23333" {
+			if result.Type == ValueTypeString && ToBase[string](result) == "23333" {
 				t.Error("value error")
 				return
 			}
@@ -673,7 +673,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			v2 = ToUnit("23333", VALUE_TYPE_STRING)
+			v2 = ToUnit("23333", ValueTypeString)
 			ok, result, err = m2.GetAndSetDefault(strconv.Itoa(i), v2)
 			if err != nil {
 				t.Error(err)
@@ -687,7 +687,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error("type error")
 				return
 			}
-			if result.Type == VALUE_TYPE_STRING && ToBase[string](result) == "23333" {
+			if result.Type == ValueTypeString && ToBase[string](result) == "23333" {
 				t.Error("value error")
 				return
 			}

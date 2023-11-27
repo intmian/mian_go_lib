@@ -18,6 +18,8 @@ type Mgr struct {
 	kvMap     map[string]*ValueUnit // 后面不放指针，避免影响gc，此为唯一数据，取出时取指针
 	pool      sync.Pool
 	ginEngine *gin.Engine
+	log       *xlog.Mgr
+	logFrom   string
 }
 
 func NewMgr(setting KeyValueSetting) (*Mgr, error) {

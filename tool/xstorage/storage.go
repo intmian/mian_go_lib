@@ -15,17 +15,17 @@ type ValueUnit struct {
 func UnitToString(unit *ValueUnit) string {
 	s := ""
 	switch unit.Type {
-	case VALUE_TYPE_STRING:
+	case ValueTypeString:
 		s = ToBase[string](unit)
-	case VALUE_TYPE_INT:
+	case ValueTypeInt:
 		s = strconv.Itoa(ToBase[int](unit))
-	case VALUE_TYPE_FLOAT:
+	case ValueTypeFloat:
 		s = strconv.FormatFloat(float64(ToBase[float32](unit)), 'f', -1, 32)
 		// 如果不含小数点，就加上小数点
 		if !strings.Contains(s, ".") {
 			s += ".0"
 		}
-	case VALUE_TYPE_BOOL:
+	case ValueTypeBool:
 		s = strconv.FormatBool(ToBase[bool](unit))
 
 	}
@@ -62,23 +62,23 @@ func Compare(unit1 *ValueUnit, unit2 *ValueUnit) bool {
 		return false
 	}
 	switch unit1.Type {
-	case VALUE_TYPE_STRING:
+	case ValueTypeString:
 		if ToBase[string](unit1) != ToBase[string](unit1) {
 			return false
 		}
-	case VALUE_TYPE_INT:
+	case ValueTypeInt:
 		if ToBase[int](unit1) != ToBase[int](unit1) {
 			return false
 		}
-	case VALUE_TYPE_FLOAT:
+	case ValueTypeFloat:
 		if ToBase[float32](unit1) != ToBase[float32](unit1) {
 			return false
 		}
-	case VALUE_TYPE_BOOL:
+	case ValueTypeBool:
 		if ToBase[bool](unit1) != ToBase[bool](unit1) {
 			return false
 		}
-	case VALUE_TYPE_SLICE_INT:
+	case ValueTypeSliceInt:
 		if len(ToBase[[]int](unit1)) != len(ToBase[[]int](unit1)) {
 			return false
 		}
@@ -87,7 +87,7 @@ func Compare(unit1 *ValueUnit, unit2 *ValueUnit) bool {
 				return false
 			}
 		}
-	case VALUE_TYPE_SLICE_STRING:
+	case ValueTypeSliceString:
 		if len(ToBase[[]string](unit1)) != len(ToBase[[]string](unit1)) {
 			return false
 		}
@@ -96,7 +96,7 @@ func Compare(unit1 *ValueUnit, unit2 *ValueUnit) bool {
 				return false
 			}
 		}
-	case VALUE_TYPE_SLICE_FLOAT:
+	case ValueTypeSliceFloat:
 		if len(ToBase[[]float32](unit1)) != len(ToBase[[]float32](unit1)) {
 			return false
 		}
@@ -105,7 +105,7 @@ func Compare(unit1 *ValueUnit, unit2 *ValueUnit) bool {
 				return false
 			}
 		}
-	case VALUE_TYPE_SLICE_BOOL:
+	case ValueTypeSliceBool:
 		if len(ToBase[[]bool](unit1)) != len(ToBase[[]bool](unit1)) {
 			return false
 		}
@@ -120,10 +120,10 @@ func Compare(unit1 *ValueUnit, unit2 *ValueUnit) bool {
 
 func Copy(srcValue *ValueUnit, newValue *ValueUnit) {
 	switch srcValue.Type {
-	case VALUE_TYPE_STRING, VALUE_TYPE_INT, VALUE_TYPE_FLOAT, VALUE_TYPE_BOOL:
+	case ValueTypeString, ValueTypeInt, ValueTypeFloat, ValueTypeBool:
 		*newValue = *srcValue
-	case VALUE_TYPE_SLICE_INT:
-		newValue.Type = VALUE_TYPE_SLICE_INT
+	case ValueTypeSliceInt:
+		newValue.Type = ValueTypeSliceInt
 		_, ok := srcValue.Data.([]int)
 		var newData []int
 		if !ok {
@@ -137,8 +137,8 @@ func Copy(srcValue *ValueUnit, newValue *ValueUnit) {
 			copy(newData, srcValue.Data.([]int))
 		}
 		newValue.Data = newData
-	case VALUE_TYPE_SLICE_STRING:
-		newValue.Type = VALUE_TYPE_SLICE_STRING
+	case ValueTypeSliceString:
+		newValue.Type = ValueTypeSliceString
 		_, ok := srcValue.Data.([]string)
 		var newData []string
 		if !ok {
@@ -152,8 +152,8 @@ func Copy(srcValue *ValueUnit, newValue *ValueUnit) {
 			copy(newData, srcValue.Data.([]string))
 		}
 		newValue.Data = newData
-	case VALUE_TYPE_SLICE_FLOAT:
-		newValue.Type = VALUE_TYPE_SLICE_FLOAT
+	case ValueTypeSliceFloat:
+		newValue.Type = ValueTypeSliceFloat
 		_, ok := srcValue.Data.([]float32)
 		var newData []float32
 		if !ok {
@@ -167,8 +167,8 @@ func Copy(srcValue *ValueUnit, newValue *ValueUnit) {
 			copy(newData, srcValue.Data.([]float32))
 		}
 		newValue.Data = newData
-	case VALUE_TYPE_SLICE_BOOL:
-		newValue.Type = VALUE_TYPE_SLICE_BOOL
+	case ValueTypeSliceBool:
+		newValue.Type = ValueTypeSliceBool
 		_, ok := srcValue.Data.([]bool)
 		var newData []bool
 		if !ok {

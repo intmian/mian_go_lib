@@ -38,18 +38,19 @@ type KeyValueSetting struct {
 
 type ValueType int
 
+// 可能会被外部调用，所以复杂命名
 const (
-	VALUE_TYPE_NORMAL_BEGIN ValueType = iota
-	VALUE_TYPE_STRING
-	VALUE_TYPE_INT
-	VALUE_TYPE_FLOAT
-	VALUE_TYPE_BOOL
-	VALUE_TYPE_NORMAL_END
-	VALUE_TYPE_SLICE_BEGIN  = 100
-	VALUE_TYPE_SLICE_STRING = iota + VALUE_TYPE_SLICE_BEGIN - VALUE_TYPE_NORMAL_END - 1
-	VALUE_TYPE_SLICE_INT
-	VALUE_TYPE_SLICE_FLOAT
-	VALUE_TYPE_SLICE_BOOL
+	ValueTypeNormalBegin ValueType = iota
+	ValueTypeString
+	ValueTypeInt
+	ValueTypeFloat
+	ValueTypeBool
+	ValueTypeNormalEnd
+	ValueTypeSliceBegin  = 100
+	ValueTypeSliceString = iota + ValueTypeSliceBegin - ValueTypeNormalEnd - 1
+	ValueTypeSliceInt
+	ValueTypeSliceFloat
+	ValueTypeSliceBool
 )
 
 type IValueType interface {
