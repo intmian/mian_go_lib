@@ -3,10 +3,10 @@ package misc
 import (
 	"errors"
 	"github.com/golang/protobuf/proto"
-	"go.uber.org/atomic"
 	"net"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -21,7 +21,6 @@ type ISyncProtoRec interface {
 
 type Sync struct {
 	syncChanMap sync.Map
-	syncChan    map[uint32]chan ISyncProtoRec
 	ID          atomic.Uint32
 }
 
@@ -66,7 +65,7 @@ func (s *Sync) OnRecResult(data ISyncProtoRec) error {
 	}
 	ch, ok := v.(chan ISyncProtoRec)
 	if !ok {
-		return errors.New("not found")
+		return errors.New("error type")
 	}
 	ch <- data
 	return nil
