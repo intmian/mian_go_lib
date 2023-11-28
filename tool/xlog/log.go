@@ -217,3 +217,12 @@ func geneLogAddr(t time.Time) string {
 	perm := `log_%d_%d_%d.txt`
 	return fmt.Sprintf(perm, t.Year(), t.Month(), t.Day())
 }
+
+func GoWaitError(log *Mgr, c <-chan error, from string, s string) {
+	go func() {
+		err := <-c
+		if err != nil {
+			log.Log(EError, from, fmt.Sprintf("%s:%s", s, err.Error()))
+		}
+	}()
+}

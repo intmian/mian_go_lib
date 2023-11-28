@@ -1,6 +1,7 @@
 package xstorage
 
 import (
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"regexp"
@@ -24,14 +25,19 @@ const (
 	WebFailReasonInnerError
 )
 
-func (m *Mgr) StartWeb() {
+func (m *Mgr) StartWeb() error {
 	if m.setting.webPort != 0 {
 		m.ginEngine = gin.Default()
 		m.ginEngine.GET("/get", m.WebGet)
 		m.ginEngine.GET("/set", m.WebSet)
-		m.ginEngine.Run(fmt.Sprintf(":%d", m.setting.webPort))
+		m.ginEngine.GET("/get_all", m.WebGetAll)
+		addr := fmt.Sprintf("127.0.0.1:%d", m.setting.webPort)
+		err := m.ginEngine.Run(addr)
+		if err != nil {
+			return errors.Join(errors.New("gin engine run error"), err)
+		}
 	}
-
+	return nil
 }
 func (m *Mgr) WebGet(c *gin.Context) {
 	if !m.initTag.IsInitialized() {
@@ -114,7 +120,7 @@ func (m *Mgr) WebSet(c *gin.Context) {
 		return
 	}
 	key := c.Query("key")
-	valueType := c.Query("valueType")
+	valueType := c.Query("value_type")
 	valueTypeInt, err := strconv.Atoi(valueType)
 	if err != nil {
 		c.JSON(200, gin.H{
