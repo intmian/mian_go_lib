@@ -12,6 +12,10 @@ type ValueUnit struct {
 	dirty bool
 }
 
+func (v *ValueUnit) Reset() {
+	*v = ValueUnit{}
+}
+
 func UnitToString(unit *ValueUnit) string {
 	s := ""
 	switch unit.Type {

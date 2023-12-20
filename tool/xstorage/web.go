@@ -52,7 +52,8 @@ func (m *Mgr) WebGet(c *gin.Context) {
 	perm := c.Query("perm")
 	var results []ValueUnit
 	if useRe != "true" {
-		ok, result, err := m.Get(perm)
+		result := &ValueUnit{}
+		ok, err := m.Get(perm, result)
 		if err != nil {
 			m.Error("xStorage:WebGet:get value error:" + err.Error())
 			c.JSON(200, gin.H{

@@ -95,104 +95,111 @@ func (m *Mgr) FromDiskGetAll() (map[string]*ValueUnit, error) {
 	return kvMap, err
 }
 
-func (m *Mgr) Get(key string) (bool, *ValueUnit, error) {
+func (m *Mgr) Get(key string, valueUnit *ValueUnit) (bool, error) {
 	if !m.initTag.IsInitialized() {
-		return false, nil, errors.New("mgr not init")
+		return false, errors.New("mgr not init")
 	}
+	if valueUnit == nil {
+		return false, errors.New("valueUnit is nil")
+	}
+	valueUnit.Reset()
 	if misc.HasProperty(m.setting.Property, MultiSafe) {
 		m.rwLock.RLock()
 		defer m.rwLock.RUnlock()
 	}
 	if misc.HasProperty(m.setting.Property, UseCache) {
-		if valueUnit, ok := m.kvMap[key]; ok {
+		if p, ok := m.kvMap[key]; ok {
 			if valueUnit.dirty {
-				return false, nil, errors.New("value is dirty")
+				return false, errors.New("value is dirty")
 			}
-			return true, valueUnit, nil
+			*valueUnit = *p
+			return true, nil
 		}
 	}
 	if misc.HasProperty(m.setting.Property, UseDisk) {
-		ok, valueUnit, err := m.OnGetFromDisk(key)
+		ok, err := m.OnGetFromDisk(key, valueUnit)
 		if err != nil {
-			return false, nil, errors.Join(errors.New("get value error"), err)
+			return false, errors.Join(errors.New("get value error"), err)
 		}
 		if !ok {
-			return false, nil, nil
+			return false, nil
 		}
 		if misc.HasProperty(m.setting.Property, UseCache) {
 			err := m.recordToMap(key, valueUnit)
 			if err != nil {
-				return false, nil, errors.Join(errors.New("record to map error"), err)
+				return false, errors.Join(errors.New("record to map error"), err)
 			}
 		}
-		return true, valueUnit, nil
+		return true, nil
 	}
-	return false, nil, errors.New("not use cache and not use db")
+	return false, errors.New("not use cache and not use db")
 }
 
-func Get[T IValueType](mgr *Mgr, key string) (bool, T, error) {
-	ok, valueUnit, err := mgr.Get(key)
-	var value T
+func Get[T IValueType](mgr *Mgr, key string, rec T) (bool, error) {
+	var valueUnit ValueUnit
+	ok, err := mgr.Get(key, &valueUnit)
 	if err != nil {
-		return false, value, errors.Join(errors.New("get value error"), err)
+		return false, errors.Join(errors.New("get value error"), err)
 	}
 	if !ok {
-		return false, value, nil
+		return false, nil
 	}
-	return true, ToBase[T](valueUnit), nil
+	rec = ToBase[T](&valueUnit)
+	return true, nil
 }
 
-func (m *Mgr) OnGetFromDisk(key string) (bool, *ValueUnit, error) {
+func (m *Mgr) OnGetFromDisk(key string, rec *ValueUnit) (bool, error) {
 	t := m.setting.SaveType
 	var ok bool
-	var valueUnit *ValueUnit
 	var err error
 	switch {
 	case t > DBBegin && t < FileBegin:
-		ok, valueUnit, err = m.dbCore.Get(key)
+		ok, err = m.dbCore.Get(key, rec)
 	case t > FileBegin:
-		return false, nil, nil
+		return false, nil
 	}
-	return ok, valueUnit, err
+	return ok, err
 }
 
 // GetAndSetDefault get值，如果没有就设置并返回默认值，返回 是否setdefault数据，数据，错误
-func (m *Mgr) GetAndSetDefault(key string, defaultValue *ValueUnit) (bool, *ValueUnit, error) {
+func (m *Mgr) GetAndSetDefault(key string, defaultValue *ValueUnit, rec *ValueUnit) (bool, error) {
 	if !m.initTag.IsInitialized() {
-		return false, nil, errors.New("mgr not init")
+		return false, errors.New("mgr not init")
 	}
-	ok, val, err := m.Get(key)
+	ok, err := m.Get(key, rec)
 	if err != nil {
-		return false, nil, errors.Join(errors.New("get value error"), err)
+		return false, errors.Join(errors.New("get value error"), err)
 	}
 	if ok {
-		return true, val, nil
+		return true, nil
 	}
+	*rec = *defaultValue
 	err = m.Set(key, defaultValue)
 	if err != nil {
-		return false, nil, errors.Join(errors.New("set value error"), err)
+		return false, errors.Join(errors.New("set value error"), err)
 	}
-	return true, defaultValue, nil
+	return true, nil
 
 }
 
 // GetAndSetDefaultAsync get值，如果没有就设置并返回默认值，返回 是否setdefault数据，数据，错误
-func (m *Mgr) GetAndSetDefaultAsync(key string, defaultValue *ValueUnit) (bool, *ValueUnit, error, chan error) {
+func (m *Mgr) GetAndSetDefaultAsync(key string, defaultValue *ValueUnit, rec *ValueUnit) (bool, error, chan error) {
 	if !m.initTag.IsInitialized() {
-		return false, nil, errors.New("mgr not init"), nil
+		return false, errors.New("mgr not init"), nil
 	}
-	ok, val, err := m.Get(key)
+	ok, err := m.Get(key, rec)
 	if err != nil {
-		return false, nil, errors.Join(errors.New("get value error"), err), nil
+		return false, errors.Join(errors.New("get value error"), err), nil
 	}
 	if ok {
-		return true, val, nil, nil
+		return true, nil, nil
 	}
+	*rec = *defaultValue
 	err, c := m.SetAsyncDB(key, defaultValue)
 	if err != nil {
-		return false, nil, errors.Join(errors.New("set value error"), err), nil
+		return false, errors.Join(errors.New("set value error"), err), nil
 	}
-	return true, defaultValue, nil, c
+	return true, nil, c
 
 }
 
@@ -332,6 +339,7 @@ func (m *Mgr) removeFromMap(key string) error {
 		return errors.New("not use cache")
 	}
 	// 释放
+	m.kvMap[key].Reset()
 	m.pool.Put(m.kvMap[key])
 	delete(m.kvMap, key)
 	return nil

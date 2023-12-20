@@ -36,7 +36,8 @@ func TestMgrSimple(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	ok, v, err := m.Get("1")
+	v := &ValueUnit{}
+	ok, err := m.Get("1", v)
 	if err != nil {
 		return
 	}
@@ -91,7 +92,8 @@ func TestMgrBase(t *testing.T) {
 	for i, v := range cases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			// get-》set-》get-》remove -》get -》set-》get -》remove -》get_default -》set-》get_default
-			ok, _, err := m.Get(strconv.Itoa(i))
+			temp := &ValueUnit{}
+			ok, err := m.Get(strconv.Itoa(i), temp)
 			if err != nil {
 				t.Error(err)
 				return
@@ -105,12 +107,13 @@ func TestMgrBase(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			ok, result, err := m.Get(strconv.Itoa(i))
+			result := &ValueUnit{}
+			ok, err = m.Get(strconv.Itoa(i), result)
 			if err != nil {
 				t.Error(err)
 				return
 			}
-			if !ok || result == nil {
+			if !ok {
 				t.Error("get error")
 				return
 			}
@@ -123,7 +126,7 @@ func TestMgrBase(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			ok, _, err = m.Get(strconv.Itoa(i))
+			ok, err = m.Get(strconv.Itoa(i), result)
 			if err != nil {
 				t.Error(err)
 				return
@@ -137,12 +140,12 @@ func TestMgrBase(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			ok, result, err = m.Get(strconv.Itoa(i))
+			ok, err = m.Get(strconv.Itoa(i), result)
 			if err != nil {
 				t.Error(err)
 				return
 			}
-			if !ok || result == nil {
+			if !ok {
 				t.Error("get error")
 				return
 			}
@@ -151,12 +154,12 @@ func TestMgrBase(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			ok, result, err = m.GetAndSetDefault(strconv.Itoa(i), v)
+			ok, err = m.GetAndSetDefault(strconv.Itoa(i), v, result)
 			if err != nil {
 				t.Error(err)
 				return
 			}
-			if !ok || result == nil {
+			if !ok {
 				t.Error("get error")
 				return
 			}
@@ -170,12 +173,12 @@ func TestMgrBase(t *testing.T) {
 				return
 			}
 			v2 := ToUnit("23333", ValueTypeString)
-			ok, result, err = m.GetAndSetDefault(strconv.Itoa(i), v2)
+			ok, err = m.GetAndSetDefault(strconv.Itoa(i), v2, result)
 			if err != nil {
 				t.Error(err)
 				return
 			}
-			if !ok || result == nil {
+			if !ok {
 				t.Error("get error")
 				return
 			}
@@ -225,7 +228,8 @@ func TestMgrMulti(t *testing.T) {
 		} else {
 			go func(i int) {
 				time.Sleep(time.Millisecond * time.Duration(rand.Intn(10)))
-				_, _, err := m.Get(strconv.Itoa(i / 2))
+				temp := &ValueUnit{}
+				_, err := m.Get(strconv.Itoa(i/2), temp)
 				if err != nil {
 					t.Error(err)
 					return
@@ -257,12 +261,13 @@ func TestMgrMulti(t *testing.T) {
 	//time.Sleep(time.Second * 2)
 	for i := 0; i < testNum; i++ {
 		// 取出来判断是否正确
-		ok, result, err := m.Get(strconv.Itoa(i))
+		result := &ValueUnit{}
+		ok, err := m.Get(strconv.Itoa(i), result)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		if !ok || result == nil {
+		if !ok {
 			t.Errorf("get error %d", i)
 			return
 		}
@@ -320,12 +325,13 @@ func TestMgrReBoot(t *testing.T) {
 		return
 	}
 	for i, v := range models {
-		ok, result, err := m2.Get(strconv.Itoa(i))
+		result := &ValueUnit{}
+		ok, err := m2.Get(strconv.Itoa(i), result)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		if !ok || result == nil {
+		if !ok {
 			t.Error("get error")
 			return
 		}
@@ -368,7 +374,8 @@ func TestMgrSlice(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		ok, v2, err := mgr1.Get(`testSlice`)
+		v2 := &ValueUnit{}
+		ok, err := mgr1.Get(`testSlice`, v2)
 		if err != nil {
 			t.Error(err)
 			return
@@ -381,7 +388,7 @@ func TestMgrSlice(t *testing.T) {
 			t.Error("value error")
 			return
 		}
-		ok, v2, err = mgr2.Get(`testSlice`)
+		ok, err = mgr2.Get(`testSlice`, v2)
 		if err != nil {
 			t.Error(err)
 			return
@@ -399,7 +406,7 @@ func TestMgrSlice(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		ok, v2, err = mgr3.Get(`testSlice`)
+		ok, err = mgr3.Get(`testSlice`, v2)
 		if err != nil {
 			t.Error(err)
 			return
@@ -448,7 +455,8 @@ func TestMgrToml(t *testing.T) {
 	for i, v := range cases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			// get-》set-》get-》remove -》get -》set-》get -》remove -》get_default -》set-》get_default
-			ok, _, err := m.Get(strconv.Itoa(i))
+			temp := &ValueUnit{}
+			ok, err := m.Get(strconv.Itoa(i), temp)
 			if err != nil {
 				t.Error(err)
 				return
@@ -462,12 +470,13 @@ func TestMgrToml(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			ok, result, err := m.Get(strconv.Itoa(i))
+			result := &ValueUnit{}
+			ok, err = m.Get(strconv.Itoa(i), result)
 			if err != nil {
 				t.Error(err)
 				return
 			}
-			if !ok || result == nil {
+			if !ok {
 				t.Error("get error")
 				return
 			}
@@ -480,7 +489,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			ok, _, err = m.Get(strconv.Itoa(i))
+			ok, err = m.Get(strconv.Itoa(i), result)
 			if err != nil {
 				t.Error(err)
 				return
@@ -494,7 +503,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			ok, result, err = m.Get(strconv.Itoa(i))
+			ok, err = m.Get(strconv.Itoa(i), result)
 			if err != nil {
 				t.Error(err)
 				return
@@ -508,7 +517,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			ok, result, err = m.GetAndSetDefault(strconv.Itoa(i), v)
+			ok, err = m.GetAndSetDefault(strconv.Itoa(i), v, result)
 			if err != nil {
 				t.Error(err)
 				return
@@ -527,7 +536,7 @@ func TestMgrToml(t *testing.T) {
 				return
 			}
 			v2 := ToUnit("23333", ValueTypeString)
-			ok, result, err = m.GetAndSetDefault(strconv.Itoa(i), v2)
+			ok, err = m.GetAndSetDefault(strconv.Itoa(i), v2, result)
 			if err != nil {
 				t.Error(err)
 				return
@@ -550,7 +559,7 @@ func TestMgrToml(t *testing.T) {
 				SaveType: Toml,
 				FileAddr: "test7.json",
 			})
-			ok, _, err = m2.Get(strconv.Itoa(i))
+			ok, err = m2.Get(strconv.Itoa(i), result)
 			if err != nil {
 				t.Error(err)
 				return
@@ -574,7 +583,7 @@ func TestMgrToml(t *testing.T) {
 				SaveType: Toml,
 				FileAddr: "test7.json",
 			})
-			ok, result, err = m2.Get(strconv.Itoa(i))
+			ok, err = m2.Get(strconv.Itoa(i), result)
 			if err != nil {
 				t.Error(err)
 				return
@@ -602,7 +611,7 @@ func TestMgrToml(t *testing.T) {
 				SaveType: Toml,
 				FileAddr: "test7.json",
 			})
-			ok, _, err = m2.Get(strconv.Itoa(i))
+			ok, err = m2.Get(strconv.Itoa(i), result)
 			if err != nil {
 				t.Error(err)
 				return
@@ -626,7 +635,7 @@ func TestMgrToml(t *testing.T) {
 				SaveType: Toml,
 				FileAddr: "test7.json",
 			})
-			ok, result, err = m2.Get(strconv.Itoa(i))
+			ok, err = m2.Get(strconv.Itoa(i), result)
 			if err != nil {
 				t.Error(err)
 				return
@@ -650,7 +659,7 @@ func TestMgrToml(t *testing.T) {
 				SaveType: Toml,
 				FileAddr: "test7.json",
 			})
-			ok, result, err = m2.GetAndSetDefault(strconv.Itoa(i), v)
+			ok, err = m2.GetAndSetDefault(strconv.Itoa(i), v, result)
 			if err != nil {
 				t.Error(err)
 				return
@@ -674,7 +683,7 @@ func TestMgrToml(t *testing.T) {
 				return
 			}
 			v2 = ToUnit("23333", ValueTypeString)
-			ok, result, err = m2.GetAndSetDefault(strconv.Itoa(i), v2)
+			ok, err = m2.GetAndSetDefault(strconv.Itoa(i), v2, result)
 			if err != nil {
 				t.Error(err)
 				return
