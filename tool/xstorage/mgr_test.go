@@ -705,3 +705,156 @@ func TestMgrToml(t *testing.T) {
 	os.Remove("test6.toml")
 	os.Remove("test7.toml")
 }
+
+func TestMem(t *testing.T) {
+	m, err := NewMgr(KeyValueSetting{
+		Property: misc.CreateProperty(UseCache),
+	})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	/*1.随机生成1000组数据，并行写入
+	  2.读取所有数据是否都正常
+	  3.读取内存数据
+	  4.随机删除500组数据
+	  5.读取内存数据
+	  6. 随机生成1000组数据
+	  7. 读取所有数据是否都正常
+	  8. 删除所有数据，检查内存
+	*/
+	testNum1 := 100000
+	testNum2 := 50000
+	tesetNum3 := 100000
+	type TestCase struct {
+		key         string
+		RealValue   *ValueUnit
+		IsFirstAdd  bool
+		IsDelete    bool
+		IsSecondAdd bool
+	}
+	testCases := make([]*TestCase, 0)
+	for i := 0; i < testNum1; i++ {
+		testCases = append(testCases, &TestCase{
+			key:         strconv.Itoa(i),
+			RealValue:   ToUnit(i, ValueTypeInt),
+			IsFirstAdd:  true,
+			IsDelete:    false,
+			IsSecondAdd: false,
+		})
+	}
+	for _, testCase := range testCases {
+		if testCase.IsFirstAdd {
+			err := m.Set(testCase.key, testCase.RealValue)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		}
+	}
+	for _, testCase := range testCases {
+		if testCase.IsFirstAdd {
+			result := &ValueUnit{}
+			ok, err := m.Get(testCase.key, result)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !ok {
+				t.Error("get error")
+				return
+			}
+			if !Compare(testCase.RealValue, result) {
+				t.Error("value error")
+				return
+			}
+		}
+	}
+	for i := 0; i < testNum2; i++ {
+		index := rand.Intn(testNum1)
+		for testCases[index].IsDelete {
+			index = rand.Intn(testNum1)
+		}
+		testCases[index].IsDelete = true
+		err := m.Delete(testCases[index].key)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	}
+	for _, testCase := range testCases {
+		if testCase.IsDelete {
+			result := &ValueUnit{}
+			ok, err := m.Get(testCase.key, result)
+			if ok {
+				t.Error("get error")
+				return
+			} else {
+				if err != nil {
+					t.Error(err)
+					return
+				}
+			}
+		}
+	}
+	for i := testNum1; i < testNum1+tesetNum3; i++ {
+		testCases = append(testCases, &TestCase{
+			key:         strconv.Itoa(i),
+			RealValue:   ToUnit(i, ValueTypeInt),
+			IsFirstAdd:  false,
+			IsDelete:    false,
+			IsSecondAdd: true,
+		})
+	}
+	for _, testCase := range testCases {
+		if testCase.IsSecondAdd {
+			err := m.Set(testCase.key, testCase.RealValue)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+		}
+	}
+	for _, testCase := range testCases {
+		if testCase.IsSecondAdd {
+			result := &ValueUnit{}
+			ok, err := m.Get(testCase.key, result)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if !ok {
+				t.Error("get error")
+				return
+			}
+			if !Compare(testCase.RealValue, result) {
+				t.Error("value error")
+				return
+			}
+		}
+	}
+	for _, testCase := range testCases {
+		if testCase.IsSecondAdd || (testCase.IsFirstAdd && !testCase.IsDelete) {
+			err := m.Delete(testCase.key)
+			if err != nil {
+				t.Logf("delete error %v", testCase)
+				t.Error(err)
+				return
+			}
+		}
+	}
+	for _, testCase := range testCases {
+		if testCase.IsSecondAdd || (testCase.IsFirstAdd && !testCase.IsDelete) {
+			result := &ValueUnit{}
+			ok, err := m.Get(testCase.key, result)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if ok {
+				t.Error("get error")
+				return
+			}
+		}
+	}
+}

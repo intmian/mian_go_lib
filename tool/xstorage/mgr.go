@@ -132,7 +132,10 @@ func (m *Mgr) Get(key string, valueUnit *ValueUnit) (bool, error) {
 		}
 		return true, nil
 	}
-	return false, errors.New("not use cache and not use db")
+	if !misc.HasProperty(m.setting.Property, UseCache) && !misc.HasProperty(m.setting.Property, UseDisk) {
+		return false, errors.New("not use cache and not use db")
+	}
+	return false, nil
 }
 
 func Get[T IValueType](mgr *Mgr, key string, rec T) (bool, error) {
@@ -339,6 +342,9 @@ func (m *Mgr) removeFromMap(key string) error {
 		return errors.New("not use cache")
 	}
 	// 释放
+	if _, ok := m.kvMap[key]; !ok {
+		return errors.New("key not exist")
+	}
 	m.kvMap[key].Reset()
 	m.pool.Put(m.kvMap[key])
 	delete(m.kvMap, key)
