@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/intmian/mian_go_lib/tool/misc"
 	_ "github.com/mattn/go-sqlite3"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
 )
 
 /*
@@ -52,11 +53,11 @@ func NewSqliteCore(DbFileAddr string) (*SqliteCore, error) {
 		Logger: EmptyLogger{},
 	})
 	if err != nil {
-		return nil, errors.Join(errors.New("open sqlite error"), err)
+		return nil, errors.Join(OpenSqliteErr, err)
 	}
 	err = db.AutoMigrate(&KeyValueModel{})
 	if err != nil {
-		return nil, errors.Join(errors.New("auto migrate error"), err)
+		return nil, errors.Join(AutoMigrateErr, err)
 	}
 	sqliteCore := &SqliteCore{
 		db: db,
@@ -67,14 +68,14 @@ func NewSqliteCore(DbFileAddr string) (*SqliteCore, error) {
 
 func (m *SqliteCore) Get(key string, rec *ValueUnit) (bool, error) {
 	if rec == nil {
-		return false, errors.New("rec is nil")
+		return false, RecIsNilErr
 	}
 	return m.getInner(key, rec, true)
 }
 
 func (m *SqliteCore) getInner(key string, rec *ValueUnit, needLock bool) (bool, error) {
 	if !m.IsInitialized() {
-		return false, errors.New("sqlite core not init")
+		return false, SqliteCoreNotInitErr
 	}
 	if needLock {
 		m.rwLock.RLock()
@@ -89,7 +90,7 @@ func (m *SqliteCore) getInner(key string, rec *ValueUnit, needLock bool) (bool, 
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return false, nil
 		} else {
-			return false, errors.Join(errors.New("get value error"), result.Error)
+			return false, errors.Join(SqliteDBFileAddrNotExistErr, result.Error)
 		}
 	}
 	sliceNum, err := sqliteModel2Data(keyValueModel, rec)
@@ -110,7 +111,7 @@ func (m *SqliteCore) getInner(key string, rec *ValueUnit, needLock bool) (bool, 
 			var keyValueModel2 KeyValueModel
 			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel2)
 			if result.Error != nil {
-				return false, errors.Join(errors.New("get value error"), result.Error)
+				return false, errors.Join(SqliteDBFileAddrNotExistErr, result.Error)
 			}
 			if keyValueModel2.ValueInt == nil {
 				return false, fmt.Errorf("slice but ValueInt is nil, Key: %s[%d]", key, i)
@@ -124,7 +125,7 @@ func (m *SqliteCore) getInner(key string, rec *ValueUnit, needLock bool) (bool, 
 			var keyValueModel2 KeyValueModel
 			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel2)
 			if result.Error != nil {
-				return false, errors.Join(errors.New("get value error"), result.Error)
+				return false, errors.Join(SqliteDBFileAddrNotExistErr, result.Error)
 			}
 			if keyValueModel2.ValueString == nil {
 				return false, fmt.Errorf("slice but ValueString is nil, Key: %s[%d]", key, i)
@@ -138,7 +139,7 @@ func (m *SqliteCore) getInner(key string, rec *ValueUnit, needLock bool) (bool, 
 			var keyValueModel2 KeyValueModel
 			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel2)
 			if result.Error != nil {
-				return false, errors.Join(errors.New("get value error"), result.Error)
+				return false, errors.Join(SqliteDBFileAddrNotExistErr, result.Error)
 			}
 			if keyValueModel2.ValueFloat == nil {
 				return false, fmt.Errorf("slice but ValueFloat is nil, Key: %s[%d]", key, i)
@@ -152,7 +153,7 @@ func (m *SqliteCore) getInner(key string, rec *ValueUnit, needLock bool) (bool, 
 			var keyValueModel2 KeyValueModel
 			result := m.db.Where("Key = ?", key+"["+strconv.Itoa(i)+"]").First(&keyValueModel2)
 			if result.Error != nil {
-				return false, errors.Join(errors.New("get value error"), result.Error)
+				return false, errors.Join(SqliteDBFileAddrNotExistErr, result.Error)
 			}
 			if keyValueModel2.ValueInt == nil {
 				return false, fmt.Errorf("slice but ValueInt is nil, Key: %s[%d]", key, i)
@@ -175,22 +176,22 @@ func sqliteModel2Data(keyValueModel KeyValueModel, rec *ValueUnit) (int, error) 
 	switch ValueType(keyValueModel.ValueType) {
 	case ValueTypeInt, ValueTypeBool:
 		if keyValueModel.ValueInt == nil {
-			return 0, errors.New("value is nil")
+			return 0, ValueIsNilErr
 		}
 	case ValueTypeString:
 		if keyValueModel.ValueString == nil {
-			return 0, errors.New("value is nil")
+			return 0, ValueIsNilErr
 		}
 	case ValueTypeFloat:
 		if keyValueModel.ValueFloat == nil {
-			return 0, errors.New("value is nil")
+			return 0, ValueIsNilErr
 		}
 	case ValueTypeSliceInt, ValueTypeSliceString, ValueTypeSliceFloat, ValueTypeSliceBool:
 		if keyValueModel.ValueInt == nil {
-			return 0, errors.New("slice but ValueInt is nil")
+			return 0, SliceButValueIntIsNilErr
 		}
 	default:
-		return 0, errors.New("value type error")
+		return 0, ValueTypeErr
 	}
 
 	// 读取值
@@ -217,7 +218,7 @@ func sqliteModel2Data(keyValueModel KeyValueModel, rec *ValueUnit) (int, error) 
 			return 0, fmt.Errorf("slice but sliceNum is %d", sliceNum)
 		}
 	default:
-		return 0, errors.New("value type error")
+		return 0, ValueTypeErr
 	}
 	*rec = *value
 	return sliceNum, nil
@@ -225,11 +226,11 @@ func sqliteModel2Data(keyValueModel KeyValueModel, rec *ValueUnit) (int, error) 
 
 func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 	if !m.IsInitialized() {
-		return errors.New("sqlite core not init")
+		return SqliteCoreNotInitErr
 	}
 	// 为避免GetAll时，取出slice的成员作为单独的主键，这里不允许key中包含[]
 	if strings.Contains(key, "[") || strings.Contains(key, "]") {
-		return errors.New("Key can not contain []")
+		return KeyCanNotContainSquareBracketsErr
 	}
 
 	var needCreate []*KeyValueModel
@@ -238,14 +239,14 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 
 	keyValueModels, err := sqliteData2Model(key, value)
 	if err != nil {
-		return errors.Join(errors.New("sqliteData2Model"), err)
+		return errors.Join(SqliteData2ModelErr, err)
 	}
 
 	dbValue := &ValueUnit{}
 	exist, err := m.getInner(key, dbValue, false)
 
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return errors.Join(errors.New("get value error"), err)
+		return errors.Join(SqliteDBFileAddrNotExistErr, err)
 	}
 
 	if !exist || dbValue.Type < ValueTypeSliceBegin {
@@ -311,21 +312,21 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 	for _, keyValueModel := range needCreate {
 		result := m.db.Create(keyValueModel)
 		if result.Error != nil {
-			return errors.Join(errors.New("create value error"), result.Error)
+			return errors.Join(CreateValueErr, result.Error)
 		}
 	}
 
 	for _, keyValueModel := range needSet {
 		result := m.db.Where("Key = ?", keyValueModel.Key).Updates(keyValueModel)
 		if result.Error != nil {
-			return errors.Join(errors.New("set value error"), result.Error)
+			return errors.Join(SetValueErr, result.Error)
 		}
 	}
 
 	for _, keyValueModel := range needRemove {
 		result := m.db.Where("Key = ?", keyValueModel.Key).Delete(&KeyValueModel{})
 		if result.Error != nil {
-			return errors.Join(errors.New("remove value error"), result.Error)
+			return errors.Join(RemoveValueErr, result.Error)
 		}
 	}
 
@@ -443,7 +444,7 @@ func sqliteData2Model(key string, value *ValueUnit) ([]*KeyValueModel, error) {
 
 func (m *SqliteCore) Delete(key string) error {
 	if !m.IsInitialized() {
-		return errors.New("sqlite core not init")
+		return SqliteCoreNotInitErr
 	}
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
@@ -452,28 +453,28 @@ func (m *SqliteCore) Delete(key string) error {
 
 func (m *SqliteCore) Have(key string) (bool, error) {
 	if !m.IsInitialized() {
-		return false, errors.New("sqlite core not init")
+		return false, SqliteCoreNotInitErr
 	}
 	m.rwLock.RLock()
 	defer m.rwLock.RUnlock()
 	var keyValueModel KeyValueModel
 	result := m.db.Where("Key = ?", key).First(&keyValueModel)
 	if result.Error != nil {
-		return false, errors.Join(errors.New("get value error"), result.Error)
+		return false, errors.Join(SqliteDBFileAddrNotExistErr, result.Error)
 	}
 	return true, nil
 }
 
 func (m *SqliteCore) GetAll() (map[string]*ValueUnit, error) {
 	if !m.IsInitialized() {
-		return nil, errors.New("sqlite core not init")
+		return nil, SqliteCoreNotInitErr
 	}
 	m.rwLock.RLock()
 	defer m.rwLock.RUnlock()
 	var keyValueModelList []KeyValueModel
 	result := m.db.Find(&keyValueModelList)
 	if result.Error != nil {
-		return nil, errors.Join(errors.New("get all value error"), result.Error)
+		return nil, errors.Join(GetAllValueErr, result.Error)
 	}
 	keyValueModelMap := make(map[string]*ValueUnit)
 	for _, keyValueModel := range keyValueModelList {
@@ -484,14 +485,14 @@ func (m *SqliteCore) GetAll() (map[string]*ValueUnit, error) {
 		unit := &ValueUnit{}
 		sliceNum, err := sqliteModel2Data(keyValueModel, unit)
 		if err != nil {
-			return nil, errors.Join(errors.New("sqliteModel2Data"), err)
+			return nil, errors.Join(sqliteModel2DataErr, err)
 		}
 
 		if sliceNum != 0 {
 			// slice 的内容存放在 Key[0]、Key[1]、Key[2]...Key[sliceNum-1] 列中
 			_, err = m.Get(keyValueModel.Key, unit)
 			if err != nil {
-				return nil, errors.Join(errors.New("get slice value error"), err)
+				return nil, errors.Join(GetSliceValueErr, err)
 			}
 		}
 		keyValueModelMap[keyValueModel.Key] = unit

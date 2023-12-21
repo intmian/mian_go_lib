@@ -3,9 +3,10 @@ package xstorage
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"regexp"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type WebCode int // web业务码
@@ -34,7 +35,7 @@ func (m *Mgr) StartWeb() error {
 		addr := fmt.Sprintf("127.0.0.1:%d", m.setting.webPort)
 		err := m.ginEngine.Run(addr)
 		if err != nil {
-			return errors.Join(errors.New("gin engine run error"), err)
+			return errors.Join(GinEngineRunErr, err)
 		}
 	}
 	return nil
