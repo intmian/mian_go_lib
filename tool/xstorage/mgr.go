@@ -2,11 +2,10 @@ package xstorage
 
 import (
 	"errors"
-	"sync"
-
 	"github.com/gin-gonic/gin"
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"github.com/intmian/mian_go_lib/tool/xlog"
+	"sync"
 )
 
 type Mgr struct {
@@ -139,11 +138,32 @@ func (m *Mgr) Get(key string, valueUnit *ValueUnit) (bool, error) {
 	return false, nil
 }
 
-func Get[T IValueType](mgr *Mgr, key string, rec *T) (bool, error) {
+// Get 从mgr中提取数据并转换为对应类型。使用方便，但是性能逊色于GetHp
+// 之所以保留这个函数，是因为相较于ValueUnit，对应的基础类型会小一点，直接返回值也还行
+// 相较于库的内部接口数量有限，方便优化，外部引用的数量可能是无限的，所以给外部暴露这个接口
+func Get[T IValueType](mgr *Mgr, key string) (bool, T, error) {
+	var valueUnit ValueUnit
+	var t T
+	ok, err := mgr.Get(key, &valueUnit)
+	if err != nil {
+		return false, t, err
+	}
+	if !ok {
+		return false, t, nil
+	}
+	t = ToBase[T](&valueUnit)
+	return true, t, nil
+}
+
+// GetHp 从mgr中提取数据并转换为对应类型。性能优于Get
+func GetHp[T IValueType](mgr *Mgr, key string, rec *T) (bool, error) {
+	if rec == nil {
+		return false, RecIsNilErr
+	}
 	var valueUnit ValueUnit
 	ok, err := mgr.Get(key, &valueUnit)
 	if err != nil {
-		return false, errors.Join(SqliteDBFileAddrNotExistErr, err)
+		return false, err
 	}
 	if !ok {
 		return false, nil
