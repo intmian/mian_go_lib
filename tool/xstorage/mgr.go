@@ -192,7 +192,7 @@ func (m *Mgr) GetAndSetDefault(key string, defaultValue *ValueUnit, rec *ValueUn
 	}
 	ok, err := m.Get(key, rec)
 	if err != nil {
-		return false, errors.Join(SqliteDBFileAddrNotExistErr, err)
+		return false, errors.Join(GetErr, err)
 	}
 	if ok {
 		return true, nil
@@ -219,12 +219,63 @@ func (m *Mgr) GetAndSetDefaultAsync(key string, defaultValue *ValueUnit, rec *Va
 		return true, nil, nil
 	}
 	*rec = *defaultValue
-	err, c := m.SetAsyncDB(key, defaultValue)
+	err, c := m.SetAsync(key, defaultValue)
 	if err != nil {
 		return false, errors.Join(SetValueErr, err), nil
 	}
 	return true, nil, c
+}
 
+// SetDefault 设置默认值，如果已经存在则不设置
+func (m *Mgr) SetDefault(key string, defaultValue *ValueUnit) error {
+	if !m.initTag.IsInitialized() {
+		return MgrNotInitErr
+	}
+	if key == "" {
+		return KeyIsEmptyErr
+	}
+	if defaultValue == nil {
+		return ValueIsNilErr
+	}
+	var Rec ValueUnit
+	ok, err := m.Get(key, &Rec)
+	if err != nil {
+		return errors.Join(GetErr, err)
+	}
+	if ok {
+		return nil
+	}
+	err = m.Set(key, defaultValue)
+	if err != nil {
+		return errors.Join(SetValueErr, err)
+	}
+	return nil
+}
+
+// SetDefaultAsync 设置默认值，如果已经存在则不设置
+func (m *Mgr) SetDefaultAsync(key string, defaultValue *ValueUnit) (error, chan error) {
+	if !m.initTag.IsInitialized() {
+		return MgrNotInitErr, nil
+	}
+	if key == "" {
+		return KeyIsEmptyErr, nil
+	}
+	if defaultValue == nil {
+		return ValueIsNilErr, nil
+	}
+	var Rec ValueUnit
+	ok, err := m.Get(key, &Rec)
+	if err != nil {
+		return errors.Join(GetErr, err), nil
+	}
+	if ok {
+		return nil, nil
+	}
+	err, c := m.SetAsync(key, defaultValue)
+	if err != nil {
+		return errors.Join(SetValueErr, err), nil
+	}
+	return nil, c
 }
 
 func (m *Mgr) Set(key string, value *ValueUnit) error {
@@ -268,7 +319,7 @@ func (m *Mgr) OnSave2Disk(key string, value *ValueUnit) error {
 	return err
 }
 
-func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
+func (m *Mgr) SetAsync(key string, value *ValueUnit) (error, chan error) {
 	if !m.initTag.IsInitialized() {
 		return MgrNotInitErr, nil
 	}
@@ -277,9 +328,6 @@ func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
 	}
 	if value == nil {
 		return ValueIsNilErr, nil
-	}
-	if !misc.HasProperty(m.setting.Property, UseDisk) {
-		return NotUseDbErr, nil
 	}
 	if misc.HasProperty(m.setting.Property, MultiSafe) {
 		m.rwLock.Lock()
@@ -291,15 +339,19 @@ func (m *Mgr) SetAsyncDB(key string, value *ValueUnit) (error, chan error) {
 			return errors.Join(RecordToMapErr, err), nil
 		}
 	}
-	errChan := make(chan error)
-	go func() {
-		err := m.OnSave2Disk(key, value)
-		if err != nil {
-			errChan <- errors.Join(SetValueErr, err)
-		}
-		errChan <- nil
-	}()
-	return nil, errChan
+	if misc.HasProperty(m.setting.Property, UseDisk) {
+		errChan := make(chan error)
+		go func() {
+			err := m.OnSave2Disk(key, value)
+			if err != nil {
+				errChan <- errors.Join(SetValueErr, err)
+			}
+			errChan <- nil
+		}()
+		return nil, errChan
+	} else {
+		return nil, nil
+	}
 }
 
 func (m *Mgr) Delete(key string) error {

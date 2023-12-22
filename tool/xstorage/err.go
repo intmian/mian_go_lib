@@ -37,4 +37,5 @@ const (
 	RemoveValueErr                             = misc.ErrStr("remove value error")
 	GetSliceValueErr                           = misc.ErrStr("get slice value error")
 	sqliteModel2DataErr                        = misc.ErrStr("sqliteModel2Data error")
+	GetErr                                     = misc.ErrStr("get error")
 )

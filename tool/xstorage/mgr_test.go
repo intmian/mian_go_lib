@@ -218,7 +218,7 @@ func TestMgrMulti(t *testing.T) {
 		if i%2 == 0 {
 			go func(i int) {
 				time.Sleep(time.Millisecond * time.Duration(rand.Intn(10)))
-				err, c2 := m.SetAsyncDB(strconv.Itoa(i/2), datas[i/2])
+				err, c2 := m.SetAsync(strconv.Itoa(i/2), datas[i/2])
 				if err != nil {
 					t.Error(err)
 					return

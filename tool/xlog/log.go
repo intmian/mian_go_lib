@@ -219,6 +219,9 @@ func geneLogAddr(t time.Time) string {
 }
 
 func GoWaitError(log *Mgr, c <-chan error, from string, s string) {
+	if c == nil {
+		return
+	}
 	go func() {
 		err := <-c
 		if err != nil {
