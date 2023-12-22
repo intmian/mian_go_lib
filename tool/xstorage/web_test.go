@@ -62,3 +62,19 @@ func TestWeb(t *testing.T) {
 		t.Fatal("web get error")
 	}
 }
+
+func TestMgr_WebMa(t *testing.T) {
+	return
+	m, err := NewMgr(KeyValueSetting{
+		Property: misc.CreateProperty(MultiSafe, UseCache),
+		webPort:  11111,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = m.StartWeb()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
