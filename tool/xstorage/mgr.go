@@ -139,7 +139,7 @@ func (m *Mgr) Get(key string, valueUnit *ValueUnit) (bool, error) {
 	return false, nil
 }
 
-func Get[T IValueType](mgr *Mgr, key string, rec T) (bool, error) {
+func Get[T IValueType](mgr *Mgr, key string, rec *T) (bool, error) {
 	var valueUnit ValueUnit
 	ok, err := mgr.Get(key, &valueUnit)
 	if err != nil {
@@ -148,7 +148,7 @@ func Get[T IValueType](mgr *Mgr, key string, rec T) (bool, error) {
 	if !ok {
 		return false, nil
 	}
-	rec = ToBase[T](&valueUnit)
+	*rec = ToBase[T](&valueUnit)
 	return true, nil
 }
 
