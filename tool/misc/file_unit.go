@@ -5,6 +5,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"os"
 	"reflect"
+	"sync"
 )
 
 type IFileRwUnit interface {
@@ -12,15 +13,19 @@ type IFileRwUnit interface {
 	Write(addr string, pData interface{}) error
 }
 
-// TFileUnit 是一个可以用于任意类型的非一次性序列化工具，可以讲变量的指针与文件中的实际值关联，请注意这个容器不是线程安全的
-type TFileUnit struct {
+// FileUnit 是一个可以用于任意类型的非一次性序列化工具
+// 可以将变量的指针与文件中的实际值关联
+// NewFileUnit 会将结构体绑定某一个文件地址，之后可以通过Load和Save来进行读写
+type FileUnit struct {
 	addr       string
 	pData      interface{}
 	fileRWUnit IFileRwUnit
+	needLock   bool
+	sync.RWMutex
 }
 
-//NewFileUnit 初始化文件单元
-func NewFileUnit(pData interface{}, kFileRWUnit IFileRwUnit, addr string) *TFileUnit {
+// NewFileUnit 初始化文件单元
+func NewFileUnit(pData interface{}, kFileRWUnit IFileRwUnit, addr string, needLock bool) *FileUnit {
 	// 使用反射判断是否为指针
 	if reflect.TypeOf(pData).Kind() != reflect.Ptr {
 		return nil
@@ -28,11 +33,13 @@ func NewFileUnit(pData interface{}, kFileRWUnit IFileRwUnit, addr string) *TFile
 	if addr == "" {
 		return nil
 	}
-	return &TFileUnit{pData: pData, fileRWUnit: kFileRWUnit, addr: addr}
+	return &FileUnit{pData: pData, fileRWUnit: kFileRWUnit, addr: addr, needLock: needLock}
 }
 
-//Load 从addr对应的文件中载入数据
-func (t *TFileUnit) Load() error {
+// Load 从addr对应的文件中载入数据
+func (t *FileUnit) Load() error {
+	t.Lock()
+	defer t.Unlock()
 	if t.fileRWUnit == nil {
 		return fmt.Errorf("t.fileRWUnit is nil")
 	}
@@ -43,8 +50,8 @@ func (t *TFileUnit) Load() error {
 	return nil
 }
 
-//save2Addr 序列化数据结构到文件
-func (t *TFileUnit) save2Addr(addr string) error {
+// save2Addr 序列化数据结构到文件
+func (t *FileUnit) save2Addr(addr string) error {
 	if t.fileRWUnit == nil {
 		return fmt.Errorf("t.fileRWUnit is nil")
 	}
@@ -58,13 +65,17 @@ func (t *TFileUnit) save2Addr(addr string) error {
 	return nil
 }
 
-//Save 序列化数据结构到文件
-func (t *TFileUnit) Save() error {
+// Save 序列化数据结构到文件
+func (t *FileUnit) Save() error {
+	t.RLock()
+	defer t.RUnlock()
 	return t.save2Addr(t.addr)
 }
 
-//SaveOther 序列化数据结构到某个文件
-func (t *TFileUnit) SaveOther(addr string) error {
+// SaveOther 序列化数据结构到某个文件
+func (t *FileUnit) SaveOther(addr string) error {
+	t.RLock()
+	defer t.RUnlock()
 	return t.save2Addr(addr)
 }
 
