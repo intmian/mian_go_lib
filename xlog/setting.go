@@ -1,6 +1,6 @@
 package xlog
 
-import "github.com/intmian/mian_go_lib/tool/xpush"
+import "github.com/intmian/mian_go_lib/xpush"
 
 type LogSetting struct {
 	LogInfo

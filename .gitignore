@@ -1,5 +1,5 @@
 /.idea
 /.git
-/tool/xres/~$test.xlsx
+/xres/~$test.xlsx
 tool/xstorage/*.db
 tool/xstorage/*.json

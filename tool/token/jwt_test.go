@@ -1,4 +1,4 @@
-package xtoken
+package token
 
 import (
 	"testing"

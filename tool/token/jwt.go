@@ -1,4 +1,4 @@
-package xtoken
+package token
 
 import (
 	"github.com/intmian/mian_go_lib/tool/cipher"

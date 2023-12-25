@@ -1,6 +1,6 @@
 package xres
 
-//ColumnType 列类型
+// ColumnType 列类型
 type ColumnType int
 
 const (

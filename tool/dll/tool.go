@@ -1,4 +1,4 @@
-package xdll
+package dll
 
 import (
 	"fmt"
