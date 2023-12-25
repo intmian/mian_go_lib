@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 )
 
@@ -229,13 +228,11 @@ type DingFeedCard struct {
 	} `json:"feedCard"`
 }
 
-var dingMgr DingRobotMgr
-var dingDefaultPushOnce sync.Once
-
 func (m *Mgr) PushDing(title string, content string, markDown bool) error {
-	dingDefaultPushOnce.Do(func() {
-		dingMgr.Init(*m.pushDingSetting)
-	})
+	if m.pushDingSetting == nil {
+		m.dingMgr = &DingRobotMgr{}
+		m.dingMgr.Init(*m.pushDingSetting)
+	}
 	var mes DingMessage
 	if markDown {
 		mesT := NewDingMarkdown()
@@ -247,5 +244,5 @@ func (m *Mgr) PushDing(title string, content string, markDown bool) error {
 		mesT.Text.Content = title + "\n" + content
 		mes = mesT
 	}
-	return dingMgr.Send(mes)
+	return m.dingMgr.Send(mes)
 }
