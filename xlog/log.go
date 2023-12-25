@@ -1,6 +1,7 @@
 package xlog
 
 import (
+	"errors"
 	"fmt"
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"github.com/intmian/mian_go_lib/xpush"
@@ -11,48 +12,113 @@ import (
 
 type Mgr struct {
 	LogSetting
-}
-
-func NewMgrWithSetting(setting LogSetting) *Mgr {
-	m := &Mgr{}
-	m.LogSetting = setting
-	return m
+	misc.InitTag
 }
 
 // NewMgr 创建一个日志管理器
-// 已经被废弃，请使用NewMgrWithSetting
-func NewMgr(logAddr string, printer Printer, pushMgr *xpush.Mgr, pushStyle []xpush.PushType, ifMisc bool, ifDebug bool, ifPrint bool, ifPush bool, ifFile bool, emailTargetAddr string, emailFromAddr string, logTag string) *Mgr {
+func NewMgr(setting LogSetting) (*Mgr, error) {
 	m := &Mgr{}
-	m.LogAddr = logAddr
-	m.Printer = printer
-	m.PushMgr = pushMgr
-	m.PushStyle = pushStyle
-	m.IfMisc = ifMisc
-	m.IfDebug = ifDebug
-	m.IfPrint = ifPrint
-	m.IfPush = ifPush
-	m.IfFile = ifFile
-	m.EmailTargetAddr = emailTargetAddr
-	m.EmailFromAddr = emailFromAddr
-	m.LogTag = logTag
-	return m
+	m.LogSetting = setting
+	return m, nil
 }
 
-var logLevel2Str map[TLogLevel]string = map[TLogLevel]string{
-	EError:   "ERROR",
-	EWarning: "WARNING",
-	ELog:     "LOG",
-	EMisc:    "MISC",
-	EDebug:   "DEBUG",
+func (receiver *Mgr) Init() error {
+	if !receiver.LogSetting.IfPrint && !receiver.LogSetting.IfPush && !receiver.LogSetting.IfFile {
+		return ErrNoLogWay
+	}
+	receiver.SetInitialized()
+	return nil
 }
 
-// detailLog 记录详细日志，并返回失败的模块
-func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc, ifDebug, ifPrint, ifPush, ifFile bool) []error {
-	errors := make([]error, 0)
-	if !ifMisc && level == EMisc {
+// Log 记录一条日志， from 中应填入来源模块的大写，
+// 例如from = "TEST"，则日志中会显示[TEST]，用于区分来源
+// 因为别的模块的error处理等都是通过日志模块来进行的，所以日志模块的错误处理只能通过print来进行
+func (receiver *Mgr) Log(level LogLevel, from string, info string) {
+	if !receiver.IsInitialized() {
+		fmt.Println("日志模块未初始化！")
+		return
+	}
+	err := receiver.detailLog(level, from, info, receiver.IfMisc, receiver.IfDebug, receiver.IfPrint, receiver.IfPush, receiver.IfFile)
+
+	// 如果有错误，则排除发生错误的那一种记录方式并将剩余的记录方式记录，同时发送一个日志错误日志
+	canPrint := receiver.IfPrint
+	canPush := receiver.IfPush
+	canFile := receiver.IfFile
+	errorReason := ""
+	// 如果日志出现记录失败，则需要去除掉失败的方式重新记录记录失败
+	if err != nil {
+		if errors.Is(err, ErrPrintFail) {
+			canPrint = false
+			errorReason += "print failed;"
+		}
+		if errors.Is(err, ErrPushPushDeerFail) || errors.Is(err, ErrPushEmailFail) || errors.Is(err, ErrPushDingFail) {
+			canPush = false
+			errorReason += "push failed;"
+		}
+		if errors.Is(err, ErrFileFail) {
+			canFile = false
+			errorReason += "file failed;"
+		}
+		errorReason = strings.TrimRight(errorReason, ";")
+		// 如果所有的记录方式都失败了，那么就直接print
+		if !canPrint && !canPush && !canFile {
+			fmt.Println("日志模块出现问题，无法记录日志！")
+			return
+		}
+		err = receiver.detailLog(LogLevelError, "LOG", errorReason, true, true, canPrint, canPush, canFile)
+		if err != nil {
+			fmt.Println("日志模块出现问题，无法记录日志！")
+		}
+	}
+}
+
+func (receiver *Mgr) Error(from string, err error) {
+	receiver.Log(LogLevelError, from, err.Error())
+}
+
+func (receiver *Mgr) Warning(from string, info string) {
+	receiver.Log(LogLevelWarning, from, info)
+}
+
+func (receiver *Mgr) Info(from string, info string) {
+	receiver.Log(LogLevelInfo, from, info)
+}
+
+func (receiver *Mgr) Misc(from string, info string) {
+	receiver.Log(LogLevelMisc, from, info)
+}
+
+func (receiver *Mgr) Debug(from string, info string) {
+	receiver.Log(LogLevelDebug, from, info)
+}
+
+func GoWaitError(log *Mgr, c <-chan error, from string, s string) {
+	if c == nil {
+		return
+	}
+	go func() {
+		err := <-c
+		if err != nil {
+			log.Log(LogLevelError, from, fmt.Sprintf("%s:%s", s, err.Error()))
+		}
+	}()
+}
+
+var logLevel2Str map[LogLevel]string = map[LogLevel]string{
+	LogLevelError:   "ERROR",
+	LogLevelWarning: "WARNING",
+	LogLevelInfo:    "INFO",
+	LogLevelMisc:    "MISC",
+	LogLevelDebug:   "DEBUG",
+}
+
+// detailLog 根据日志配置，记录详细日志，并返回失败的模块
+func (receiver *Mgr) detailLog(level LogLevel, from string, info string, ifMisc, ifDebug, ifPrint, ifPush, ifFile bool) error {
+	var err error
+	if !ifMisc && level == LogLevelMisc {
 		return nil
 	}
-	if !ifDebug && level == EDebug {
+	if !ifDebug && level == LogLevelDebug {
 		return nil
 	}
 
@@ -66,99 +132,63 @@ func (receiver *Mgr) detailLog(level TLogLevel, from string, info string, ifMisc
 	if ifPrint {
 		var printContent string
 		switch level {
-		case EError:
+		case LogLevelError:
 			printContent = misc.Red(content)
-		case EWarning:
+		case LogLevelWarning:
 			printContent = misc.Yellow(content)
-		case EDebug:
+		case LogLevelDebug:
 			printContent = misc.Green(content)
 		default:
 			printContent = content
 		}
 
 		if !receiver.Printer(printContent) {
-			errors = append(errors, fmt.Errorf("print failed"))
+			err = errors.Join(err, ErrPrintFail)
 		}
 	}
 
-	if ifPush && level <= EWarning {
+	if ifPush && level <= LogLevelWarning {
 		for _, pushType := range receiver.PushStyle {
 			switch pushType {
 			case xpush.PushType_PUSH_EMAIL:
 				if !receiver.PushMgr.PushEmail(receiver.EmailFromAddr, receiver.LogTag, receiver.EmailTargetAddr, receiver.LogTag+" "+sLevel+" log", content, false) {
-					errors = append(errors, fmt.Errorf("push failed"))
+					err = errors.Join(err, ErrPushEmailFail)
 				}
 			case xpush.PushType_PUSH_PUSH_DEER:
 				if _, suc := receiver.PushMgr.PushPushDeer(receiver.LogTag+" "+sLevel+" log", content, false); !suc {
-					errors = append(errors, fmt.Errorf("push failed"))
+					err = errors.Join(err, ErrPushPushDeerFail)
 				}
 			case xpush.PushType_PUSH_DING:
 				err := receiver.PushMgr.PushDing(receiver.LogTag+" "+sLevel+" log", content, false)
 				if err != nil {
-					errors = append(errors, fmt.Errorf("push failed"))
+					err = errors.Join(err, ErrPushDingFail)
 				}
 			}
 		}
 	}
 
 	if ifFile {
-		fp, err := os.OpenFile(receiver.LogAddr+`/`+geneLogAddr(t),
+		fp, err2 := os.OpenFile(receiver.LogAddr+`/`+geneLogAddr(t),
 			os.O_WRONLY|os.O_APPEND|os.O_CREATE,
 			0666)
 		isErr := false
-		if err != nil {
+		if err2 != nil {
 			isErr = true
 		}
-		_, err = fp.Write([]byte(content))
-		if err != nil {
+		_, err2 = fp.Write([]byte(content))
+		if err2 != nil {
 			isErr = true
 		}
-		err = fp.Close()
-		if err != nil {
+		err2 = fp.Close()
+		if err2 != nil {
 			isErr = true
 		}
 		if isErr {
-			errors = append(errors, fmt.Errorf("file failed"))
+			err = errors.Join(err, ErrFileFail)
 		}
 	}
 
-	return errors
-}
-
-// Log 记录一条日志， from 中应填入来源模块的大写
-func (receiver *Mgr) Log(level TLogLevel, from string, info string) {
-	errors := receiver.detailLog(level, from, info, receiver.IfMisc, receiver.IfDebug, receiver.IfPrint, receiver.IfPush, receiver.IfFile)
-
-	// 如果有错误，则排除发生错误的那一种记录方式并将剩余的记录方式记录，同时发送一个日志错误日志
-	canPrint := receiver.IfPrint
-	canPush := receiver.IfPush
-	canFile := receiver.IfFile
-	errorReason := ""
-	if errors != nil && len(errors) > 0 {
-		for _, err := range errors {
-			if err.Error() == "print failed" {
-				canPrint = false
-				errorReason += "print failed;"
-			}
-			if err.Error() == "push failed" {
-				canPush = false
-				errorReason += "push failed;"
-			}
-			if err.Error() == "file failed" {
-				canFile = false
-				errorReason += "file failed;"
-			}
-		}
-		errorReason = strings.TrimRight(errorReason, ";")
-		err := receiver.detailLog(EError, "LOG", errorReason, true, true, canPrint, canPush, canFile)
-		if err != nil && len(err) > 0 {
-			fmt.Println("救救我，我的日志记录有问题！")
-		}
-	}
-}
-
-func (receiver *Mgr) LogWithErr(level TLogLevel, from string, err error) {
-	receiver.Log(EError, from, err.Error())
+	return err
 }
 
 func parseLog(sLevel string, ts string, from string, info string) string {
@@ -168,18 +198,15 @@ func parseLog(sLevel string, ts string, from string, info string) string {
 }
 
 func geneLogAddr(t time.Time) string {
-	perm := `log_%d_%d_%d.txt`
+	perm := `%d_%d_%d.txt`
 	return fmt.Sprintf(perm, t.Year(), t.Month(), t.Day())
 }
 
-func GoWaitError(log *Mgr, c <-chan error, from string, s string) {
-	if c == nil {
-		return
-	}
-	go func() {
-		err := <-c
-		if err != nil {
-			log.Log(EError, from, fmt.Sprintf("%s:%s", s, err.Error()))
-		}
-	}()
-}
+const (
+	ErrPrintFail        = misc.ErrStr("print failed")
+	ErrPushPushDeerFail = misc.ErrStr("push failed")
+	ErrPushEmailFail    = misc.ErrStr("push failed")
+	ErrPushDingFail     = misc.ErrStr("push failed")
+	ErrFileFail         = misc.ErrStr("file failed")
+	ErrNoLogWay         = misc.ErrStr("no log way")
+)

@@ -44,7 +44,7 @@ type LogInfo struct {
 // 不包含推送相关
 func DefaultSetting() LogSetting {
 	l := LogSetting{}
-	l.LogAddr = "\\log"
+	l.LogAddr = "./log"
 	l.IfPrint = true
 	l.IfUseColor = true
 	l.IfFile = true

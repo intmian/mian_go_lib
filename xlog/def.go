@@ -1,11 +1,11 @@
 package xlog
 
-type TLogLevel uint8
+type LogLevel uint8
 
 const (
-	EError TLogLevel = iota
-	EWarning
-	ELog
-	EDebug
-	EMisc
+	LogLevelError LogLevel = iota
+	LogLevelWarning
+	LogLevelInfo
+	LogLevelDebug
+	LogLevelMisc
 )
