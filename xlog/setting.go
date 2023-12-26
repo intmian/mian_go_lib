@@ -24,10 +24,7 @@ type LogRecordStrategy struct {
 }
 
 type PushInfo struct {
-	EmailTargetAddr string // 用;分割
-	EmailFromAddr   string
-	PushMgr         *xpush.XPush
-	PushStyle       []xpush.PushType
+	PushMgr *xpush.XPush
 }
 
 type LogPrint struct {

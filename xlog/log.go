@@ -4,28 +4,31 @@ import (
 	"errors"
 	"fmt"
 	"github.com/intmian/mian_go_lib/tool/misc"
-	"github.com/intmian/mian_go_lib/xpush"
 	"os"
 	"strings"
 	"time"
 )
 
-type Mgr struct {
+type XLog struct {
 	LogSetting
 	misc.InitTag
 }
 
-// NewMgr 创建一个日志管理器
-func NewMgr(setting LogSetting) (*Mgr, error) {
-	m := &Mgr{}
-	m.LogSetting = setting
+// NewXlog 创建一个日志管理器
+func NewXlog(setting LogSetting) (*XLog, error) {
+	m := &XLog{}
+	err := m.Init(setting)
+	if err != nil {
+		return nil, err
+	}
 	return m, nil
 }
 
-func (receiver *Mgr) Init() error {
-	if !receiver.LogSetting.IfPrint && !receiver.LogSetting.IfPush && !receiver.LogSetting.IfFile {
+func (receiver *XLog) Init(setting LogSetting) error {
+	if !setting.IfPrint && !setting.IfPush && !setting.IfFile {
 		return ErrNoLogWay
 	}
+	receiver.LogSetting = setting
 	receiver.SetInitialized()
 	return nil
 }
@@ -33,7 +36,7 @@ func (receiver *Mgr) Init() error {
 // Log 记录一条日志， from 中应填入来源模块的大写，
 // 例如from = "TEST"，则日志中会显示[TEST]，用于区分来源
 // 因为别的模块的error处理等都是通过日志模块来进行的，所以日志模块的错误处理只能通过print来进行
-func (receiver *Mgr) Log(level LogLevel, from string, info string) {
+func (receiver *XLog) Log(level LogLevel, from string, info string) {
 	if !receiver.IsInitialized() {
 		fmt.Println("日志模块未初始化！")
 		return
@@ -72,27 +75,27 @@ func (receiver *Mgr) Log(level LogLevel, from string, info string) {
 	}
 }
 
-func (receiver *Mgr) Error(from string, err error) {
+func (receiver *XLog) Error(from string, err error) {
 	receiver.Log(LogLevelError, from, err.Error())
 }
 
-func (receiver *Mgr) Warning(from string, info string) {
+func (receiver *XLog) Warning(from string, info string) {
 	receiver.Log(LogLevelWarning, from, info)
 }
 
-func (receiver *Mgr) Info(from string, info string) {
+func (receiver *XLog) Info(from string, info string) {
 	receiver.Log(LogLevelInfo, from, info)
 }
 
-func (receiver *Mgr) Misc(from string, info string) {
+func (receiver *XLog) Misc(from string, info string) {
 	receiver.Log(LogLevelMisc, from, info)
 }
 
-func (receiver *Mgr) Debug(from string, info string) {
+func (receiver *XLog) Debug(from string, info string) {
 	receiver.Log(LogLevelDebug, from, info)
 }
 
-func GoWaitError(log *Mgr, c <-chan error, from string, s string) {
+func GoWaitError(log *XLog, c <-chan error, from string, s string) {
 	if c == nil {
 		return
 	}
@@ -113,7 +116,7 @@ var logLevel2Str map[LogLevel]string = map[LogLevel]string{
 }
 
 // detailLog 根据日志配置，记录详细日志，并返回失败的模块
-func (receiver *Mgr) detailLog(level LogLevel, from string, info string, ifMisc, ifDebug, ifPrint, ifPush, ifFile bool) error {
+func (receiver *XLog) detailLog(level LogLevel, from string, info string, ifMisc, ifDebug, ifPrint, ifPush, ifFile bool) error {
 	var err error
 	if !ifMisc && level == LogLevelMisc {
 		return nil
@@ -148,23 +151,8 @@ func (receiver *Mgr) detailLog(level LogLevel, from string, info string, ifMisc,
 	}
 
 	if ifPush && level <= LogLevelWarning {
-		for _, pushType := range receiver.PushStyle {
-			switch pushType {
-			case xpush.PushTypeEmail:
-				if !receiver.PushMgr.PushEmail(receiver.EmailFromAddr, receiver.LogTag, receiver.EmailTargetAddr, receiver.LogTag+" "+sLevel+" log", content, false) {
-					err = errors.Join(err, ErrPushEmailFail)
-				}
-			case xpush.PushTypePushDeer:
-				if _, suc := receiver.PushMgr.PushPushDeer(receiver.LogTag+" "+sLevel+" log", content, false); !suc {
-					err = errors.Join(err, ErrPushPushDeerFail)
-				}
-			case xpush.PushTypeDing:
-				err := receiver.PushMgr.PushDing(receiver.LogTag+" "+sLevel+" log", content, false)
-				if err != nil {
-					err = errors.Join(err, ErrPushDingFail)
-				}
-			}
-		}
+		err2 := receiver.PushMgr.Push(receiver.LogTag+" "+sLevel+" log", content, false)
+		err = errors.Join(err, err2)
 	}
 
 	if ifFile {

@@ -6,11 +6,7 @@ import (
 
 func TestLog(t *testing.T) {
 	setting := DefaultSetting()
-	l, err := NewMgr(setting)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = l.Init()
+	l, err := NewXlog(setting)
 	if err != nil {
 		t.Fatal(err)
 	}
