@@ -11,3 +11,7 @@ func (receiver *InitTag) IsInitialized() bool {
 func (receiver *InitTag) SetInitialized() {
 	receiver.Init = true
 }
+
+const (
+	ErrNotInit = ErrStr("not init")
+)

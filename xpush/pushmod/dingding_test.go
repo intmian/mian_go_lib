@@ -1,4 +1,4 @@
-package xpush
+package pushmod
 
 import (
 	"os"

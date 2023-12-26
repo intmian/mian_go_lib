@@ -11,7 +11,7 @@ func TestLottery(t *testing.T) {
 		t.Error("lotteries is nil")
 	}
 	s := ParseLotteriesToMarkDown(lotteries)
-	p := xpush.Mgr{}
+	p := xpush.XPush{}
 	p.SetTag("auto")
 	p.SetPushDeerToken("PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ")
 	p.PushPushDeer("彩票", s, true)

@@ -150,15 +150,15 @@ func (receiver *Mgr) detailLog(level LogLevel, from string, info string, ifMisc,
 	if ifPush && level <= LogLevelWarning {
 		for _, pushType := range receiver.PushStyle {
 			switch pushType {
-			case xpush.PushType_PUSH_EMAIL:
+			case xpush.PushTypeEmail:
 				if !receiver.PushMgr.PushEmail(receiver.EmailFromAddr, receiver.LogTag, receiver.EmailTargetAddr, receiver.LogTag+" "+sLevel+" log", content, false) {
 					err = errors.Join(err, ErrPushEmailFail)
 				}
-			case xpush.PushType_PUSH_PUSH_DEER:
+			case xpush.PushTypePushDeer:
 				if _, suc := receiver.PushMgr.PushPushDeer(receiver.LogTag+" "+sLevel+" log", content, false); !suc {
 					err = errors.Join(err, ErrPushPushDeerFail)
 				}
-			case xpush.PushType_PUSH_DING:
+			case xpush.PushTypeDing:
 				err := receiver.PushMgr.PushDing(receiver.LogTag+" "+sLevel+" log", content, false)
 				if err != nil {
 					err = errors.Join(err, ErrPushDingFail)

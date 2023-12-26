@@ -1,4 +1,4 @@
-package xpush
+package pushmod
 
 import (
 	"bytes"
@@ -13,6 +13,13 @@ import (
 	"time"
 )
 
+type DingSetting struct {
+	Token             string
+	Secret            string
+	SendInterval      int32 // 每隔多少时间
+	IntervalSendCount int32 // 有多少次发送机会
+}
+
 type DingRobotToken struct {
 	accessToken string
 	secret      string
@@ -22,10 +29,6 @@ type DingRobotMgr struct {
 	dingRobotToken DingRobotToken
 	isInit         bool
 	goMgr          misc.LimitMcoCallFuncMgr
-}
-
-type DingMessage interface {
-	ToJson() string
 }
 
 const ApiUrl = "https://oapi.dingtalk.com/robot/send"
@@ -43,21 +46,65 @@ func GetDingSign(token string) (timestamp string, sign string) {
 	return
 }
 
-type DingSetting struct {
-	Token             string
-	Secret            string
-	SendInterval      int32 // 每隔多少时间
-	IntervalSendCount int32 // 有多少次发送机会
-}
-
 func (m *DingRobotMgr) Init(setting DingSetting) {
+	if m.isInit {
+		return
+	}
 	m.dingRobotToken.accessToken = setting.Token
 	m.dingRobotToken.secret = setting.Secret
-	m.isInit = true
 	m.goMgr.Init(misc.LimitMCoCallFuncMgrSetting{
 		TimeInterval:         setting.SendInterval,
 		EveryIntervalCallNum: setting.IntervalSendCount,
 	})
+	m.isInit = true
+}
+
+func NewDingRobotMgr(setting DingSetting) *DingRobotMgr {
+	m := &DingRobotMgr{}
+	m.Init(setting)
+	return m
+}
+
+func (m *DingRobotMgr) Push(title string, content string) error {
+	return m.pushDing(title, content, false)
+}
+
+func (m *DingRobotMgr) PushMarkDown(title string, content string) error {
+	return m.pushDing(title, content, true)
+}
+
+func (m *DingRobotMgr) SetSetting(setting interface{}) error {
+	if !m.isInit {
+		return misc.ErrNotInit
+	}
+	if setting == nil {
+		return ErrTypeErr
+	}
+	settingT, ok := setting.(DingSetting)
+	if !ok {
+		return ErrTypeErr
+	}
+	m.dingRobotToken.accessToken = settingT.Token
+	m.dingRobotToken.secret = settingT.Secret
+	return nil
+}
+
+func (m *DingRobotMgr) pushDing(title string, content string, markDown bool) error {
+	if !m.isInit {
+		return misc.ErrNotInit
+	}
+	var mes DingMessage
+	if markDown {
+		mesT := NewDingMarkdown()
+		mesT.Markdown.Title = title
+		mesT.Markdown.Text = content
+		mes = mesT
+	} else {
+		mesT := NewDingText()
+		mesT.Text.Content = title + "\n" + content
+		mes = mesT
+	}
+	return m.Send(mes)
 }
 
 func SendDingMessage(accessToken, secret string, message DingMessage) error {
@@ -98,6 +145,10 @@ func (m *DingRobotMgr) Send(message DingMessage) error {
 		err <- err2
 	})
 	return <-err
+}
+
+type DingMessage interface {
+	ToJson() string
 }
 
 type At struct {
@@ -226,23 +277,4 @@ type DingFeedCard struct {
 			PicURL     string `json:"picURL"`
 		} `json:"links"`
 	} `json:"feedCard"`
-}
-
-func (m *Mgr) PushDing(title string, content string, markDown bool) error {
-	if m.pushDingSetting == nil {
-		m.dingMgr = &DingRobotMgr{}
-		m.dingMgr.Init(*m.pushDingSetting)
-	}
-	var mes DingMessage
-	if markDown {
-		mesT := NewDingMarkdown()
-		mesT.Markdown.Title = title
-		mesT.Markdown.Text = content
-		mes = mesT
-	} else {
-		mesT := NewDingText()
-		mesT.Text.Content = title + "\n" + content
-		mes = mesT
-	}
-	return m.dingMgr.Send(mes)
 }

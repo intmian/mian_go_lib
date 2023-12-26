@@ -1,11 +1,13 @@
-package xpush
+package pushmod
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestMgr_PushPushDeer(t *testing.T) {
 	type fields struct {
-		pushEmailToken *EmailToken
-		PushDeerToken  *PushDeerToken
+		pushEmailToken *EmailSetting
+		PushDeerToken  *PushDeerSetting
 	}
 	type args struct {
 		title    string
@@ -16,14 +18,13 @@ func TestMgr_PushPushDeer(t *testing.T) {
 		name   string
 		fields fields
 		args   args
-		want   string
-		want1  bool
+		want   error
 	}{
 		{
 			name: "public-text",
 			fields: fields{
 				pushEmailToken: nil,
-				PushDeerToken: &PushDeerToken{
+				PushDeerToken: &PushDeerSetting{
 					Token: "PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ",
 				},
 			},
@@ -32,14 +33,13 @@ func TestMgr_PushPushDeer(t *testing.T) {
 				content:  "contentTest",
 				markDown: false,
 			},
-			want:  "200 OK",
-			want1: true,
+			want: nil,
 		},
 		{
 			name: "public-markdown",
 			fields: fields{
 				pushEmailToken: nil,
-				PushDeerToken: &PushDeerToken{
+				PushDeerToken: &PushDeerSetting{
 					Token: "PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ",
 				},
 			},
@@ -48,22 +48,24 @@ func TestMgr_PushPushDeer(t *testing.T) {
 				content:  "# 论信息\n\n- 很重要\n- 测试aaa111\n\n> 兼听则明\n\n```c++\n偏信则黯\n```\n",
 				markDown: true,
 			},
-			want:  "200 OK",
-			want1: true,
+			want: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &Mgr{
-				pushEmailToken: tt.fields.pushEmailToken,
-				pushDeerToken:  tt.fields.PushDeerToken,
+			m, err := NewPushDeerMgr(&PushDeerSetting{
+				Token: tt.fields.PushDeerToken.Token,
+			})
+			if err != nil {
+				t.Fatal(err)
 			}
-			got, got1 := m.PushPushDeer(tt.args.title, tt.args.content, tt.args.markDown)
-			if got != tt.want {
-				t.Errorf("PushPushDeer() got = %v, want %v", got, tt.want)
+			if tt.args.markDown {
+				err = m.PushMarkDown(tt.args.title, tt.args.content)
+			} else {
+				err = m.Push(tt.args.title, tt.args.content)
 			}
-			if got1 != tt.want1 {
-				t.Errorf("PushPushDeer() got1 = %v, want %v", got1, tt.want1)
+			if err != nil {
+				t.Fatal(err)
 			}
 		})
 	}
