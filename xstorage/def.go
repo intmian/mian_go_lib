@@ -1,7 +1,5 @@
 package xstorage
 
-import "github.com/intmian/mian_go_lib/tool/xlog"
-
 type KeyValueProperty uint32
 
 const (
@@ -26,14 +24,11 @@ const (
 	Toml // 为保证效率，必须开启UseCache、FullInitLoad
 )
 
-type KeyValueSetting struct {
+type XstorageSetting struct {
 	Property KeyValueProperty
 	SaveType keyValueSaveType
 	DBAddr   string
 	FileAddr string
-	logFrom  string
-	log      *xlog.Mgr
-	webPort  int
 }
 
 type ValueType int

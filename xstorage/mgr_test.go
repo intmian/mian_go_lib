@@ -12,7 +12,7 @@ import (
 func TestMgrSimple(t *testing.T) {
 	// 删除test.db文件
 	os.Remove("test.db")
-	m, err := NewMgr(KeyValueSetting{
+	m, err := NewXstorage(XstorageSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 		SaveType: SqlLiteDB,
 		DBAddr:   "test.db",
@@ -59,7 +59,7 @@ func TestMgrSimple(t *testing.T) {
 func TestMgrBase(t *testing.T) {
 	// 删除test.db文件
 	os.Remove("test2.db")
-	m, err := NewMgr(KeyValueSetting{
+	m, err := NewXstorage(XstorageSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 		SaveType: SqlLiteDB,
 		DBAddr:   "test2.db",
@@ -198,7 +198,7 @@ func TestMgrBase(t *testing.T) {
 // test 多线程
 func TestMgrMulti(t *testing.T) {
 	os.Remove("test3.db")
-	m, err := NewMgr(KeyValueSetting{
+	m, err := NewXstorage(XstorageSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 		SaveType: SqlLiteDB,
 		DBAddr:   "test3.db",
@@ -289,7 +289,7 @@ func TestMgrReBoot(t *testing.T) {
 		先写入所有类型的数据，然后再新建一个mgr，看是否能够正确读取所有的数据
 	*/
 	os.Remove("test4.db")
-	m, err := NewMgr(KeyValueSetting{
+	m, err := NewXstorage(XstorageSetting{
 		SaveType: SqlLiteDB,
 		DBAddr:   "test4.db",
 		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
@@ -315,7 +315,7 @@ func TestMgrReBoot(t *testing.T) {
 		}
 	}
 
-	m2, err := NewMgr(KeyValueSetting{
+	m2, err := NewXstorage(XstorageSetting{
 		SaveType: SqlLiteDB,
 		DBAddr:   "test4.db",
 		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
@@ -347,17 +347,17 @@ func TestMgrSlice(t *testing.T) {
 	os.Remove("test5.db")
 	defer os.Remove("test5.db")
 	// 伸长 缩短 或改部分值
-	mgr1, _ := NewMgr(KeyValueSetting{
+	mgr1, _ := NewXstorage(XstorageSetting{
 		SaveType: SqlLiteDB,
 		DBAddr:   "test5.db",
 		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 	})
-	mgr2, _ := NewMgr(KeyValueSetting{
+	mgr2, _ := NewXstorage(XstorageSetting{
 		SaveType: SqlLiteDB,
 		DBAddr:   "test5.db",
 		Property: misc.CreateProperty(MultiSafe, UseDisk),
 	})
-	mgr3, _ := NewMgr(KeyValueSetting{
+	mgr3, _ := NewXstorage(XstorageSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache),
 	})
 	a1 := []int{1, 2, 3}
@@ -426,7 +426,7 @@ func TestMgrToml(t *testing.T) {
 	// 删除test.db文件
 	os.Remove("test6.toml")
 	os.Remove("test7.toml")
-	m, _ := NewMgr(KeyValueSetting{
+	m, _ := NewXstorage(XstorageSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 		SaveType: Toml,
 		FileAddr: "test6.json",
@@ -554,7 +554,7 @@ func TestMgrToml(t *testing.T) {
 				return
 			}
 
-			m2, _ := NewMgr(KeyValueSetting{
+			m2, _ := NewXstorage(XstorageSetting{
 				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 				SaveType: Toml,
 				FileAddr: "test7.json",
@@ -568,7 +568,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error("get error")
 				return
 			}
-			m2, _ = NewMgr(KeyValueSetting{
+			m2, _ = NewXstorage(XstorageSetting{
 				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 				SaveType: Toml,
 				FileAddr: "test7.json",
@@ -578,7 +578,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			m2, _ = NewMgr(KeyValueSetting{
+			m2, _ = NewXstorage(XstorageSetting{
 				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 				SaveType: Toml,
 				FileAddr: "test7.json",
@@ -596,7 +596,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error("type error")
 				return
 			}
-			m2, _ = NewMgr(KeyValueSetting{
+			m2, _ = NewXstorage(XstorageSetting{
 				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 				SaveType: Toml,
 				FileAddr: "test7.json",
@@ -606,7 +606,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			m2, _ = NewMgr(KeyValueSetting{
+			m2, _ = NewXstorage(XstorageSetting{
 				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 				SaveType: Toml,
 				FileAddr: "test7.json",
@@ -620,7 +620,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error("get error")
 				return
 			}
-			m2, _ = NewMgr(KeyValueSetting{
+			m2, _ = NewXstorage(XstorageSetting{
 				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 				SaveType: Toml,
 				FileAddr: "test7.json",
@@ -630,7 +630,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			m2, _ = NewMgr(KeyValueSetting{
+			m2, _ = NewXstorage(XstorageSetting{
 				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 				SaveType: Toml,
 				FileAddr: "test7.json",
@@ -644,7 +644,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error("get error")
 				return
 			}
-			m2, _ = NewMgr(KeyValueSetting{
+			m2, _ = NewXstorage(XstorageSetting{
 				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 				SaveType: Toml,
 				FileAddr: "test7.json",
@@ -654,7 +654,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			m2, _ = NewMgr(KeyValueSetting{
+			m2, _ = NewXstorage(XstorageSetting{
 				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 				SaveType: Toml,
 				FileAddr: "test7.json",
@@ -672,7 +672,7 @@ func TestMgrToml(t *testing.T) {
 				t.Error("type error")
 				return
 			}
-			m2, _ = NewMgr(KeyValueSetting{
+			m2, _ = NewXstorage(XstorageSetting{
 				Property: misc.CreateProperty(MultiSafe, UseCache, UseDisk, FullInitLoad),
 				SaveType: Toml,
 				FileAddr: "test7.json",
@@ -707,7 +707,7 @@ func TestMgrToml(t *testing.T) {
 }
 
 func TestMem(t *testing.T) {
-	m, err := NewMgr(KeyValueSetting{
+	m, err := NewXstorage(XstorageSetting{
 		Property: misc.CreateProperty(UseCache),
 	})
 	if err != nil {

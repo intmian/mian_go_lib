@@ -3,6 +3,8 @@ package xstorage
 import (
 	"errors"
 	"fmt"
+	"github.com/intmian/mian_go_lib/tool/misc"
+	"github.com/intmian/mian_go_lib/xlog"
 	"regexp"
 	"strconv"
 
@@ -18,30 +20,63 @@ const (
 	WebCodeFail
 )
 
-type EWebFailReason int // web失败原因
+// WebPack 是xstorage的拓展之一，必须绑定xstorage使用
+// 因为是小众需求所以做一下拆分
+type WebPack struct {
+	storageCore *XStorage
+	ginEngine   *gin.Engine
+	log         *xlog.XLog
+	logFrom     string
+	setting     WebPackSetting
+	misc.InitTag
+}
+
+type WebPackSetting struct {
+	logFrom string
+	log     *xlog.XLog
+	webPort int
+}
+
+func (w *WebPack) Init(setting WebPackSetting, core *XStorage) error {
+	w.setting = setting
+	w.storageCore = core
+	w.SetInitialized()
+	return nil
+}
+
+func NewWebPack(setting WebPackSetting, core *XStorage) (*WebPack, error) {
+	m := &WebPack{}
+	err := m.Init(setting, core)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+type WebFailReason int // web失败原因
 
 const (
-	WebFailReasonNull EWebFailReason = iota
+	WebFailReasonNull WebFailReason = iota
 	WebFailReasonNoLegalParam
 	WebFailReasonInnerError
 )
 
-func (m *Mgr) StartWeb() error {
-	if m.setting.webPort != 0 {
-		m.ginEngine = gin.Default()
-		m.ginEngine.GET("/get", m.WebGet)
-		m.ginEngine.GET("/set", m.WebSet)
-		m.ginEngine.GET("/get_all", m.WebGetAll)
-		addr := fmt.Sprintf("127.0.0.1:%d", m.setting.webPort)
-		err := m.ginEngine.Run(addr)
-		if err != nil {
-			return errors.Join(GinEngineRunErr, err)
-		}
+func (w *WebPack) StartWeb() error {
+
+	w.ginEngine = gin.Default()
+	w.ginEngine.GET("/get", w.WebGet)
+	w.ginEngine.GET("/set", w.WebSet)
+	w.ginEngine.GET("/get_all", w.WebGetAll)
+	addr := fmt.Sprintf("127.0.0.1:%d", w.setting.webPort)
+	err := w.ginEngine.Run(addr)
+	if err != nil {
+		return errors.Join(ErrGinEngineRun, err)
 	}
+
 	return nil
 }
-func (m *Mgr) WebGet(c *gin.Context) {
-	if !m.initTag.IsInitialized() {
+func (w *WebPack) WebGet(c *gin.Context) {
+	if !w.IsInitialized() {
 		c.JSON(200, gin.H{
 			"code": WebCodeFail,
 			"msg":  WebFailReasonInnerError,
@@ -54,9 +89,9 @@ func (m *Mgr) WebGet(c *gin.Context) {
 	var results []ValueUnit
 	if useRe != "true" {
 		result := &ValueUnit{}
-		ok, err := m.Get(perm, result)
+		ok, err := w.storageCore.Get(perm, result)
 		if err != nil {
-			m.Error("xStorage:WebGet:get value error:" + err.Error())
+			w.log.Error(w.setting.logFrom, "xStorage:WebGet:get value error:"+err.Error())
 			c.JSON(200, gin.H{
 				"code": WebCodeFail,
 				"msg":  WebFailReasonNoLegalParam,
@@ -73,9 +108,9 @@ func (m *Mgr) WebGet(c *gin.Context) {
 		results = append(results, *result)
 	} else {
 		// 遍历并且搜索正则
-		all, err := m.GetAll()
+		all, err := w.storageCore.GetAll()
 		if err != nil {
-			m.Error("xStorage:WebGet:get all value error:" + err.Error())
+			w.log.Error(w.setting.logFrom, "xStorage:WebGet:get all value error:"+err.Error())
 			c.JSON(200, gin.H{
 				"code": WebCodeFail,
 				"msg":  WebFailReasonInnerError,
@@ -87,7 +122,7 @@ func (m *Mgr) WebGet(c *gin.Context) {
 			// 使用正则
 			matched, err := regexp.MatchString(perm, k)
 			if err != nil {
-				m.Error("xStorage:WebGet:match string error:" + err.Error())
+				w.log.Error(w.setting.logFrom, "xStorage:WebGet:match string error:"+err.Error())
 				c.JSON(200, gin.H{
 					"code": WebCodeFail,
 					"msg":  WebFailReasonInnerError,
@@ -113,8 +148,8 @@ func (m *Mgr) WebGet(c *gin.Context) {
 	})
 }
 
-func (m *Mgr) WebSet(c *gin.Context) {
-	if !m.initTag.IsInitialized() {
+func (w *WebPack) WebSet(c *gin.Context) {
+	if !w.IsInitialized() {
 		c.JSON(200, gin.H{
 			"code": WebCodeFail,
 			"msg":  WebFailReasonInnerError,
@@ -133,9 +168,9 @@ func (m *Mgr) WebSet(c *gin.Context) {
 	}
 	value := c.Query("value")
 
-	err = m.Set(key, ToUnit(value, ValueType(valueTypeInt)))
+	err = w.storageCore.Set(key, ToUnit(value, ValueType(valueTypeInt)))
 	if err != nil {
-		m.Error("xStorage:WebSet:set value error:" + err.Error())
+		w.log.Error(w.setting.logFrom, "xStorage:WebSet:set value error:"+err.Error())
 		c.JSON(200, gin.H{
 			"code": WebCodeFail,
 			"msg":  WebFailReasonInnerError,
@@ -147,17 +182,17 @@ func (m *Mgr) WebSet(c *gin.Context) {
 	})
 }
 
-func (m *Mgr) WebGetAll(c *gin.Context) {
-	if !m.initTag.IsInitialized() {
+func (w *WebPack) WebGetAll(c *gin.Context) {
+	if !w.IsInitialized() {
 		c.JSON(200, gin.H{
 			"code": WebCodeFail,
 			"msg":  WebFailReasonInnerError,
 		})
 		return
 	}
-	all, err := m.GetAll()
+	all, err := w.storageCore.GetAll()
 	if err != nil {
-		m.Error("xStorage:WebGet:get all value error:" + err.Error())
+		w.log.Error(w.setting.logFrom, "xStorage:WebGet:get all value error:"+err.Error())
 		c.JSON(200, gin.H{
 			"code": WebCodeFail,
 			"msg":  WebFailReasonInnerError,

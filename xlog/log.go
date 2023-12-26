@@ -75,8 +75,8 @@ func (receiver *XLog) Log(level LogLevel, from string, info string) {
 	}
 }
 
-func (receiver *XLog) Error(from string, err error) {
-	receiver.Log(LogLevelError, from, err.Error())
+func (receiver *XLog) Error(from string, info string) {
+	receiver.Log(LogLevelError, from, info)
 }
 
 func (receiver *XLog) Warning(from string, info string) {

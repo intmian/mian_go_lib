@@ -10,15 +10,17 @@ import (
 )
 
 func TestWeb(t *testing.T) {
-	m, err := NewMgr(KeyValueSetting{
+	m, err := NewXstorage(XstorageSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache),
-		webPort:  11111,
 	})
+	w, err := NewWebPack(WebPackSetting{
+		webPort: 11111,
+	}, m)
 	if err != nil {
 		t.Fatal(err)
 	}
 	go func() {
-		err = m.StartWeb()
+		err = w.StartWeb()
 		if err != nil {
 			t.Error(err)
 			return
@@ -65,14 +67,16 @@ func TestWeb(t *testing.T) {
 
 func TestMgr_WebMa(t *testing.T) {
 	return
-	m, err := NewMgr(KeyValueSetting{
+	m, err := NewXstorage(XstorageSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache),
-		webPort:  11111,
 	})
+	w, err := NewWebPack(WebPackSetting{
+		webPort: 11111,
+	}, m)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = m.StartWeb()
+	err = w.StartWeb()
 	if err != nil {
 		t.Error(err)
 		return
