@@ -107,7 +107,7 @@ func GoWaitError(log *XLog, c <-chan error, from string, s string) {
 	}()
 }
 
-var logLevel2Str map[LogLevel]string = map[LogLevel]string{
+var logLevel2Str = map[LogLevel]string{
 	LogLevelError:   "ERROR",
 	LogLevelWarning: "WARNING",
 	LogLevelInfo:    "INFO",
