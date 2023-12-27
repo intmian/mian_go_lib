@@ -1,5 +1,6 @@
 /.idea
 /.git
+# 单元测试文件
 /xres/~$test.xlsx
-tool/xstorage/*.db
-tool/xstorage/*.json
+/xstorage/*.db
+/xstorage/*.json
