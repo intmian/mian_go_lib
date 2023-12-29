@@ -2,6 +2,7 @@ package pushmod
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -18,6 +19,7 @@ type DingSetting struct {
 	Secret            string
 	SendInterval      int32 // 每隔多少时间
 	IntervalSendCount int32 // 有多少次发送机会
+	Ctx               context.Context
 }
 
 type DingRobotToken struct {
@@ -28,7 +30,7 @@ type DingRobotToken struct {
 type DingRobotMgr struct {
 	dingRobotToken DingRobotToken
 	isInit         bool
-	goMgr          misc.LimitMcoCallFuncMgr
+	goMgr          misc.GoLimit
 }
 
 const ApiUrl = "https://oapi.dingtalk.com/robot/send"
@@ -52,10 +54,10 @@ func (m *DingRobotMgr) Init(setting DingSetting) {
 	}
 	m.dingRobotToken.accessToken = setting.Token
 	m.dingRobotToken.secret = setting.Secret
-	m.goMgr.Init(misc.LimitMCoCallFuncMgrSetting{
-		TimeInterval:         setting.SendInterval,
+	m.goMgr.Init(misc.GoLimitSetting{
+		TimeInterval:         time.Duration(setting.SendInterval) * time.Second,
 		EveryIntervalCallNum: setting.IntervalSendCount,
-	})
+	}, setting.Ctx)
 	m.isInit = true
 }
 
