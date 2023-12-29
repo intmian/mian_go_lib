@@ -2,7 +2,6 @@ package misc
 
 import (
 	"context"
-	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -45,7 +44,7 @@ func TestGoBase(t *testing.T) {
 			if i2 == 2 {
 				time.Sleep(time.Second + 100*time.Millisecond)
 			}
-			fmt.Printf("%stest: %d\n", time.Now().Format("15:04:05"), i2)
+			//fmt.Printf("%stest: %d\n", time.Now().Format("15:04:05"), i2)
 			runNum.Add(1)
 			runTime[i2] = time.Now().Sub(now)
 		})

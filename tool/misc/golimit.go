@@ -2,7 +2,6 @@ package misc
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -105,7 +104,7 @@ func (m *GoLimit) timeLimit() {
 		case <-m.ctx.Done():
 			return
 		case <-t.C:
-			fmt.Printf("%stime:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
+			//fmt.Printf("%stime:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
 			m.calledNum.Store(0)
 			if m.fullRun.Load() {
 				m.fullRun.Store(false)
@@ -123,13 +122,13 @@ func (m *GoLimit) callLimit() {
 			return
 		case f := <-m.funcC:
 			// 做限制
-			fmt.Printf("%scheck:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
+			//fmt.Printf("%scheck:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
 			if m.nowCallNum.Load()+m.calledNum.Load() >= m.setting.EveryIntervalCallNum {
 				m.fullRun.Store(true)
 				m.fullRunLock.Lock()
 			}
 			// 实际执行
-			fmt.Printf("%scall:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
+			//fmt.Printf("%scall:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
 			m.nowCallNum.Add(1)
 			go func() {
 				f()
