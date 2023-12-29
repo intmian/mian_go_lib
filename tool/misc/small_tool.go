@@ -2,6 +2,7 @@ package misc
 
 import (
 	"bufio"
+	"cmp"
 	"fmt"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -16,6 +17,23 @@ import (
 // Str2list 将json风格的数组字符串s转换为字符串
 func Str2list(s string) []string {
 	return strings.Split(s[1:len(s)-1], ",")
+}
+
+// MinMaxSlice 求一个切片的最大最小值
+func MinMaxSlice[T cmp.Ordered](array []T) (min T, minIndex int, max T, maxIndex int) {
+	max = array[0]
+	min = array[0]
+	for i, value := range array {
+		if max < value {
+			max = value
+			maxIndex = i
+		}
+		if min > value {
+			min = value
+			minIndex = i
+		}
+	}
+	return
 }
 
 // MinMaxInt 求一个int切片的最大最小值
