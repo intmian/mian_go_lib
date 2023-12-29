@@ -43,7 +43,7 @@ func TestGoBase(t *testing.T) {
 		i2 := i
 		m.Call(func() {
 			if i2 == 2 {
-				time.Sleep(time.Second)
+				time.Sleep(time.Second + 100*time.Millisecond)
 			}
 			fmt.Printf("%stest: %d\n", time.Now().Format("15:04:05"), i2)
 			runNum.Add(1)
@@ -70,6 +70,6 @@ func TestGoBase(t *testing.T) {
 		t.Error("runTime[4] < time.Second*2")
 	}
 	if runTime[5] < time.Second*3 {
-		t.Error("runTime[5] < time.Second*2")
+		t.Error("runTime[5] < time.Second*3")
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/intmian/mian_go_lib/tool/cipher"
 	"github.com/intmian/mian_go_lib/tool/misc"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -48,26 +49,38 @@ func GetDingSign(token string) (timestamp string, sign string) {
 	return
 }
 
-func (m *DingRobotMgr) Init(setting DingSetting) {
+func (m *DingRobotMgr) Init(setting DingSetting) error {
 	if m.isInit {
-		return
+		return misc.ErrNotInit
 	}
 	m.dingRobotToken.accessToken = setting.Token
 	m.dingRobotToken.secret = setting.Secret
 	if setting.Ctx == nil {
 		setting.Ctx = context.Background()
 	}
-	m.goMgr.Init(misc.GoLimitSetting{
+	err := m.goMgr.Init(misc.GoLimitSetting{
 		TimeInterval:         time.Duration(setting.SendInterval) * time.Second,
 		EveryIntervalCallNum: setting.IntervalSendCount,
 	}, setting.Ctx)
+	if err != nil {
+		return errors.WithMessage(err, "DingRobotMgr Init")
+	}
+	err = m.goMgr.Start()
+	if err != nil {
+		return errors.WithMessage(err, "DingRobotMgr Start")
+	}
+
 	m.isInit = true
+	return nil
 }
 
-func NewDingRobotMgr(setting DingSetting) *DingRobotMgr {
+func NewDingRobotMgr(setting DingSetting) (*DingRobotMgr, error) {
 	m := &DingRobotMgr{}
-	m.Init(setting)
-	return m
+	err := m.Init(setting)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (m *DingRobotMgr) Push(title string, content string) error {
@@ -145,10 +158,13 @@ func (m *DingRobotMgr) Send(message DingMessage) error {
 		return fmt.Errorf("DingRobotMgr not init")
 	}
 	err := make(chan error)
-	m.goMgr.Call(func() {
+	err2 := m.goMgr.Call(func() {
 		err2 := SendDingMessage(m.dingRobotToken.accessToken, m.dingRobotToken.secret, message)
 		err <- err2
 	})
+	if err2 != nil {
+		return err2
+	}
 	return <-err
 }
 

@@ -21,18 +21,21 @@ func TestDingRobotMgr_Send(t *testing.T) {
 	token = strs[0]
 	secret = strs[1]
 
-	m.Init(DingSetting{
+	err := m.Init(DingSetting{
 		Token:             token,
 		Secret:            secret,
 		SendInterval:      60,
 		IntervalSendCount: 20,
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	text := NewDingText()
 	text.Text.Content = "test"
-	err := m.Send(text)
+	err = m.Send(text)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	md := NewDingMarkdown()

@@ -13,5 +13,6 @@ func (receiver *InitTag) SetInitialized() {
 }
 
 const (
-	ErrNotInit = ErrStr("not init")
+	ErrNotInit    = ErrStr("not init")
+	ErrRepeatInit = ErrStr("repeat init")
 )

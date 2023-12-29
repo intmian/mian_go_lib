@@ -2,6 +2,7 @@ package misc
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -11,12 +12,14 @@ import (
 type GoLimitSetting struct {
 	TimeInterval         time.Duration // 每隔多少秒重置一次
 	EveryIntervalCallNum int32         // 每个周期允许执行多少次
-
 }
 
 // GoLimit 并发执行限流器
 // 如果超过限制上线，会阻塞
 // 如果一个函数跨越两个周期，会阻塞
+// init 后调用 start使用
+// 停止通过ctx实现或直接调用
+// 不支持stop后重新start
 type GoLimit struct {
 	setting     GoLimitSetting
 	ctx         context.Context
@@ -25,26 +28,52 @@ type GoLimit struct {
 	calledNum   atomic.Int32 // 当前周期已经执行的函数数量
 	fullRunLock sync.Mutex
 	fullRun     atomic.Bool
+	stop        func()
+	started     bool
 	InitTag
 }
 
-func (m *GoLimit) Init(setting GoLimitSetting, ctx context.Context) {
+const (
+	ErrCtxNil       = ErrStr("ctx is nil")
+	ErrParamInvalid = ErrStr("param invalid")
+)
+
+func (m *GoLimit) Init(setting GoLimitSetting, ctx context.Context) error {
+	if m.IsInitialized() {
+		return ErrRepeatInit
+	}
 	m.funcC = make(chan func())
 	if ctx == nil {
-		ctx = context.Background()
+		return ErrCtxNil
 	}
-	m.ctx = ctx
+	if setting.EveryIntervalCallNum <= 0 || setting.TimeInterval.Seconds() <= 0 {
+		return ErrParamInvalid
+	}
+	m.ctx, m.stop = context.WithCancel(ctx)
 	m.setting = setting
 	m.SetInitialized()
+	return nil
 }
 
-func (m *GoLimit) Call(f func()) {
+const (
+	ErrStop     = ErrStr("stop")
+	ErrNotStart = ErrStr("not start")
+)
+
+func (m *GoLimit) Call(f func()) error {
+	if !m.started {
+		return ErrNotStart
+	}
+	if !m.IsInitialized() {
+		return ErrNotInit
+	}
 	select {
 	case <-m.ctx.Done():
-		return
+		return ErrStop
 	default:
 		m.funcC <- f
 	}
+	return nil
 }
 
 //TODO: 涉及免闭包实现
@@ -54,11 +83,18 @@ func (m *GoLimit) Call(f func()) {
 //	})
 //}
 
-func (m *GoLimit) Start() {
+func (m *GoLimit) Start() error {
 	m.fullRun.Store(true)
 	m.fullRunLock.Lock()
 	go m.timeLimit()
 	go m.callLimit()
+	m.started = true
+	return nil
+}
+
+func (m *GoLimit) Stop() error {
+	m.stop()
+	return nil
 }
 
 func (m *GoLimit) timeLimit() {
@@ -69,7 +105,7 @@ func (m *GoLimit) timeLimit() {
 		case <-m.ctx.Done():
 			return
 		case <-t.C:
-			//fmt.Printf("%stime:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
+			fmt.Printf("%stime:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
 			m.calledNum.Store(0)
 			if m.fullRun.Load() {
 				m.fullRun.Store(false)
@@ -87,13 +123,13 @@ func (m *GoLimit) callLimit() {
 			return
 		case f := <-m.funcC:
 			// 做限制
-			//fmt.Printf("%scheck:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
+			fmt.Printf("%scheck:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
 			if m.nowCallNum.Load()+m.calledNum.Load() >= m.setting.EveryIntervalCallNum {
 				m.fullRun.Store(true)
 				m.fullRunLock.Lock()
 			}
 			// 实际执行
-			//fmt.Printf("%scall:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
+			fmt.Printf("%scall:nowCallNum:%d calledNum:%d\n", time.Now().Format("15:04:05"), m.nowCallNum.Load(), m.calledNum.Load())
 			m.nowCallNum.Add(1)
 			go func() {
 				f()
