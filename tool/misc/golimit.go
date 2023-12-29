@@ -25,12 +25,17 @@ type GoLimit struct {
 	calledNum   atomic.Int32 // 当前周期已经执行的函数数量
 	fullRunLock sync.Mutex
 	fullRun     atomic.Bool
+	InitTag
 }
 
 func (m *GoLimit) Init(setting GoLimitSetting, ctx context.Context) {
 	m.funcC = make(chan func())
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	m.ctx = ctx
 	m.setting = setting
+	m.SetInitialized()
 }
 
 func (m *GoLimit) Call(f func()) {

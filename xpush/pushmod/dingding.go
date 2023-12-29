@@ -54,6 +54,9 @@ func (m *DingRobotMgr) Init(setting DingSetting) {
 	}
 	m.dingRobotToken.accessToken = setting.Token
 	m.dingRobotToken.secret = setting.Secret
+	if setting.Ctx == nil {
+		setting.Ctx = context.Background()
+	}
 	m.goMgr.Init(misc.GoLimitSetting{
 		TimeInterval:         time.Duration(setting.SendInterval) * time.Second,
 		EveryIntervalCallNum: setting.IntervalSendCount,

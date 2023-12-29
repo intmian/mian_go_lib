@@ -6,6 +6,7 @@ import (
 )
 
 // TJsonTool 是对于json文件的抽象，可以用匿名组合的方式进行二次包装
+//
 // 请注意已经被废弃，请使用JsonTool与FileUnit
 type TJsonTool struct {
 	addr  string
