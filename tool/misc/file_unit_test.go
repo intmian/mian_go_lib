@@ -57,7 +57,7 @@ func TestTFileUnit(t *testing.T) {
 			Name string `json:"name"`
 			Age  int    `json:"age"`
 		}{}
-		j := NewFileUnit(jsonStruct, GJsonTool, jsonFileAddr)
+		j := NewFileUnit(jsonStruct, GJsonTool, jsonFileAddr, false)
 		err := j.Load()
 		if err != nil {
 			t.Error(err)
@@ -86,7 +86,7 @@ func TestTFileUnit(t *testing.T) {
 			Name string `toml:"name"`
 			Age  int    `toml:"age"`
 		}{}
-		j := NewFileUnit(tomlStruct, GTomlTool, tomlFileAddr)
+		j := NewFileUnit(tomlStruct, GTomlTool, tomlFileAddr, false)
 		err := j.Load()
 		if err != nil {
 			t.Error(err)
