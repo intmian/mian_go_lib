@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// XLog 日志管理器，支持以对应策略记录日志。目前暂不支持复杂策略，可以考虑组合使用多个xLog来实现
 type XLog struct {
 	LogSetting
 	misc.InitTag
