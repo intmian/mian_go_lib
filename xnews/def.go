@@ -1,6 +1,8 @@
 package xnews
 
-import "time"
+import (
+	"time"
+)
 
 // TopicTimeRemain 用于限制某个topic的单条信息的留存时间
 type TopicTimeRemain time.Duration
@@ -15,12 +17,11 @@ type TopicTimeLimit struct {
 	ThisDurationNum int
 }
 
-// Add 向limit当前周期内增加n个技术，返回淘汰的数量
+// Add 向limit当前周期内增加n个计数，返回淘汰的数量
 func (l *TopicTimeLimit) Add(num int) int {
 	if num < 0 {
 		return 0
 	}
-
 	l.checkDuration()
 
 	l.ThisDurationNum += num
@@ -29,6 +30,7 @@ func (l *TopicTimeLimit) Add(num int) int {
 		l.ThisDurationNum = l.Num
 		return outNum
 	}
+
 	return 0
 }
 
