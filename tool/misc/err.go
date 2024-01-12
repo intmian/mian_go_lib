@@ -1,7 +1,7 @@
 package misc
 
 const (
-	NIL = ErrStr("nil")
+	ErrNil = ErrStr("nil")
 )
 
 type ErrStr string
