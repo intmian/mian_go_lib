@@ -26,7 +26,7 @@ func (t *TopicSetting) AddNowLimit(duration time.Duration, num int) {
 }
 
 // AddLimit 用于限制某个topic的时间间隔内允许发送的信息条数，建议只使用一个永久limit，如果添加多条limit，则任意一条达到上限，则都会删除最旧的信息，同时触发多条也只会删除一条，后续如果有别的需求再改改。
-// 用于实现只保存十条日志之类的功能，其他的功能为拓展性，暂时没想好能干嘛。
+// 用于实现只保存十条日志之类的功能，其他的功能为拓展性，暂时没想好能干嘛。建议如果要很复杂的组合限制、过期逻辑，分离到多个topic中，然后在业务层面组合
 func (t *TopicSetting) AddLimit(startTime time.Time, duration time.Duration, num int) {
 	t.Limit = append(t.Limit, TopicTimeLimit{
 		Duration:        &duration,
