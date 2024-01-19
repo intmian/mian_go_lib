@@ -16,11 +16,19 @@ class err_operator:
         # 生成替换过后的错误常量名
         self.after_err = "Err"
         for word in words:
-            # 如果首字母已经大写，就直接拼入
+            # 如果首字母已经大写，就直接拼入，如果存在大写字母，就将首字母转为大写后重新拼入
             if word[0].isupper():
                 self.after_err += word
-            else:
-                self.after_err += word.capitalize()
+                continue
+            has_upper = False
+            for w in word:
+                if w.isupper():
+                    has_upper = True
+                    break
+            if has_upper:
+                self.after_err += word[0].upper() + word[1:]
+                continue
+            self.after_err += word.capitalize()
         # 确认整体代换的代码
         if self.ori_code.startswith("errors.New"):
             self.replaced_code = self.after_err
