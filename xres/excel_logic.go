@@ -61,7 +61,7 @@ func convertNormalStrFromOri(columnType ColumnType, str string, metaEnumMap map[
 	}
 }
 
-//ExcelOri2Logic 将原始的以列组织的表，进行基础的校验，并将所有的文本翻译为逻辑值
+// ExcelOri2Logic 将原始的以列组织的表，进行基础的校验，并将所有的文本翻译为逻辑值
 func ExcelOri2Logic(ori *ExcelOri, meta *ExcelMeta) (*ExcelLogic, error) {
 	if (ori == nil) || (meta == nil) {
 		return nil, fmt.Errorf("%s:ori or meta is nil", ori.SheetName)

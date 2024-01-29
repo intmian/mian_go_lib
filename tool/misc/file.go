@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-//ReadAllDir 返回root目录下所有的目录，当出现错误时返回nil，否则至少返回空
+// ReadAllDir 返回root目录下所有的目录，当出现错误时返回nil，否则至少返回空
 func ReadAllDir(root string) []string {
 	rd, err := os.ReadDir(root)
 	if err != nil {
@@ -36,7 +36,7 @@ func ReadAllFile(root string) []string {
 	return files
 }
 
-//PathExist 返回文件或目录是否存在
+// PathExist 返回文件或目录是否存在
 func PathExist(path string) bool {
 	_, err := os.Stat(path)
 	if err != nil && err.Error() == os.ErrNotExist.Error() {
@@ -45,7 +45,7 @@ func PathExist(path string) bool {
 	return true
 }
 
-//CopyFile 复制文件
+// CopyFile 复制文件
 func CopyFile(dstName, srcName string) (written int64, err error) {
 	src, err := os.Open(srcName)
 	if err != nil {

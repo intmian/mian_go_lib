@@ -11,7 +11,7 @@ import (
 	"github.com/intmian/mian_go_lib/tool/misc"
 )
 
-//ExcelPtlRow 单行数据
+// ExcelPtlRow 单行数据
 type ExcelPtlRow struct {
 	Data []interface{}
 }
@@ -23,7 +23,7 @@ type ExcelPtl struct {
 	Rows        []*ExcelPtlRow
 }
 
-//CheckByMeta 使用meta中的公式检查数据是否合法
+// CheckByMeta 使用meta中的公式检查数据是否合法
 func (e *ExcelPtl) CheckByMeta(meta *ExcelMeta) (bool, error) {
 	if meta == nil {
 		return false, errors.New("meta is nil")
@@ -51,7 +51,7 @@ func (e *ExcelPtl) CheckByMeta(meta *ExcelMeta) (bool, error) {
 	return true, nil
 }
 
-//GetExcelFromLogic 将以列组织的数据重整为以行组织的数据
+// GetExcelFromLogic 将以列组织的数据重整为以行组织的数据
 func GetExcelFromLogic(logic *ExcelLogic, meta *ExcelMeta) (*ExcelPtl, error) {
 	if (logic == nil) || (meta == nil) {
 		return nil, fmt.Errorf("%s:logic or meta is nil", logic.SheetName)
@@ -174,8 +174,8 @@ func GetExcelFromLogic(logic *ExcelLogic, meta *ExcelMeta) (*ExcelPtl, error) {
 	return &excel, nil
 }
 
-//Save2file 将excel数据保存到文件
-//首先存入每一列的类型，然后存入每一行的数据
+// Save2file 将excel数据保存到文件
+// 首先存入每一列的类型，然后存入每一行的数据
 func (e *ExcelPtl) Save2file(addr string) error {
 	// 创建文件
 	file, err := os.Create(addr)
@@ -269,7 +269,7 @@ func (e *ExcelPtl) Save2file(addr string) error {
 	return nil
 }
 
-//LoadFromFile 从文件中加载excel数据
+// LoadFromFile 从文件中加载excel数据
 func (e *ExcelPtl) LoadFromFile(addr string) error {
 	// 清空自身
 	e.ColumnTypes = nil
@@ -427,7 +427,7 @@ func (e *ExcelPtl) LoadFromFile(addr string) error {
 	return nil
 }
 
-//Convert 将excel数据转换为任意结构体，根据Tag进行转换
+// Convert 将excel数据转换为任意结构体，根据Tag进行转换
 func (e *ExcelPtl) Convert(Rec []interface{}) error {
 	Rec = make([]interface{}, len(e.Rows))
 	for i := 0; i < len(e.Rows); i++ {

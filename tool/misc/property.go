@@ -1,7 +1,7 @@
 package misc
 
 type Property interface {
-	~int | ~int32 | ~int64 | ~uint32 | ~uint64 | ~uint | ~byte | ~uint8 | ~uint16 | ~int8 | ~int16
+	~int | ~int32 | ~int64 | ~uint32 | ~uint64 | ~uint | ~uint8 | ~uint16 | ~int8 | ~int16
 }
 
 func HasProperty[T Property](p T, properties ...T) bool {

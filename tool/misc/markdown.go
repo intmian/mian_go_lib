@@ -6,7 +6,7 @@ import (
 	"regexp"
 )
 
-//MarkdownToHTML 提供markdown到html的功能
+// MarkdownToHTML 提供markdown到html的功能
 func MarkdownToHTML(md string) string {
 	myHTMLFlags := 0 |
 		blackfriday.HTML_USE_XHTML |
@@ -35,7 +35,7 @@ func MarkdownToHTML(md string) string {
 	return bluemonday.UGCPolicy().Sanitize(theHTML)
 }
 
-//GetPicLinkFromStr 从字符串中提取所有的图片外链
+// GetPicLinkFromStr 从字符串中提取所有的图片外链
 func GetPicLinkFromStr(mdStr string) []string {
 	reg := regexp.MustCompile(`![.*](.*)`)
 	if reg == nil {

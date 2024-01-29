@@ -5,7 +5,7 @@ import (
 	hook "github.com/robotn/gohook"
 )
 
-//WaitKeyDown 阻塞式的等待按键按下
+// WaitKeyDown 阻塞式的等待按键按下
 func WaitKeyDown() rune {
 	evChan := hook.Start()
 	defer func() {
@@ -23,7 +23,7 @@ func WaitKeyDown() rune {
 	return ' '
 }
 
-//KeyDownSendChan 返回一个chan，第一次按下key时发送到chan中，后续按下key时不发送
+// KeyDownSendChan 返回一个chan，第一次按下key时发送到chan中，后续按下key时不发送
 func KeyDownSendChan(key rune) <-chan bool {
 	result := make(chan bool)
 	go func() {

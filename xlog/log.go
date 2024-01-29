@@ -80,8 +80,16 @@ func (receiver *XLog) Error(from string, info string) {
 	receiver.Log(LogLevelError, from, info)
 }
 
+func (receiver *XLog) ErrorErr(from string, err error) {
+	receiver.Log(LogLevelError, from, err.Error())
+}
+
 func (receiver *XLog) Warning(from string, info string) {
 	receiver.Log(LogLevelWarning, from, info)
+}
+
+func (receiver *XLog) WarningErr(from string, err error) {
+	receiver.Log(LogLevelWarning, from, err.Error())
 }
 
 func (receiver *XLog) Info(from string, info string) {

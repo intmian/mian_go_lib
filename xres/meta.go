@@ -16,7 +16,7 @@ a.data = """
 """
 */
 
-//ExcelColMetaOri 从toml中读取的原始数据
+// ExcelColMetaOri 从toml中读取的原始数据
 type ExcelColMetaOri struct {
 	Type string `toml:"type"`
 	Data string `toml:"data"`
@@ -26,25 +26,25 @@ type ExcelSheetMetaOri struct {
 	expressions []string `toml:"limit"`
 }
 
-//ExcelColMeta 转化后的列元数据
+// ExcelColMeta 转化后的列元数据
 type ExcelColMeta struct {
 	Type ColumnType
 	Data map[string]int // 用于将填在excel中的枚举转换为int
 }
 
-//ExcelMeta Excel元数据
+// ExcelMeta Excel元数据
 type ExcelMeta struct {
 	ColumnMeta  map[string]*ExcelColMeta
 	expressions []*govaluate.EvaluableExpression
 }
 
-//ExcelMetaOri 从toml中读取的原始excel元数据
+// ExcelMetaOri 从toml中读取的原始excel元数据
 type ExcelMetaOri struct {
 	Columns map[string]*ExcelColMetaOri `toml:"columns"`
 	Sheet   ExcelSheetMetaOri           `toml:"sheet"`
 }
 
-//GetColumnType 从原始文本中获得列类型
+// GetColumnType 从原始文本中获得列类型
 func (m *ExcelColMetaOri) GetColumnType() ColumnType {
 	switch m.Type {
 	case "int":
@@ -68,7 +68,7 @@ func (m *ExcelColMetaOri) GetColumnType() ColumnType {
 	}
 }
 
-//GetData 将原始文本中的枚举文本转换为实际的map
+// GetData 将原始文本中的枚举文本转换为实际的map
 func (m *ExcelColMetaOri) GetData() map[string]int {
 	/*
 		如果类型是枚举，则解析枚举数据
@@ -133,7 +133,7 @@ func (m *ExcelColMetaOri) GetData() map[string]int {
 	}
 }
 
-//GetMeta 将原始的元数据转换为实际的元数据
+// GetMeta 将原始的元数据转换为实际的元数据
 func (m *ExcelMetaOri) GetMeta() (*ExcelMeta, error) {
 	meta := ExcelMeta{}
 	meta.ColumnMeta = make(map[string]*ExcelColMeta)

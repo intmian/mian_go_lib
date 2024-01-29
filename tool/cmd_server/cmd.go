@@ -77,14 +77,14 @@ func (s *CMDServer) Stop() {
 	s.stop <- true
 }
 
-//Send 处理发来的请求
-//视情况可能阻塞，低负荷情况下非阻塞
+// Send 处理发来的请求
+// 视情况可能阻塞，低负荷情况下非阻塞
 func (s *CMDServer) Send(plt Plt) {
 	s.inputC <- plt
 }
 
-//AdminSend 将优先处理请求
-//视情况可能阻塞，低负荷情况下非阻塞
+// AdminSend 将优先处理请求
+// 视情况可能阻塞，低负荷情况下非阻塞
 func (s *CMDServer) AdminSend(plt Plt) {
 	s.adminInputC <- plt
 }

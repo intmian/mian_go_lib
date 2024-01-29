@@ -10,7 +10,7 @@ import (
 	"github.com/intmian/mian_go_lib/tool/misc"
 )
 
-//MakeUntilPressFunc 创建一个按下一般都会返回的函数
+// MakeUntilPressFunc 创建一个按下一般都会返回的函数
 func MakeUntilPressFunc(f func(chan bool)) func() {
 	// 按下esc的话会触发退出，但是只有在真正结束函数的时候才会返回
 	endChan := make(chan bool)
@@ -31,7 +31,7 @@ func MakeUntilPressFunc(f func(chan bool)) func() {
 	}
 }
 
-//MakeUntilPressForFunc 创建一个按下esc才停止否则会一直循环调用的函数
+// MakeUntilPressForFunc 创建一个按下esc才停止否则会一直循环调用的函数
 func MakeUntilPressForFunc(f func()) func() {
 	forFunc := func(endChan chan bool) {
 		for {
@@ -46,7 +46,7 @@ func MakeUntilPressForFunc(f func()) func() {
 	return MakeUntilPressFunc(forFunc)
 }
 
-//MakeUntilPressForShowFunc 返回一个每隔waitSecond刷新一次printFunc，收到endChan则停止的函数
+// MakeUntilPressForShowFunc 返回一个每隔waitSecond刷新一次printFunc，收到endChan则停止的函数
 func MakeUntilPressForShowFunc(printFunc func(), waitSecond int) func() {
 	forShowFunc := func(endChan chan bool) {
 		for {
@@ -118,7 +118,7 @@ type kvSlice []struct {
 	value string
 }
 
-//MakeListInputFunc 创建一个输入列表的函数
+// MakeListInputFunc 创建一个输入列表的函数
 func MakeListInputFunc(kv map[string]string, callBack func()) func() {
 	return func() {
 		// 获得kv的第一个key
