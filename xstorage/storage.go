@@ -191,8 +191,12 @@ func Copy(srcValue *ValueUnit, newValue *ValueUnit) {
 
 func Join(src ...string) string {
 	var result string
-	for _, s := range src {
-		result += "." + s
+	for i, s := range src {
+		if i == 0 {
+			result = s
+		} else {
+			result += "." + s
+		}
 	}
 	return result
 }

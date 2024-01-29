@@ -73,7 +73,7 @@ func (m *SqliteCore) Get(key string, rec *ValueUnit) (bool, error) {
 	return m.getInner(key, rec, true)
 }
 
-func (m *SqliteCore) getInner(key string, rec *ValueUnit, needLock bool) (bool, error) {
+func (m *SqliteCore) getInner(key string, rec *ValueUnit, needLock bool) (exist bool, retErr error) {
 	if !m.IsInitialized() {
 		return false, ErrSqliteCoreNotInit
 	}
@@ -99,7 +99,7 @@ func (m *SqliteCore) getInner(key string, rec *ValueUnit, needLock bool) (bool, 
 	}
 
 	if sliceNum == 0 {
-		return false, nil
+		return true, nil
 	}
 
 	// slice 的内容存放在 Key[0]、Key[1]、Key[2]...Key[sliceNum-1] 列中
@@ -164,6 +164,8 @@ func (m *SqliteCore) getInner(key string, rec *ValueUnit, needLock bool) (bool, 
 				rec.Data.([]bool)[i] = true
 			}
 		}
+	default:
+		return false, ErrValueType
 	}
 	return true, nil
 }
