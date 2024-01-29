@@ -30,6 +30,14 @@ func (receiver *XLog) Init(setting LogSetting) error {
 		return ErrNoLogWay
 	}
 	receiver.LogSetting = setting
+	// 如果文件夹不存在则创建
+	_, err := os.Stat(receiver.LogAddr)
+	if errors.Is(err, os.ErrNotExist) {
+		err = os.MkdirAll(receiver.LogAddr, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	}
 	receiver.SetInitialized()
 	return nil
 }
