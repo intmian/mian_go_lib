@@ -251,8 +251,16 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 		return errors.Join(ErrSqliteDBFileAddrNotExist, err)
 	}
 
-	if !exist || dbValue.Type < ValueTypeSliceBegin {
-		needCreate = keyValueModels
+	notList := dbValue.Type < ValueTypeSliceBegin
+	if notList {
+		if !exist {
+			needCreate = keyValueModels
+		}
+		if exist {
+			if !Compare(dbValue, value) {
+				needSet = keyValueModels
+			}
+		}
 	} else {
 		sliceNum := 0
 		switch dbValue.Type {
