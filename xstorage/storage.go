@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// TODO: 考虑用泛型改写一个v2的
+
 // ValueUnit 加入类型，用于在非反射的情况下直接处理类型
 type ValueUnit struct {
 	Type  ValueType

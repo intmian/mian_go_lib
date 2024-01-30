@@ -101,7 +101,7 @@ func (t *FileUnit[T]) SafeUseData(f func(any), isWrite bool) {
 }
 
 // Copy 复制一份向外传达，请注意类型内部是否存在指针
-func (t *FileUnit[T]) Copy() any {
+func (t *FileUnit[T]) Copy() T {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 	return t.data
