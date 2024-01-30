@@ -46,7 +46,7 @@ func NewFileUnit[T any](unitType FileUnitType, addr string) *FileUnit[T] {
 }
 
 // Load 从addr对应的文件中载入数据
-func (t *FileUnit[any]) Load() error {
+func (t *FileUnit[T]) Load() error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	if t.fileRWUnit == nil {
@@ -60,7 +60,7 @@ func (t *FileUnit[any]) Load() error {
 }
 
 // save2Addr 序列化数据结构到文件
-func (t *FileUnit[any]) save2Addr(addr string) error {
+func (t *FileUnit[T]) save2Addr(addr string) error {
 	if t.fileRWUnit == nil {
 		return fmt.Errorf("t.fileRWUnit is nil")
 	}
@@ -75,21 +75,21 @@ func (t *FileUnit[any]) save2Addr(addr string) error {
 }
 
 // Save 序列化数据结构到文件
-func (t *FileUnit[any]) Save() error {
+func (t *FileUnit[T]) Save() error {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 	return t.save2Addr(t.addr)
 }
 
 // SaveOther 序列化数据结构到某个文件
-func (t *FileUnit[any]) SaveOther(addr string) error {
+func (t *FileUnit[T]) SaveOther(addr string) error {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
 	return t.save2Addr(addr)
 }
 
-// SaveUseData 线程安全的使用数据的函数
-func (t *FileUnit[any]) SaveUseData(f func(any), isWrite bool) {
+// SafeUseData 线程安全的使用数据的函数
+func (t *FileUnit[T]) SafeUseData(f func(any), isWrite bool) {
 	if isWrite {
 		t.lock.Lock()
 		defer t.lock.Unlock()
@@ -98,6 +98,13 @@ func (t *FileUnit[any]) SaveUseData(f func(any), isWrite bool) {
 		defer t.lock.RUnlock()
 	}
 	f(t.data)
+}
+
+// Copy 复制一份向外传达，请注意类型内部是否存在指针
+func (t *FileUnit[T]) Copy() any {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
+	return t.data
 }
 
 type TomlTool struct{}
