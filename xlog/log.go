@@ -84,32 +84,32 @@ func (receiver *XLog) Log(level LogLevel, from string, info string) {
 	}
 }
 
-func (receiver *XLog) Error(from string, info string) {
-	receiver.Log(LogLevelError, from, info)
+func (receiver *XLog) Error(from string, format string, a ...interface{}) {
+	receiver.Log(LogLevelError, from, fmt.Sprintf(format, a...))
 }
 
 func (receiver *XLog) ErrorErr(from string, err error) {
 	receiver.Log(LogLevelError, from, err.Error())
 }
 
-func (receiver *XLog) Warning(from string, info string) {
-	receiver.Log(LogLevelWarning, from, info)
+func (receiver *XLog) Warning(from string, format string, a ...interface{}) {
+	receiver.Log(LogLevelWarning, from, fmt.Sprintf(format, a...))
 }
 
 func (receiver *XLog) WarningErr(from string, err error) {
 	receiver.Log(LogLevelWarning, from, err.Error())
 }
 
-func (receiver *XLog) Info(from string, info string) {
-	receiver.Log(LogLevelInfo, from, info)
+func (receiver *XLog) Info(from string, format string, a ...interface{}) {
+	receiver.Log(LogLevelInfo, from, fmt.Sprintf(format, a...))
 }
 
-func (receiver *XLog) Misc(from string, info string) {
-	receiver.Log(LogLevelMisc, from, info)
+func (receiver *XLog) Misc(from string, format string, a ...interface{}) {
+	receiver.Log(LogLevelMisc, from, fmt.Sprintf(format, a...))
 }
 
-func (receiver *XLog) Debug(from string, info string) {
-	receiver.Log(LogLevelDebug, from, info)
+func (receiver *XLog) Debug(from string, format string, a ...interface{}) {
+	receiver.Log(LogLevelDebug, from, fmt.Sprintf(format, a...))
 }
 
 func GoWaitError(log *XLog, c <-chan error, from string, s string) {
