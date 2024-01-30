@@ -74,7 +74,7 @@ func (m *XStorage) Init(setting XstorageSetting) error {
 	return nil
 }
 
-func NewXstorage(setting XstorageSetting) (*XStorage, error) {
+func NewXStorage(setting XstorageSetting) (*XStorage, error) {
 	mgr := &XStorage{
 		setting: setting,
 	}

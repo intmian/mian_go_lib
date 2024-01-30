@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/BurntSushi/toml"
 	"os"
-	"reflect"
 	"sync"
 )
 
@@ -13,45 +12,55 @@ type IFileRwUnit interface {
 	Write(addr string, pData interface{}) error
 }
 
+type FileUnitType int
+
+const (
+	FileUnitJson = iota
+	FileUnitToml
+)
+
 // FileUnit 是一个可以用于任意类型的非一次性序列化工具
 // 可以将变量的指针与文件中的实际值关联
 // NewFileUnit 会将结构体绑定某一个文件地址，之后可以通过Load和Save来进行读写
-type FileUnit struct {
+type FileUnit[T any] struct {
 	addr       string
-	pData      interface{}
+	data       T
 	fileRWUnit IFileRwUnit
-	needLock   bool
-	sync.RWMutex
+	lock       sync.RWMutex
 }
 
 // NewFileUnit 初始化文件单元
-func NewFileUnit(pData interface{}, kFileRWUnit IFileRwUnit, addr string, needLock bool) *FileUnit {
-	// 使用反射判断是否为指针
-	if reflect.TypeOf(pData).Kind() != reflect.Ptr {
-		return nil
-	}
+func NewFileUnit[T any](unitType FileUnitType, addr string) *FileUnit[T] {
 	if addr == "" {
 		return nil
 	}
-	return &FileUnit{pData: pData, fileRWUnit: kFileRWUnit, addr: addr, needLock: needLock}
+	var t T
+	var kFileRWUnit IFileRwUnit
+	switch unitType {
+	case FileUnitJson:
+		kFileRWUnit = GJsonTool
+	case FileUnitToml:
+		kFileRWUnit = GTomlTool
+	}
+	return &FileUnit[T]{data: t, fileRWUnit: kFileRWUnit, addr: addr}
 }
 
 // Load 从addr对应的文件中载入数据
-func (t *FileUnit) Load() error {
-	t.Lock()
-	defer t.Unlock()
+func (t *FileUnit[any]) Load() error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
 	if t.fileRWUnit == nil {
 		return fmt.Errorf("t.fileRWUnit is nil")
 	}
 	var err error
-	if err = t.fileRWUnit.Read(t.addr, t.pData); err != nil {
+	if err = t.fileRWUnit.Read(t.addr, &t.data); err != nil {
 		return err
 	}
 	return nil
 }
 
 // save2Addr 序列化数据结构到文件
-func (t *FileUnit) save2Addr(addr string) error {
+func (t *FileUnit[any]) save2Addr(addr string) error {
 	if t.fileRWUnit == nil {
 		return fmt.Errorf("t.fileRWUnit is nil")
 	}
@@ -59,24 +68,36 @@ func (t *FileUnit) save2Addr(addr string) error {
 		return fmt.Errorf("addr is empty")
 	}
 	var err error
-	if err = t.fileRWUnit.Write(addr, t.pData); err != nil {
+	if err = t.fileRWUnit.Write(addr, &t.data); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Save 序列化数据结构到文件
-func (t *FileUnit) Save() error {
-	t.RLock()
-	defer t.RUnlock()
+func (t *FileUnit[any]) Save() error {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
 	return t.save2Addr(t.addr)
 }
 
 // SaveOther 序列化数据结构到某个文件
-func (t *FileUnit) SaveOther(addr string) error {
-	t.RLock()
-	defer t.RUnlock()
+func (t *FileUnit[any]) SaveOther(addr string) error {
+	t.lock.RLock()
+	defer t.lock.RUnlock()
 	return t.save2Addr(addr)
+}
+
+// SaveUseData 线程安全的使用数据的函数
+func (t *FileUnit[any]) SaveUseData(f func(any), isWrite bool) {
+	if isWrite {
+		t.lock.Lock()
+		defer t.lock.Unlock()
+	} else {
+		t.lock.RLock()
+		defer t.lock.RUnlock()
+	}
+	f(t.data)
 }
 
 type TomlTool struct{}

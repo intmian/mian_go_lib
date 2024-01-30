@@ -53,18 +53,20 @@ func TestTFileUnit(t *testing.T) {
 		}
 	})
 	t.Run("jsonFileUnit", func(t *testing.T) {
-		jsonStruct := &struct {
+		type json struct {
 			Name string `json:"name"`
 			Age  int    `json:"age"`
-		}{}
-		j := NewFileUnit(jsonStruct, GJsonTool, jsonFileAddr, false)
+		}
+		j := NewFileUnit[json](FileUnitJson, jsonFileAddr)
 		err := j.Load()
 		if err != nil {
 			t.Error(err)
 		}
-		if jsonStruct.Name != "name" || jsonStruct.Age != 19 {
-			t.Error("json write or read error")
-		}
+		j.SaveUseData(func(a json) {
+			if a.Name != "name" || a.Age != 19 {
+				t.Error("json write or read error")
+			}
+		}, false)
 		err = j.Save()
 		if err != nil {
 			t.Error(err)
@@ -77,32 +79,11 @@ func TestTFileUnit(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if jsonStruct.Name != "name" || jsonStruct.Age != 19 {
-			t.Error("json write or read error")
-		}
-	})
-	t.Run("tomlFileUnit", func(t *testing.T) {
-		tomlStruct := &struct {
-			Name string `toml:"name"`
-			Age  int    `toml:"age"`
-		}{}
-		j := NewFileUnit(tomlStruct, GTomlTool, tomlFileAddr, false)
-		err := j.Load()
-		if err != nil {
-			t.Error(err)
-		}
-		if tomlStruct.Name != "name" || tomlStruct.Age != 19 {
-			t.Error("toml write or read error")
-		}
-		err = j.Save()
-		if err != nil {
-			t.Error(err)
-		}
-		err = j.SaveOther(tomlFileAddr)
-		if err != nil {
-			t.Error(err)
-		}
-		err = j.Load()
+		j.SaveUseData(func(a json) {
+			if a.Name != "name" || a.Age != 19 {
+				t.Error("json write or read error")
+			}
+		}, true)
 	})
 	t.Run("test file delete", func(t *testing.T) {
 		err1 := os.Remove(jsonFileAddr)

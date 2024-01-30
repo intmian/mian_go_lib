@@ -215,3 +215,5 @@ const (
 	ErrFileFail         = misc.ErrStr("file failed")
 	ErrNoLogWay         = misc.ErrStr("no log way")
 )
+
+// TODO: 考虑一下接入更多的全量日志落盘、例如kafka或者sqlite，开放接口出去
