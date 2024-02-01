@@ -98,7 +98,19 @@ func (m *XStorage) FromDiskGetAll() (map[string]*ValueUnit, error) {
 	return kvMap, err
 }
 
-func (m *XStorage) Get(key string, valueUnit *ValueUnit) (bool, error) {
+func (m *XStorage) Get(key string) (*ValueUnit, error) {
+	var valueUnit ValueUnit
+	ok, err := m.GetHP(key, &valueUnit)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, nil
+	}
+	return &valueUnit, nil
+}
+
+func (m *XStorage) GetHP(key string, valueUnit *ValueUnit) (bool, error) {
 	if !m.initTag.IsInitialized() {
 		return false, ErrMgrNotInit
 	}
@@ -141,40 +153,6 @@ func (m *XStorage) Get(key string, valueUnit *ValueUnit) (bool, error) {
 	return false, nil
 }
 
-// Get 从mgr中提取数据并转换为对应类型。使用方便，但是性能逊色于GetHp
-// 之所以保留这个函数，是因为相较于ValueUnit，对应的基础类型会小一点，直接返回值也还行
-// 相较于库的内部接口数量有限，方便优化，外部引用的数量可能是无限的，所以给外部暴露这个接口
-func Get[T IValueType](mgr *XStorage, key string) (bool, T, error) {
-	var valueUnit ValueUnit
-	var t T
-	ok, err := mgr.Get(key, &valueUnit)
-	if err != nil {
-		return false, t, err
-	}
-	if !ok {
-		return false, t, nil
-	}
-	t = ToBase[T](&valueUnit)
-	return true, t, nil
-}
-
-// GetHp 从mgr中提取数据并转换为对应类型。性能优于Get
-func GetHp[T IValueType](mgr *XStorage, key string, rec *T) (bool, error) {
-	if rec == nil {
-		return false, ErrRecIsNil
-	}
-	var valueUnit ValueUnit
-	ok, err := mgr.Get(key, &valueUnit)
-	if err != nil {
-		return false, err
-	}
-	if !ok {
-		return false, nil
-	}
-	*rec = ToBase[T](&valueUnit)
-	return true, nil
-}
-
 func (m *XStorage) onGetFromDisk(key string, rec *ValueUnit) (bool, error) {
 	t := m.setting.SaveType
 	var ok bool
@@ -188,12 +166,25 @@ func (m *XStorage) onGetFromDisk(key string, rec *ValueUnit) (bool, error) {
 	return ok, err
 }
 
-// GetAndSetDefault get值，如果没有就设置并返回默认值，返回 是否setdefault数据，数据，错误
-func (m *XStorage) GetAndSetDefault(key string, defaultValue *ValueUnit, rec *ValueUnit) (bool, error) {
+func (m *XStorage) GetAndSetDefault(key string, defaultValue *ValueUnit) (*ValueUnit, error) {
+	var valueUnit ValueUnit
+	ok, err := m.GetHP(key, &valueUnit)
+	if err != nil {
+		return nil, err
+	}
+	if ok {
+		return &valueUnit, nil
+	} else {
+		return defaultValue, nil
+	}
+}
+
+// GetAndSetDefaultHP get值，如果没有就设置并返回默认值，返回 是否setdefault数据，数据，错误
+func (m *XStorage) GetAndSetDefaultHP(key string, defaultValue *ValueUnit, rec *ValueUnit) (bool, error) {
 	if !m.initTag.IsInitialized() {
 		return false, ErrMgrNotInit
 	}
-	ok, err := m.Get(key, rec)
+	ok, err := m.GetHP(key, rec)
 	if err != nil {
 		return false, errors.Join(ErrGet, err)
 	}
@@ -214,7 +205,7 @@ func (m *XStorage) GetAndSetDefaultAsync(key string, defaultValue *ValueUnit, re
 	if !m.initTag.IsInitialized() {
 		return false, ErrMgrNotInit, nil
 	}
-	ok, err := m.Get(key, rec)
+	ok, err := m.GetHP(key, rec)
 	if err != nil {
 		return false, errors.Join(ErrSqliteDBFileAddrNotExist, err), nil
 	}
@@ -241,7 +232,7 @@ func (m *XStorage) SetDefault(key string, defaultValue *ValueUnit) error {
 		return ErrValueIsNil
 	}
 	var Rec ValueUnit
-	ok, err := m.Get(key, &Rec)
+	ok, err := m.GetHP(key, &Rec)
 	if err != nil {
 		return errors.Join(ErrGet, err)
 	}
@@ -267,7 +258,7 @@ func (m *XStorage) SetDefaultAsync(key string, defaultValue *ValueUnit) (error, 
 		return ErrValueIsNil, nil
 	}
 	var Rec ValueUnit
-	ok, err := m.Get(key, &Rec)
+	ok, err := m.GetHP(key, &Rec)
 	if err != nil {
 		return errors.Join(ErrGet, err), nil
 	}
@@ -371,7 +362,7 @@ func (m *XStorage) Delete(key string) error {
 		}
 	}
 	if misc.HasProperty(m.setting.Property, UseDisk) {
-		err := m.FromDiskDelete(key)
+		err := m.fromDiskDelete(key)
 		if err != nil {
 			return errors.Join(ErrDeleteValue, err)
 		}
@@ -379,7 +370,7 @@ func (m *XStorage) Delete(key string) error {
 	return nil
 }
 
-func (m *XStorage) FromDiskDelete(key string) error {
+func (m *XStorage) fromDiskDelete(key string) error {
 	t := m.setting.SaveType
 	var err error
 	switch {
