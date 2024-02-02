@@ -14,7 +14,7 @@ func TestWeb(t *testing.T) {
 		Property: misc.CreateProperty(MultiSafe, UseCache),
 	})
 	w, err := NewWebPack(WebPackSetting{
-		webPort: 11111,
+		WebPort: 11111,
 	}, m)
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +71,7 @@ func TestMgr_WebMa(t *testing.T) {
 		Property: misc.CreateProperty(MultiSafe, UseCache),
 	})
 	w, err := NewWebPack(WebPackSetting{
-		webPort: 11111,
+		WebPort: 11111,
 	}, m)
 	if err != nil {
 		t.Fatal(err)
