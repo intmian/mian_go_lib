@@ -8,6 +8,11 @@ type LogSetting struct {
 	LogStrategy
 	LogRecordStrategy
 	PushInfo
+	Extend
+}
+
+type Extend struct {
+	OnLog func(content string)
 }
 
 type Printer func(string) bool
