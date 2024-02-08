@@ -72,6 +72,30 @@ func GetNameFromPath(path string) string {
 	return filepath.Base(path)
 }
 
+func GetFileContent(path string) string {
+	if !PathExist(path) {
+		return ""
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+	s := ""
+	buf := make([]byte, 100)
+	for {
+		n, err := file.Read(buf)
+		if err != nil && err != io.EOF {
+			return ""
+		}
+		if n == 0 {
+			break
+		}
+		s += string(buf[:n])
+	}
+	return s
+}
+
 func DeleteFileAndChild(path string) error {
 	return os.RemoveAll(path)
 }
