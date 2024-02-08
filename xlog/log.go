@@ -149,7 +149,7 @@ func (receiver *XLog) detailLog(level LogLevel, from string, info string, ifMisc
 	ts := t.Format("2006-01-02 15:04:05")
 
 	content := parseLog(sLevel, ts, from, info)
-	receiver.Onlog(content)
+	receiver.OnLog(content)
 	if ifPrint {
 		var printContent string
 		switch level {
