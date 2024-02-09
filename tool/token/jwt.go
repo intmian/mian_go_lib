@@ -21,10 +21,10 @@ func NewJwtMgr(salt1 string, salt2 string) *JwtMgr {
 }
 
 type Data struct {
-	User       string
-	Permission []string
-	ValidTime  int64 // 时间戳
-	token      string
+	User       string   `json:"user"`
+	Permission []string `json:"permission"`
+	ValidTime  int64    `json:"validTime"` // 时间戳
+	Token      string   `json:"Token"`
 }
 
 func (m *JwtMgr) SetSalt(salt1, salt2 string) {
@@ -52,7 +52,7 @@ func (m *JwtMgr) CheckSignature(data *Data, now time.Time, wantPermission string
 		return false
 	}
 	// 检查有效性
-	if m.GenToken(data.User, data.Permission, data.ValidTime) != data.token {
+	if m.GenToken(data.User, data.Permission, data.ValidTime) != data.Token {
 		return false
 	}
 	// 如果没有权限，则返回false
@@ -65,5 +65,5 @@ func (m *JwtMgr) CheckSignature(data *Data, now time.Time, wantPermission string
 }
 
 func (m *JwtMgr) Signature(data *Data) {
-	data.token = m.GenToken(data.User, data.Permission, data.ValidTime)
+	data.Token = m.GenToken(data.User, data.Permission, data.ValidTime)
 }

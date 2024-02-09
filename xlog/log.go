@@ -15,8 +15,8 @@ type XLog struct {
 	misc.InitTag
 }
 
-// NewXlog 创建一个日志管理器
-func NewXlog(setting LogSetting) (*XLog, error) {
+// NewXLog 创建一个日志管理器
+func NewXLog(setting LogSetting) (*XLog, error) {
 	m := &XLog{}
 	err := m.Init(setting)
 	if err != nil {
