@@ -33,6 +33,14 @@ func ToBase[T IValueType](unit *ValueUnit) T {
 	return t
 }
 
+func ToBaseF[T IValueType](unit *ValueUnit, err error) T {
+	if err != nil {
+		var empty T
+		return empty
+	}
+	return ToBase[T](unit)
+}
+
 func ToUnit[T IValueType](value T, valueType ValueType) *ValueUnit {
 	return &ValueUnit{
 		Type:  valueType,
