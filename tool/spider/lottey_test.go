@@ -1,7 +1,6 @@
 package spider
 
 import (
-	"github.com/intmian/mian_go_lib/xpush"
 	"testing"
 )
 
@@ -11,10 +10,11 @@ func TestLottery(t *testing.T) {
 		t.Error("lotteries is nil")
 	}
 	s := ParseLotteriesToMarkDown(lotteries)
-	p := xpush.XPush{}
-	p.SetTag("auto")
-	p.SetPushDeerToken("PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ")
-	p.PushPushDeer("彩票", s, true)
+	t.Log(s)
+	//p := xpush.XPush{}
+	//p.SetTag("auto")
+	//p.SetPushDeerToken("PDU10120Tp8PByEPFdrKiStSvMWeOdeFtwY7GuOmQ")
+	//p.PushPushDeer("彩票", s, true)
 }
 
 func TestGetLotteryNow(t *testing.T) {
