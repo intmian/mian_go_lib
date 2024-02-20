@@ -88,7 +88,7 @@ func (w *WebPack) WebGet(c *gin.Context) {
 	//perm := c.Query("perm")
 	// 从body中读取
 	var body struct {
-		UseRe string `json:"useRe"`
+		UseRe bool   `json:"useRe"`
 		Perm  string `json:"perm"`
 	}
 	err := c.BindJSON(&body)
@@ -103,7 +103,7 @@ func (w *WebPack) WebGet(c *gin.Context) {
 	perm := body.Perm
 
 	var results []ValueUnit
-	if useRe != "true" {
+	if !useRe {
 		result := &ValueUnit{}
 		ok, err := w.storageCore.GetHP(perm, result)
 		if err != nil {
