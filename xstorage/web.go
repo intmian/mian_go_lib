@@ -84,8 +84,24 @@ func (w *WebPack) WebGet(c *gin.Context) {
 		return
 	}
 	// 读取正则表达式
-	useRe := c.Query("useRe")
-	perm := c.Query("perm")
+	//useRe := c.Query("useRe")
+	//perm := c.Query("perm")
+	// 从body中读取
+	var body struct {
+		UseRe string `json:"useRe"`
+		Perm  string `json:"perm"`
+	}
+	err := c.BindJSON(&body)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"code": WebCodeFail,
+			"msg":  WebFailReasonNoLegalParam,
+		})
+		return
+	}
+	useRe := body.UseRe
+	perm := body.Perm
+
 	var results []ValueUnit
 	if useRe != "true" {
 		result := &ValueUnit{}
