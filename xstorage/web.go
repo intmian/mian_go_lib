@@ -168,7 +168,7 @@ func (w *WebPack) WebSet(c *gin.Context) {
 	}
 	value := c.Query("value")
 
-	err = w.storageCore.Set(key, ToUnit(value, ValueType(valueTypeInt)))
+	err = w.storageCore.Set(key, StringToUnit(value, ValueType(valueTypeInt)))
 	if err != nil {
 		w.log.Error(w.setting.LogFrom, "xStorage:WebSet:set value error:"+err.Error())
 		c.JSON(200, gin.H{

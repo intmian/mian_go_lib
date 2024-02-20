@@ -1,6 +1,7 @@
 package xstorage
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -46,6 +47,61 @@ func ToUnit[T IValueType](value T, valueType ValueType) *ValueUnit {
 		Type:  valueType,
 		Data:  value,
 		dirty: false,
+	}
+}
+
+func StringToUnit(value string, valueType ValueType) *ValueUnit {
+	switch valueType {
+	case ValueTypeString:
+		return ToUnit(value, valueType)
+	case ValueTypeInt:
+		v, err := strconv.Atoi(value)
+		if err != nil {
+			return nil
+		}
+		return ToUnit(v, valueType)
+	case ValueTypeFloat:
+		v, err := strconv.ParseFloat(value, 32)
+		if err != nil {
+			return nil
+		}
+		return ToUnit(float32(v), valueType)
+	case ValueTypeBool:
+		v, err := strconv.ParseBool(value)
+		if err != nil {
+			return nil
+		}
+		return ToUnit(v, valueType)
+	case ValueTypeSliceInt:
+		var v []int
+		err := json.Unmarshal([]byte(value), &v)
+		if err != nil {
+			return nil
+		}
+		return ToUnit(v, valueType)
+	case ValueTypeSliceString:
+		var v []string
+		err := json.Unmarshal([]byte(value), &v)
+		if err != nil {
+			return nil
+		}
+		return ToUnit(v, valueType)
+	case ValueTypeSliceFloat:
+		var v []float32
+		err := json.Unmarshal([]byte(value), &v)
+		if err != nil {
+			return nil
+		}
+		return ToUnit(v, valueType)
+	case ValueTypeSliceBool:
+		var v []bool
+		err := json.Unmarshal([]byte(value), &v)
+		if err != nil {
+			return nil
+		}
+		return ToUnit(v, valueType)
+	default:
+		return nil
 	}
 }
 
