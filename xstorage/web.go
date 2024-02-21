@@ -3,12 +3,10 @@ package xstorage
 import (
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"github.com/intmian/mian_go_lib/xlog"
 	"regexp"
-	"strconv"
-
-	"github.com/gin-gonic/gin"
 )
 
 type WebCode int // web业务码
@@ -172,9 +170,12 @@ func (w *WebPack) WebSet(c *gin.Context) {
 		})
 		return
 	}
-	key := c.Query("key")
-	valueType := c.Query("value_type")
-	valueTypeInt, err := strconv.Atoi(valueType)
+	req := struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+		Type  int    `json:"type"`
+	}{}
+	err := c.BindJSON(&req)
 	if err != nil {
 		c.JSON(200, gin.H{
 			"code": WebCodeFail,
@@ -182,9 +183,20 @@ func (w *WebPack) WebSet(c *gin.Context) {
 		})
 		return
 	}
-	value := c.Query("value")
-
-	err = w.storageCore.Set(key, StringToUnit(value, ValueType(valueTypeInt)))
+	if req.Key == "" {
+		err := w.storageCore.Delete(req.Key)
+		if err != nil {
+			w.log.Error(w.setting.LogFrom, "xStorage:WebSet:delete value error:"+err.Error())
+			c.JSON(200, gin.H{
+				"code": WebCodeFail,
+				"msg":  WebFailReasonInnerError,
+			})
+			return
+		}
+		w.log.Info(w.setting.LogFrom, "xStorage:WebSet:delete [%s] success", req.Key)
+		return
+	}
+	err = w.storageCore.Set(req.Key, StringToUnit(req.Value, ValueType(req.Type)))
 	if err != nil {
 		w.log.Error(w.setting.LogFrom, "xStorage:WebSet:set value error:"+err.Error())
 		c.JSON(200, gin.H{
@@ -196,6 +208,7 @@ func (w *WebPack) WebSet(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"code": WebCodeSuc,
 	})
+	w.log.Info(w.setting.LogFrom, "xStorage:WebSet:set [%s:%s] success", req.Key, req.Value)
 }
 
 func (w *WebPack) WebGetAll(c *gin.Context) {
