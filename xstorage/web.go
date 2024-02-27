@@ -38,6 +38,8 @@ type WebPackSetting struct {
 func (w *WebPack) Init(setting WebPackSetting, core *XStorage) error {
 	w.setting = setting
 	w.storageCore = core
+	w.log = setting.Log
+	w.logFrom = setting.LogFrom
 	w.SetInitialized()
 	return nil
 }
