@@ -53,25 +53,46 @@ func ToUnit[T IValueType](value T, valueType ValueType) *ValueUnit {
 func StringToUnit(value string, valueType ValueType) *ValueUnit {
 	switch valueType {
 	case ValueTypeString:
-		return ToUnit(value, valueType)
+		var v string
+		err := json.Unmarshal([]byte(value), &v)
+		if err != nil {
+			return nil
+		}
+		return ToUnit(v, valueType)
 	case ValueTypeInt:
-		v, err := strconv.Atoi(value)
+		var v string
+		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
-		return ToUnit(v, valueType)
+		v2, err := strconv.Atoi(v)
+		if err != nil {
+			return nil
+		}
+		return ToUnit(v2, valueType)
 	case ValueTypeFloat:
-		v, err := strconv.ParseFloat(value, 32)
+		var v string
+		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
-		return ToUnit(float32(v), valueType)
+		v2, err := strconv.ParseFloat(v, 32)
+		if err != nil {
+			return nil
+		}
+		v3 := float32(v2)
+		return ToUnit(v3, valueType)
 	case ValueTypeBool:
-		v, err := strconv.ParseBool(value)
+		var v string
+		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
-		return ToUnit(v, valueType)
+		v2, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil
+		}
+		return ToUnit(v2, valueType)
 	case ValueTypeSliceInt:
 		var v1 []string
 		err := json.Unmarshal([]byte(value), &v1)
