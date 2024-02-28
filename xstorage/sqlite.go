@@ -251,7 +251,11 @@ func (m *SqliteCore) Set(key string, value *ValueUnit) error {
 		return errors.Join(ErrSqliteDBFileAddrNotExist, err)
 	}
 
+	if dbValue.Type != 0 && dbValue.Type != value.Type {
+		return ErrValueTypeNotMatch
+	}
 	notList := dbValue.Type < ValueTypeSliceBegin
+
 	if notList {
 		if !exist {
 			needCreate = keyValueModels
