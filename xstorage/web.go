@@ -13,8 +13,7 @@ type WebCode int // web业务码
 
 // 可能会被外部调用，所以复杂命名
 const (
-	WebCodeNull WebCode = iota
-	WebCodeSuc
+	WebCodeSuc WebCode = iota
 	WebCodeFail
 )
 
