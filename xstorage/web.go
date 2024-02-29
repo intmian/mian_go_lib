@@ -184,7 +184,7 @@ func (w *WebPack) WebSet(c *gin.Context) {
 		})
 		return
 	}
-	if req.Value == "" {
+	if req.Value == "\"\"" {
 		err := w.storageCore.Delete(req.Key)
 		if err != nil {
 			w.log.Error(w.setting.LogFrom, "xStorage:WebSet:delete value error:"+err.Error())
