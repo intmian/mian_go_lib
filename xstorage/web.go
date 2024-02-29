@@ -195,6 +195,9 @@ func (w *WebPack) WebSet(c *gin.Context) {
 			return
 		}
 		w.log.Info(w.setting.LogFrom, "xStorage:WebSet:delete [%s] success", req.Key)
+		c.JSON(200, gin.H{
+			"code": WebCodeSuc,
+		})
 		return
 	}
 	err = w.storageCore.Set(req.Key, StringToUnit(req.Value, ValueType(req.Type)))
