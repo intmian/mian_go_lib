@@ -182,54 +182,54 @@ func Compare(unit1 *ValueUnit, unit2 *ValueUnit) bool {
 	}
 	switch unit1.Type {
 	case ValueTypeString:
-		if ToBase[string](unit1) != ToBase[string](unit1) {
+		if ToBase[string](unit1) != ToBase[string](unit2) {
 			return false
 		}
 	case ValueTypeInt:
-		if ToBase[int](unit1) != ToBase[int](unit1) {
+		if ToBase[int](unit1) != ToBase[int](unit2) {
 			return false
 		}
 	case ValueTypeFloat:
-		if ToBase[float32](unit1) != ToBase[float32](unit1) {
+		if ToBase[float32](unit1) != ToBase[float32](unit2) {
 			return false
 		}
 	case ValueTypeBool:
-		if ToBase[bool](unit1) != ToBase[bool](unit1) {
+		if ToBase[bool](unit1) != ToBase[bool](unit2) {
 			return false
 		}
 	case ValueTypeSliceInt:
-		if len(ToBase[[]int](unit1)) != len(ToBase[[]int](unit1)) {
+		if len(ToBase[[]int](unit1)) != len(ToBase[[]int](unit2)) {
 			return false
 		}
 		for i, val := range ToBase[[]int](unit1) {
-			if val != ToBase[[]int](unit1)[i] {
+			if val != ToBase[[]int](unit2)[i] {
 				return false
 			}
 		}
 	case ValueTypeSliceString:
-		if len(ToBase[[]string](unit1)) != len(ToBase[[]string](unit1)) {
+		if len(ToBase[[]string](unit1)) != len(ToBase[[]string](unit2)) {
 			return false
 		}
 		for i, val := range ToBase[[]string](unit1) {
-			if val != ToBase[[]string](unit1)[i] {
+			if val != ToBase[[]string](unit2)[i] {
 				return false
 			}
 		}
 	case ValueTypeSliceFloat:
-		if len(ToBase[[]float32](unit1)) != len(ToBase[[]float32](unit1)) {
+		if len(ToBase[[]float32](unit1)) != len(ToBase[[]float32](unit2)) {
 			return false
 		}
 		for i, val := range ToBase[[]float32](unit1) {
-			if val != ToBase[[]float32](unit1)[i] {
+			if val != ToBase[[]float32](unit2)[i] {
 				return false
 			}
 		}
 	case ValueTypeSliceBool:
-		if len(ToBase[[]bool](unit1)) != len(ToBase[[]bool](unit1)) {
+		if len(ToBase[[]bool](unit1)) != len(ToBase[[]bool](unit2)) {
 			return false
 		}
 		for i, val := range ToBase[[]bool](unit1) {
-			if val != ToBase[[]bool](unit1)[i] {
+			if val != ToBase[[]bool](unit2)[i] {
 				return false
 			}
 		}
