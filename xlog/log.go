@@ -63,7 +63,7 @@ func (receiver *XLog) Log(level LogLevel, from string, info string) {
 			canPrint = false
 			errorReason += "print failed;"
 		}
-		if errors.Is(err, ErrPushPushDeerFail) || errors.Is(err, ErrPushEmailFail) || errors.Is(err, ErrPushDingFail) {
+		if errors.Is(err, ErrPushFail) || errors.Is(err, ErrPushPushDeerFail) || errors.Is(err, ErrPushEmailFail) || errors.Is(err, ErrPushDingFail) {
 			canPush = false
 			errorReason += "push failed;"
 		}
@@ -170,6 +170,7 @@ func (receiver *XLog) detailLog(level LogLevel, from string, info string, ifMisc
 
 	if ifPush && level <= LogLevelWarning {
 		err2 := receiver.PushMgr.Push(receiver.LogTag+" "+sLevel+" log", content, false)
+		err = errors.Join(err, ErrPushFail)
 		err = errors.Join(err, err2)
 	}
 
@@ -210,6 +211,7 @@ func geneLogAddr(t time.Time) string {
 
 const (
 	ErrPrintFail        = misc.ErrStr("print failed")
+	ErrPushFail         = misc.ErrStr("push failed")
 	ErrPushPushDeerFail = misc.ErrStr("push failed")
 	ErrPushEmailFail    = misc.ErrStr("push failed")
 	ErrPushDingFail     = misc.ErrStr("push failed")
