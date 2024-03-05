@@ -3,6 +3,7 @@ package spider
 import (
 	"fmt"
 	"github.com/antlabs/strsim"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -86,9 +87,8 @@ func CutInvalidNews(news []BaiduNew, valid float64) []BaiduNew {
 	return newsReturn
 }
 
-func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, noNews bool) {
+func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	result = make([]BaiduNew, 0)
-	noNews = false
 	header := http.Header{"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"}}
 	u := "https://www.baidu.com/s?tn=news&rtt=4&bsst=1&cl=2&wd=" + keyword
 	if page > 1 {
@@ -101,9 +101,14 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, noNews bool)
 		Header: header,
 	}
 	client := &http.Client{}
-	response, _ := client.Do(req)
-
-	text, _ := ioutil.ReadAll(response.Body)
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, errors.WithMessage(err, "client.Do error")
+	}
+	text, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, errors.WithMessage(err, "ioutil.ReadAll error")
+	}
 	reStr := `\{"titleAriaLabel":"标题[： ](.*)","absAriaLabel":"摘要[： ](.*)","sourceAriaLabel":"新闻来源[： ](.*)","timeAriaLabel":"发布于[： ](.{0,20})"\}.*href="(.*)" target`
 	reg1 := regexp.MustCompile(reStr)
 	if reg1 == nil {
@@ -112,7 +117,7 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, noNews bool)
 	//根据规则提取关键信息
 	results := reg1.FindAllStringSubmatch(string(text), -1)
 	if len(results) == 0 {
-		return nil, true
+		return nil, errors.New("no news")
 	}
 	for _, result2 := range results {
 		bn := BaiduNew{}
@@ -130,16 +135,15 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, noNews bool)
 	return
 }
 
-func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, noNews bool) {
+func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error) {
 	newsReturn = make([]BaiduNew, 0)
-	noNews = false
 	keyword = strings.Replace(keyword, " ", "+", -1)
 
 	page := 1
 	for {
-		news, noNews := getBaiduNewsPage(keyword, page)
-		if noNews {
-			return nil, true
+		news, err := getBaiduNewsPage(keyword, page)
+		if err != nil {
+			return nil, errors.WithMessage(err, "getBaiduNewsPage error")
 		}
 		if len(news) == 0 {
 			break
