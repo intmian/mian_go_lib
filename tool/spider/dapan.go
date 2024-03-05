@@ -25,7 +25,7 @@ type apiJson struct {
 	} `json:"Result"`
 }
 
-type apiJsonPlus struct {
+type ApiJsonPlus struct {
 	ResultCode string `json:"ResultCode"`
 	ResultNum  string `json:"ResultNum"`
 	Result     []struct {
@@ -317,7 +317,7 @@ type apiJsonPlus struct {
 	QueryID string `json:"QueryID"`
 }
 
-func GetDapan() *apiJson {
+func GetDapan() *ApiJsonPlus {
 	header := http.Header{"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"}}
 	u := `https://gushitong.baidu.com/opendata?openapi=1&dspName=iphone&tn=tangram&client=app&query=000001&code=000001&word=000001&resource_id=5352&name=null&title=null&market=ab&ma_ver=4&finClientType=pc`
 	httpUrl, _ := url.Parse(u)
@@ -329,7 +329,7 @@ func GetDapan() *apiJson {
 	client := &http.Client{}
 	response, _ := client.Do(req)
 	text, _ := ioutil.ReadAll(response.Body)
-	var data apiJson
+	var data ApiJsonPlus
 	err := json.Unmarshal(text, &data)
 	if err != nil {
 		return nil
@@ -342,15 +342,7 @@ func GetDapan000001() (price, increase, ratio string) {
 	if data == nil {
 		return
 	}
-	for _, v := range data.Result {
-		if v.Code == "000001" {
-			price = v.Price
-			increase = v.Increase
-			ratio = v.Ratio
-			return
-		}
-	}
-	return
+	return "", "", ""
 }
 
 func ParseDapanToMarkdown(name, price, increase, ratio string) string {
