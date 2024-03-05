@@ -141,9 +141,19 @@ func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error) {
 
 	page := 1
 	for {
-		news, err := getBaiduNewsPage(keyword, page)
+		retryTimes := 10
+		var news []BaiduNew
+		for retryTimes > 0 {
+			news, err = getBaiduNewsPage(keyword, page)
+			if err == nil {
+				break
+			}
+			retryTimes--
+			// 休眠一分钟
+			time.Sleep(time.Minute)
+		}
 		if err != nil {
-			return nil, errors.WithMessage(err, "getBaiduNewsPage error")
+			return nil, errors.WithMessage(err, "getBaiduNewsPage error after retry 10")
 		}
 		if len(news) == 0 {
 			break
