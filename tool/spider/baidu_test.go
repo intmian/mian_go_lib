@@ -16,9 +16,10 @@ func TestGetBaiduNews(t *testing.T) {
 	keywords := []string{}
 	newss := [][]BaiduNew{}
 	for _, v := range params {
-		news, b1 := GetTodayBaiduNews(v)
-		if b1 == true {
-			t.Error("get news error")
+		news, err := GetTodayBaiduNews(v)
+		if err != nil {
+			t.Error(err)
+			return
 		}
 		t.Logf("%s: %d", v, len(news))
 		keywords = append(keywords, v)
