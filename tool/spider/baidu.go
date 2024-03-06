@@ -196,6 +196,19 @@ func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error, retry 
 			break
 		}
 	}
+
+	// 如果时间全部都是undefined，那么就直接返回空，因为undefined的新闻可能是很古早的
+	allUndefined := true
+	for _, news1 := range newsReturn {
+		if news1.time != "undefined" {
+			allUndefined = false
+			break
+		}
+	}
+	if allUndefined {
+		return []BaiduNew{}, nil, retry
+	}
+
 	for i := 0; i < len(newsReturn); i++ {
 		for j := i + 1; j < len(newsReturn); j++ {
 			valid1 := strsim.Compare(newsReturn[i].title, newsReturn[j].title)
