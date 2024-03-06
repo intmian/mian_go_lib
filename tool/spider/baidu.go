@@ -125,6 +125,9 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "ioutil.ReadAll error")
 	}
+	if strings.Contains(string(text), "网络不给力，请稍后重试") {
+		return nil, errors.New("网络不给力，请稍后重试")
+	}
 	reStr := `\{"titleAriaLabel":"标题[： ](.*)","absAriaLabel":"摘要[： ](.*)","sourceAriaLabel":"新闻来源[： ](.*)","timeAriaLabel":"发布于[： ](.{0,20})"\}.*href="(.*)" target`
 	reg1 := regexp.MustCompile(reStr)
 	if reg1 == nil {
@@ -153,13 +156,13 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	return
 }
 
-func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error) {
+func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error, retry int) {
 	newsReturn = make([]BaiduNew, 0)
 	keyword = strings.Replace(keyword, " ", "+", -1)
 
 	page := 1
 	for {
-		retryTimes := 10
+		retryTimes := 20
 		var news []BaiduNew
 		for retryTimes > 0 {
 			news, err = getBaiduNewsPage(keyword, page)
@@ -167,11 +170,12 @@ func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error) {
 				break
 			}
 			retryTimes--
+			retry++
 			// 休眠一分钟
 			time.Sleep(time.Minute)
 		}
 		if err != nil {
-			return nil, errors.WithMessage(err, "getBaiduNewsPage error after retry 10")
+			return nil, errors.WithMessage(err, "getBaiduNewsPage error after retry"), retry
 		}
 		if len(news) == 0 {
 			break

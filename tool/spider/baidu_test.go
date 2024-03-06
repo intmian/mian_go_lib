@@ -6,17 +6,17 @@ import (
 
 func TestGetBaiduNews(t *testing.T) {
 	params := []string{
-		//"nuc",
-		//"群晖",
-		//"macbook air",
-		//"扫地机器人 发布",
+		"gta6",
+		"iphone16 ",
+		"ps5pro ",
+		"apple glass",
 		"iphone16",
-		//"特斯拉",
+		"特斯拉",
 	}
 	keywords := []string{}
 	newss := [][]BaiduNew{}
 	for _, v := range params {
-		news, err := GetTodayBaiduNews(v)
+		news, err, _ := GetTodayBaiduNews(v)
 		if err != nil {
 			t.Error(err)
 			return
