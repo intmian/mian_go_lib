@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -117,6 +118,8 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	//根据规则提取关键信息
 	results := reg1.FindAllStringSubmatch(string(text), -1)
 	if len(results) == 0 {
+		f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
+		f.WriteString(string(text))
 		return nil, errors.New("no news")
 	}
 	for _, result2 := range results {
