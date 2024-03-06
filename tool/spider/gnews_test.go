@@ -13,7 +13,7 @@ func TestTime(t *testing.T) {
 
 func TestGetGNews(t *testing.T) {
 	req := GNewsSearch{
-		q:      "特斯拉",
+		q:      "tesla",
 		lang:   LanChinese,
 		sortby: SortByPublishedAt,
 		from:   GetUniTimeStr(time.Now().AddDate(0, -1, -10)),

@@ -61,14 +61,29 @@ func ParseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 		return ""
 	}
 	dateTime := time.Now().Format("2006-01-02")
-	s := "## " + dateTime + " 新闻汇总\r\n"
+	s := "### " + dateTime + " 新闻汇总\r\n"
+	var noNews []string
+	for i, keyword := range keywords {
+		newsNum := len(news[i])
+		if newsNum != 0 {
+			continue
+		}
+		noNews = append(noNews, keyword)
+	}
+	if len(noNews) != 0 {
+		s += "#### 无新闻\r\n"
+		for _, noNew := range noNews {
+			s += "- " + noNew + "\r\n"
+		}
+		return s
+	}
+
 	for i, keyword := range keywords {
 		newsNum := len(news[i])
 		if newsNum == 0 {
-			s += "### " + keyword + " 无新闻\r\n"
 			continue
 		}
-		s += "### " + keyword + " " + strconv.Itoa(newsNum) + "条新闻\r\n"
+		s += "#### " + keyword + " " + strconv.Itoa(newsNum) + "条新闻\r\n"
 		for _, baiduNew := range news[i] {
 			baiduNew.time = strings.Replace(baiduNew.time, "undefined", "近期", -1)
 			// 来源 时间：标题（链接）
