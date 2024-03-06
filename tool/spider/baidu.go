@@ -125,11 +125,11 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "ioutil.ReadAll error")
 	}
+	f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
+	f.WriteString(string(text))
 	if strings.Contains(string(text), "网络不给力，请稍后重试") {
 		return nil, errors.New("网络不给力，请稍后重试")
 	}
-	f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
-	f.WriteString(string(text))
 	reStr := `\{"titleAriaLabel":"标题[： ](.*)","absAriaLabel":"摘要[： ](.*)","sourceAriaLabel":"新闻来源[： ](.*)","timeAriaLabel":"发布于[： ](.{0,20})"\}.*href="(.*)" target`
 	reg1 := regexp.MustCompile(reStr)
 	if reg1 == nil {
