@@ -51,7 +51,7 @@ func DefaultSetting() LogSetting {
 	l.IfUseColor = true
 	l.IfFile = true
 	l.Printer = func(s string) bool {
-		println(s)
+		print(s)
 		return true
 	}
 	return l
