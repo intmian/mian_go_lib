@@ -6,11 +6,11 @@ import (
 
 func TestGetBaiduNews(t *testing.T) {
 	params := []string{
-		//"gta6",
-		//"iphone16 ",
-		//"ps5pro ",
-		//"apple glass",
-		//"iphone16",
+		"gta6",
+		"iphone16 ",
+		"ps5pro ",
+		"apple glass",
+		"iphone16",
 		"特斯拉",
 	}
 	keywords := []string{}

@@ -74,7 +74,6 @@ func ParseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 		for _, noNew := range noNews {
 			s += "- " + noNew + "\r\n"
 		}
-		return s
 	}
 
 	for i, keyword := range keywords {
