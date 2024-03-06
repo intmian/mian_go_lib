@@ -10,8 +10,8 @@ func TestGetBaiduNews(t *testing.T) {
 		//"群晖",
 		//"macbook air",
 		//"扫地机器人 发布",
-		"手机",
-		"特斯拉",
+		"iphone16",
+		//"特斯拉",
 	}
 	keywords := []string{}
 	newss := [][]BaiduNew{}
@@ -39,7 +39,7 @@ func TestGetBaiduNews(t *testing.T) {
 	//		//println(baiduNew.valid)
 	//	}
 	//}
-	//s := ParseNewToMarkdown(keywords, newss)
+	_ = ParseNewToMarkdown(keywords, newss)
 	//f, _ := os.Create("baidu.md")
 	//f.WriteString(s)
 	//p := xpush.Mgr{}

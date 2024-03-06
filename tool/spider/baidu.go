@@ -70,7 +70,7 @@ func ParseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 		}
 		s += "### " + keyword + " " + strconv.Itoa(newsNum) + "条新闻\r\n"
 		for _, baiduNew := range news[i] {
-			strings.Replace(baiduNew.time, "undefined", "也许是刚刚", -1)
+			baiduNew.time = strings.Replace(baiduNew.time, "undefined", "近期", -1)
 			// 来源 时间：标题（链接）
 			s += fmt.Sprintf("- %s %s：[%s](%s) \r\n", baiduNew.source, baiduNew.time, baiduNew.title, baiduNew.href)
 		}
