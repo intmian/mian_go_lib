@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -105,6 +104,10 @@ func CutInvalidNews(news []BaiduNew, valid float64) []BaiduNew {
 
 func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	result = make([]BaiduNew, 0)
+	/*
+		服务器和本机读取的结果可能不一样，本机的类似于直接搜索百度新闻，服务器上的就是精简后的，而且去除重复新闻。
+		服务器请求可能会出现网络问题
+	*/
 	header := http.Header{"User-Agent": {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"}}
 	u := "https://www.baidu.com/s?tn=news&rtt=4&bsst=1&cl=2&wd=" + keyword
 	if page > 1 {
@@ -125,8 +128,8 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "ioutil.ReadAll error")
 	}
-	f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
-	f.WriteString(string(text))
+	//f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
+	//f.WriteString(string(text))
 	if strings.Contains(string(text), "网络不给力，请稍后重试") {
 		return nil, errors.New("网络不给力，请稍后重试")
 	}
