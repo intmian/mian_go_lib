@@ -128,6 +128,8 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	if strings.Contains(string(text), "网络不给力，请稍后重试") {
 		return nil, errors.New("网络不给力，请稍后重试")
 	}
+	f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
+	f.WriteString(string(text))
 	reStr := `\{"titleAriaLabel":"标题[： ](.*)","absAriaLabel":"摘要[： ](.*)","sourceAriaLabel":"新闻来源[： ](.*)","timeAriaLabel":"发布于[： ](.{0,20})"\}.*href="(.*)" target`
 	reg1 := regexp.MustCompile(reStr)
 	if reg1 == nil {
@@ -135,11 +137,6 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	}
 	//根据规则提取关键信息
 	results := reg1.FindAllStringSubmatch(string(text), -1)
-	if len(results) == 0 {
-		f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
-		f.WriteString(string(text))
-		return nil, errors.New("no news")
-	}
 	for _, result2 := range results {
 		bn := BaiduNew{}
 		if len(result2) != 6 {
