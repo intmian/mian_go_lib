@@ -170,8 +170,10 @@ func (receiver *XLog) detailLog(level LogLevel, from string, info string, ifMisc
 
 	if ifPush && level <= LogLevelWarning {
 		err2 := receiver.PushMgr.Push(receiver.LogTag+" "+sLevel+" log", content, false)
-		err = errors.Join(err, ErrPushFail)
-		err = errors.Join(err, err2)
+		if err2 != nil {
+			err = errors.Join(err, ErrPushFail)
+			err = errors.Join(err, err2)
+		}
 	}
 
 	if ifFile {
