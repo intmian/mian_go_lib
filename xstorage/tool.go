@@ -3,15 +3,14 @@ package xstorage
 import "strings"
 
 func Join(src ...string) string {
-	var result string
+	var buffer strings.Builder
 	for i, s := range src {
-		if i == 0 {
-			result = s
-		} else {
-			result += "." + s
+		buffer.WriteString(s)
+		if i != len(src)-1 {
+			buffer.WriteString(".")
 		}
 	}
-	return result
+	return buffer.String()
 }
 
 func Split(src string) []string {
