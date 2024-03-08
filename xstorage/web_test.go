@@ -10,7 +10,7 @@ import (
 )
 
 func TestWeb(t *testing.T) {
-	m, err := NewXStorage(XstorageSetting{
+	m, err := NewXStorage(XStorageSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache),
 	})
 	w, err := NewWebPack(WebPackSetting{
@@ -67,7 +67,7 @@ func TestWeb(t *testing.T) {
 
 func TestMgr_WebMa(t *testing.T) {
 	return
-	m, err := NewXStorage(XstorageSetting{
+	m, err := NewXStorage(XStorageSetting{
 		Property: misc.CreateProperty(MultiSafe, UseCache),
 	})
 	w, err := NewWebPack(WebPackSetting{

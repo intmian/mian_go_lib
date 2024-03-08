@@ -24,7 +24,7 @@ const (
 	Toml // 为保证效率，必须开启UseCache、FullInitLoad
 )
 
-type XstorageSetting struct {
+type XStorageSetting struct {
 	Property KeyValueProperty
 	SaveType keyValueSaveType
 	DBAddr   string

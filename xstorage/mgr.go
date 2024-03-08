@@ -9,7 +9,7 @@ import (
 type XStorage struct {
 	dbCore   IDBCore
 	fileCore IFileCore
-	setting  XstorageSetting
+	setting  XStorageSetting
 	rwLock   sync.RWMutex
 	initTag  misc.InitTag
 	//map尽量不要包非pool指针，不然可能在频繁调用的情况下出现大量的内存垃圾，影响内存，gc也无法快速回收，如果低峰期依然有访问可能会出现同访问量、数据量的情况下，每天内存占用越来越高，直到内存耗尽才频繁gc，性能会有问题，特别是在单机多进程的情况下。
@@ -17,7 +17,7 @@ type XStorage struct {
 	pool  sync.Pool
 }
 
-func (m *XStorage) Init(setting XstorageSetting) error {
+func (m *XStorage) Init(setting XStorageSetting) error {
 	// 检查路径
 	if setting.SaveType > DBBegin && setting.SaveType < FileBegin && setting.DBAddr == "" {
 		return ErrSqliteDBFileAddrEmpty
@@ -74,7 +74,7 @@ func (m *XStorage) Init(setting XstorageSetting) error {
 	return nil
 }
 
-func NewXStorage(setting XstorageSetting) (*XStorage, error) {
+func NewXStorage(setting XStorageSetting) (*XStorage, error) {
 	mgr := &XStorage{
 		setting: setting,
 	}

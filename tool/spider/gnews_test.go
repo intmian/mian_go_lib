@@ -19,7 +19,7 @@ func TestGetGNews(t *testing.T) {
 		from:   GetUniTimeStr(time.Now().AddDate(0, -1, -10)),
 		to:     GetUniTimeStr(time.Now()),
 	}
-	result, err := QueryGNews(req, "")
+	result, err := QueryGNews(req, "ee54b7595ba81fc612c56689416abf6a")
 	if err != nil {
 		t.Error(err)
 	}
@@ -32,7 +32,7 @@ func TestGetGTop(t *testing.T) {
 		from: GetUniTimeStr(time.Now().AddDate(0, 0, -1)),
 		to:   GetUniTimeStr(time.Now()),
 	}
-	result, err := QueryGNewsTop(req, "")
+	result, err := QueryGNewsTop(req, "ee54b7595ba81fc612c56689416abf6a")
 	if err != nil {
 		t.Error(err)
 	}
