@@ -13,6 +13,8 @@ class err_operator:
 
         # 将形如 has init 之类的错误信息转换为 ErrHasInit
         words = ori_err.split(" ")
+        # 删除.
+        words = [word.replace(".", "") for word in words]
         # 生成替换过后的错误常量名
         self.after_err = "Err"
         for word in words:
