@@ -26,6 +26,7 @@ require (
 	github.com/richardlehane/msoleps v1.0.1 // indirect
 	github.com/robotn/xgb v0.0.0-20190912153532-2cb92d044934 // indirect
 	github.com/robotn/xgbutil v0.0.0-20190912154524-c861d6f87770 // indirect
+	github.com/sashabaranov/go-openai v1.20.3 // indirect
 	github.com/shirou/gopsutil v3.21.10+incompatible // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect

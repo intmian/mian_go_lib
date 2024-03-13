@@ -4,3 +4,5 @@
 /xres/~$test.xlsx
 /xstorage/*.db
 /xstorage/*.json
+tool/ai/openai_test.txt
+tool/ai/openai_test.go
