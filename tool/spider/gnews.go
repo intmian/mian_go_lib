@@ -99,10 +99,10 @@ type GNewsSearch struct {
 
 type GNewsTop struct {
 	category string
-	lang     GNewsLang    // This parameter allows you to specify the language of the news articles returned by the API. You have to set as value the 2 letters code of the language you want to filter.
-	country  GNewsCountry // This parameter allows you to specify the country where the news articles returned by the API were published, the contents of the articles are not necessarily related to the specified country. You have to set as value the 2 letters code of the country you want to filter.
-	from     UniTimeStr   // This parameter allows you to filter the articles that have a publication date greater than or equal to the specified value. The date must respect the following format:
-	to       UniTimeStr   // This parameter allows you to filter the articles that have a publication date smaller than or equal to the specified value. The date must respect the following format:
+	Lang     GNewsLang    // This parameter allows you to specify the language of the news articles returned by the API. You have to set as value the 2 letters code of the language you want to filter.
+	country  GNewsCountry // This parameter allows you To specify the country where the news articles returned by the API were published, the contents of the articles are not necessarily related To the specified country. You have To set as value the 2 letters code of the country you want To filter.
+	From     UniTimeStr   // This parameter allows you to filter the articles that have a publication date greater than or equal to the specified value. The date must respect the following format:
+	To       UniTimeStr   // This parameter allows you To filter the articles that have a publication date smaller than or equal To the specified value. The date must respect the following format:
 }
 
 type UniTimeStr string
@@ -193,17 +193,17 @@ func QueryGNewsTop(top GNewsTop, apikey string) (TopResult, error) {
 	} else {
 		url += "&category=general"
 	}
-	if top.lang != "" {
-		url += "&lang=" + string(top.lang)
+	if top.Lang != "" {
+		url += "&lang=" + string(top.Lang)
 	}
 	if top.country != "" {
 		url += "&country=" + string(top.country)
 	}
-	if top.from != "" {
-		url += "&from=" + string(top.from)
+	if top.From != "" {
+		url += "&from=" + string(top.From)
 	}
-	if top.to != "" {
-		url += "&to=" + string(top.to)
+	if top.To != "" {
+		url += "&to=" + string(top.To)
 	}
 	// get
 	resp, err := http.Get(url)
@@ -231,9 +231,9 @@ func GetGNewsSumTop(token string, last time.Time) (TopResult, error) {
 	var result GNewsArticles
 	for i := 0; i < len(times)-1; i++ {
 		req := GNewsTop{
-			lang: LanEnglish,
-			from: GetUniTimeStr(times[i]),
-			to:   GetUniTimeStr(times[i+1]),
+			Lang: LanEnglish,
+			From: GetUniTimeStr(times[i]),
+			To:   GetUniTimeStr(times[i+1]),
 		}
 		r, err := QueryGNewsTop(req, token)
 		if err != nil {
