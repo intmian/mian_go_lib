@@ -11,6 +11,8 @@ type OpenAI struct {
 	renshe string
 }
 
+const DefaultRenshe = "You are ChatGPT, a large language model trained by OpenAI."
+
 func NewOpenAI(baseUrl, token string, cheap bool, renshe string) *OpenAI {
 	o := &OpenAI{}
 	o.Init(baseUrl, token, cheap, renshe)
