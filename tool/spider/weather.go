@@ -62,7 +62,7 @@ type Weather struct {
 	IndexMap   map[Index]IndexInfo
 	MinWeather int
 	MaxWeather int
-	condition  string
+	Condition  string
 }
 
 func GetTodayWeather(s string) (Weather, error) {
@@ -95,7 +95,7 @@ func GetTodayWeather(s string) (Weather, error) {
 	todayStr := time.Now().Format("2006-01-02")
 	for _, v := range d {
 		if v.Date == todayStr {
-			weather.condition = v.WeatherText
+			weather.Condition = v.WeatherText
 			break
 		}
 	}
@@ -114,7 +114,7 @@ func GetTodayWeather(s string) (Weather, error) {
 		}
 	}
 	// 有一个为空就返回错误
-	if weather.MinWeather == 0 || weather.MaxWeather == 0 || weather.condition == "" || len(weather.IndexMap) == 0 {
+	if weather.MinWeather == 0 || weather.MaxWeather == 0 || weather.Condition == "" || len(weather.IndexMap) == 0 {
 		return Weather{}, fmt.Errorf("error parsing weather data")
 	}
 	return weather, nil

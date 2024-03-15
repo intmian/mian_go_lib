@@ -59,8 +59,7 @@ func ParseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 	if len(news) != len(keywords) {
 		return ""
 	}
-	dateTime := time.Now().Format("2006-01-02")
-	s := "### " + dateTime + " 新闻汇总\r\n"
+	s := ""
 	var noNews []string
 	for i, keyword := range keywords {
 		newsNum := len(news[i])

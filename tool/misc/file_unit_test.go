@@ -62,8 +62,9 @@ func TestTFileUnit(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		j.SafeUseData(func(a json) {
-			if a.Name != "name" || a.Age != 19 {
+		j.SafeUseData(func(a any) {
+			b := a.(*json)
+			if b.Name != "name" || b.Age != 19 {
 				t.Error("json write or read error")
 			}
 		}, false)
@@ -79,8 +80,9 @@ func TestTFileUnit(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		j.SafeUseData(func(a json) {
-			if a.Name != "name" || a.Age != 19 {
+		j.SafeUseData(func(a any) {
+			b := a.(*json)
+			if b.Name != "name" || b.Age != 19 {
 				t.Error("json write or read error")
 			}
 		}, true)
