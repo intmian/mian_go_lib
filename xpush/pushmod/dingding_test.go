@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDingRobotMgr_Send(t *testing.T) {
@@ -45,27 +46,56 @@ func TestDingRobotMgr_Send(t *testing.T) {
 }
 
 func TestManual(t *testing.T) {
-	s := `【文体娱乐】 最近的娱乐界又热闹了起来。韩星Han So-hee终于澄清了与Ryu Jun-yeol的约会谣言，并在博客上对粉丝致歉，希望大家不再误会[[1](https://koreajoongangdaily.joins.com/news/2024-03-16/entertainment/television/Han-Sohee-admits-dating-Ryu-Joonyeol-/2003882)]。另一方面，知名影星Billie Piper表示，她并不喜欢讨论前夫Laurence Fox的言论，这些炒作只会让她变得更强大[[5](https://www.theguardian.com/tv-and-radio/2024/mar/15/billie-piper-says-she-dislikes-discussing-ex-husband-laurence-foxs-comments)]。至于TVB剧集《婚後事》则引起了网民的热议，毕竟谁不好奇王敏奕的结局会如何呢？[[1](https://koreajoongangdaily.joins.com/news/2024-03-16/entertainment/television/Han-Sohee-admits-dating-Ryu-Joonyeol-/2003882)7]。 【体育】 在体育领域，各种比赛火热进行中。Pittsburgh Steelers足球队选择在Terry Bradshaw退役后20年选中了他们的下一任潜在特许经营者，似乎他们对未来有着远大的期待[[2](https://www.nbcsports.com/nfl/profootballtalk/rumor-mill/news/steelers-continue-to-act-out-of-character-in-trading-kenny-pickett)]。同时，Chelsea在WSL的比赛中以3-1击败了Arsenal，重塑了她们在竞标中的地位[[3](https://www.theguardian.com/football/2024/mar/15/chelsea-sink-arsenal-to-make-major-move-in-wsl-title-race)]。而同样在体育赛场上，Ireland U20s 在与苏格兰的比赛中取得了胜利，却未能成功赢得他们的第三个冠军[[1](https://koreajoongangdaily.joins.com/news/2024-03-16/entertainment/television/Han-Sohee-admits-dating-Ryu-Joonyeol-/2003882)0]。 【科技】 科技则同样进步迅速。对于工程师来说，从人类最远的飞行器传回的新信号可能是修复Voyager 1 的关键[[6](https://arstechnica.com/space/2024/03/finally-engineers-have-a-clue-that-could-help-them-save-voyager-1/)]。同时，关于PS5 Pro的谣言也逐渐浮出水面，未来可能会采用"Spectral Super Resolution"技术，具体含义仍有待探索[[9](https://www.kotaku.com.au/2024/03/rumoured-ps5-pro-has-spectral-super-resolution-whatever-the-hell-that-means/)]。 【政治】 政治新闻也不断更新。最近，安哥拉总统João Lourenço对中国进行了访问，在与中国国家主席习近平的会晤中，试图寻找中美之间的平衡并推动经贸多元化[[1](https://koreajoongangdaily.joins.com/news/2024-03-16/entertainment/television/Han-Sohee-admits-dating-Ryu-Joonyeol-/2003882)5]。而在以色列，内塔尼亚胡总理批准了军队进攻加沙地带南部拉法的行动计划，对此，美国白宫国家安全委员会发言人表示对正在进行中的停火谈判持"谨慎乐观"的态度[[1](https://koreajoongangdaily.joins.com/news/2024-03-16/entertainment/television/Han-Sohee-admits-dating-Ryu-Joonyeol-/2003882)1]。 【经济】 在经济领域，TikTok在美国市场的营业额在2023年已高达160亿美元，显示出在美国市场的重要性[[1](https://koreajoongangdaily.joins.com/news/2024-03-16/entertainment/television/Han-Sohee-admits-dating-Ryu-Joonyeol-/2003882)3]。 【地区】 地域方面，Miami Beach为了保证春假期间的安宁设定了宵禁，禁止市民在每晚零点后外出[[7](https://www.nytimes.com/2024/03/15/us/miami-beach-spring-break-curfew.html)]。此外，中国海警宣称在金门附近海域执法巡查，引发了台湾海巡伴航驱离的行动[[1](https://koreajoongangdaily.joins.com/news/2024-03-16/entertainment/television/Han-Sohee-admits-dating-Ryu-Joonyeol-/2003882)8]。 综上，这些就是过去一天内的20个热点新闻，希望对读者们有所帮助。 `
+	s := `在过去的一天里，全球各地发生了许多引人注目的事件，从科技创新到体育赛事，再到政治动态，热点新闻层出不穷。让我们一起回顾这些精彩瞬间，感受时代脉搏的跳动。 在科技领域，SpaceX的Starship火箭成功发射，带来了令人惊叹的太空影像。同时，有关AI技术复活已逝明星的讨论引发了公众对科技伦理的深思。此外，SIGMA即将发布的F1.2超大光圈定焦镜头，预示着摄影技术的又一次飞跃。 体育赛事同样精彩纷呈。Sam Hauser在波士顿凯尔特人对阵华盛顿奇才的比赛中创下个人职业生涯新高，成为比赛的焦点。而在足球领域，巴塞罗那以3-0的比分双杀马德里竞技，展现了球队的强大实力。 政治舞台上，普京在俄罗斯总统选举中以压倒性优势获胜，引发了国际社会的广泛关注和讨论[[16](https://www.rfi.fr/cn/%E4%B8%AD%E5%9B%BD/20240317-%E8%A5%BF%E6%96%B9%E5%90%84%E5%9B%BD%E6%8C%87%E8%B4%A3%E4%BF%84%E6%80%BB%E7%BB%9F%E9%80%89%E4%B8%BE%E4%B8%8D%E5%85%AC%E6%AD%A3%E6%97%A0%E5%90%88%E6%B3%95%E6%80%A7-%E6%B3%BD%E8%BF%9E%E6%96%AF%E5%9F%BA%E7%A7%B0%E6%99%AE%E4%BA%AC%E6%98%AF-%E6%9D%83%E6%AC%B2%E7%86%8F%E5%BF%83%E7%9A%84%E7%8B%AC%E8%A3%81%E8%80%85)]。与此同时，以色列与哈马斯的冲突持续升级，国际社会对和平的渴望愈发迫切。 在社会议题方面，多个地区的民众通过购买补贴商品来应对生活压力，反映出普遍的经济挑战。而在台北，一起儿童虐待案件引发了公众对儿童保护问题的关注。 每一条新闻都是时代的一个缩影，反映了当下社会的多样性和复杂性。无论是科技的进步，体育的激情，政治的变迁，还是社会的关怀，这些热点新闻共同编织了我们共同生活的世界图景。`
+	//restr := `[[.*](.*)]`
+	//re := regexp.MustCompile(restr)
+	//// 删除所有链接
+	//s = re.ReplaceAllString(s, "")
 	//hexie := map[string]string{
 	//	"习近平": "aaa",
 	//	"台湾":  "bb",
 	//	"中国":  "cc",
 	//	"主席":  "dd",
+	//	"选举":  "ee",
+	//	"普京":  "ff",
 	//}
 	//for k, v := range hexie {
 	//	s = strings.ReplaceAll(s, k, v)
 	//}
+	//find(t, s, 0, len(s))
+	err := send(t, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func find(t *testing.T, s string, left, right int) {
+	// 使用二分法查找哪里有违禁词并打印
+	time.Sleep(10 * time.Second)
+	t.Logf("findf left: %d, right: %d", left, right)
+	news := s[left:right]
+	err := send(t, news)
+	if err != nil {
+		if len(s) < 20 {
+			t.Log(s)
+		} else {
+			find(t, s, left, (left+right)/2)
+			find(t, s, (left+right)/2, right)
+		}
+	}
+}
+
+func send(t *testing.T, s string) error {
 	m := &DingRobotMgr{}
 	token := ""
 	secret := ""
-
 	// 从本地文件 dingding_test.txt 读取测试内容token和secret
 	file, _ := os.Open("dingding_test.txt")
 	defer file.Close()
 	buf := make([]byte, 1024)
 	n, _ := file.Read(buf)
 	str := string(buf[:n])
-	strs := strings.Split(str, "\n")
+	strs := strings.Split(str, "\r\n")
 	token = strs[0]
 	secret = strs[1]
 
@@ -80,7 +110,5 @@ func TestManual(t *testing.T) {
 	}
 
 	e := m.pushDing("test", s, true)
-	if e != nil {
-		t.Fatal(e)
-	}
+	return e
 }
