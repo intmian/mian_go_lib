@@ -18,6 +18,7 @@ type XStorage struct {
 }
 
 func (m *XStorage) Init(setting XStorageSetting) error {
+	m.setting = setting
 	// 检查路径
 	if setting.SaveType > DBBegin && setting.SaveType < FileBegin && setting.DBAddr == "" {
 		return ErrSqliteDBFileAddrEmpty
