@@ -34,6 +34,17 @@ func ToBase[T IValueType](unit *ValueUnit) T {
 	return t
 }
 
+// UnitToJStruct 直接转换为结构体
+func UnitToJStruct[T any](unit *ValueUnit) *T {
+	s := ToBase[string](unit)
+	v := new(T)
+	err := json.Unmarshal([]byte(s), &v)
+	if err != nil {
+		return v
+	}
+	return v
+}
+
 func ToBaseF[T IValueType](unit *ValueUnit, err error) T {
 	if err != nil {
 		var empty T
@@ -48,6 +59,14 @@ func ToUnit[T IValueType](value T, valueType ValueType) *ValueUnit {
 		Data:  value,
 		dirty: false,
 	}
+}
+
+func JStructToUnit[T any](value *T) *ValueUnit {
+	s, err := json.Marshal(value)
+	if err != nil {
+		return nil
+	}
+	return ToUnit(string(s), ValueTypeString)
 }
 
 func StringToUnit(value string, valueType ValueType) *ValueUnit {
