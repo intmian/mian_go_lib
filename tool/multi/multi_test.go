@@ -38,7 +38,7 @@ func TestSafeMap(t *testing.T) {
 }
 
 func TestUnitLock(t *testing.T) {
-	t.Run("1", func(t *testing.T) {
+	t.Run("lock", func(t *testing.T) {
 		u := NewUnitLock[string]()
 		wg := sync.WaitGroup{}
 		for i := 0; i < 100; i++ {
@@ -75,6 +75,29 @@ func TestUnitLock(t *testing.T) {
 		case <-c:
 		case <-time.After(time.Second):
 			t.Error("lock error")
+		}
+	})
+	t.Run("rlock", func(t *testing.T) {
+		u := NewUnitLock[string]()
+		wg := sync.WaitGroup{}
+		for i := 0; i < 100; i++ {
+			wg.Add(1)
+			go func(i int) {
+				u.RLock(fmt.Sprintf("key"))
+				defer u.RUnlock(fmt.Sprintf("key"))
+				time.Sleep(time.Second)
+				wg.Done()
+			}(i)
+		}
+		c := make(chan any)
+		go func() {
+			wg.Wait()
+			c <- nil
+		}()
+		select {
+		case <-c:
+		case <-time.After(time.Second * 2):
+			t.Error("time error")
 		}
 	})
 	t.Run("lock all", func(t *testing.T) {
