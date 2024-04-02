@@ -146,7 +146,7 @@ func MakeTodayWeatherMD(cityName string, index IndexReturn, w WeatherReturn) (st
 	}
 	todayWeather := w.Daily[0]
 	md := misc.MarkdownTool{}
-	md.AddTitle(cityName+"今日天气", 2)
+	md.AddTitle(cityName+"今日天气", 3)
 	s := ""
 	s = `白天%s->晚上%s，温度%s℃-%s℃，湿度%s%%，日出%s，日落%s`
 	s = fmt.Sprintf(s, todayWeather.TextDay, todayWeather.TextNight, todayWeather.TempMin, todayWeather.TempMax, todayWeather.Humidity, todayWeather.Sunrise, todayWeather.Sunset)
