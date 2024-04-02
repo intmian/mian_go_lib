@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const qWeatherApi = "https://devapi.qweather.com"
@@ -151,7 +152,9 @@ func MakeTodayWeatherMD(cityName string, index IndexReturn, w WeatherReturn) (st
 	s = fmt.Sprintf(s, todayWeather.TextDay, todayWeather.TextNight, todayWeather.TempMin, todayWeather.TempMax, todayWeather.Humidity, todayWeather.Sunrise, todayWeather.Sunset)
 	md.AddContent(s)
 	for i := 0; i < len(index.Daily); i++ {
-		md.AddList("**"+index.Daily[i].Name+":**"+index.Daily[i].Text, 1)
+		name := index.Daily[i].Name
+		name = strings.Replace(name, "指数", "", -1)
+		md.AddList(name+":"+index.Daily[i].Text, 1)
 	}
 	return md.ToStr(), nil
 }
