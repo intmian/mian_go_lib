@@ -12,22 +12,14 @@ type CfgParam struct {
 
 // CfgExt 为xstorage增加一个通用的配置机制
 type CfgExt struct {
-	core        *XStorage
-	serviceName string
-	paramMap    map[string]*CfgParam
-	initTag     misc.InitTag
+	core     *XStorage
+	paramMap map[string]*CfgParam
+	initTag  misc.InitTag
 }
 
-func (c *CfgExt) Init(core *XStorage, serviceName string) error {
+func (c *CfgExt) Init(core *XStorage) error {
 	if core == nil {
 		return ErrCoreIsNil
-	}
-	if serviceName == "" {
-		return ErrParamIsEmpty
-	}
-	// 避免奇怪的冲突
-	if serviceName == "cfg" || serviceName == "user" {
-		return ErrParamIsInvalid
 	}
 	c.paramMap = make(map[string]*CfgParam)
 	c.core = core
@@ -37,7 +29,7 @@ func (c *CfgExt) Init(core *XStorage, serviceName string) error {
 
 func NewCfgExt(core *XStorage, serviceName string) (*CfgExt, error) {
 	ret := &CfgExt{}
-	err := ret.Init(core, serviceName)
+	err := ret.Init(core)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +55,7 @@ func (c *CfgExt) AddParam(param *CfgParam) error {
 	return nil
 }
 
-func (c *CfgExt) SetCfg(key string, value ValueUnit) error {
+func (c *CfgExt) SetCfg(key string, svr string, value ValueUnit) error {
 	if !c.initTag.IsInitialized() {
 		return ErrNotInitialized
 	}
@@ -77,12 +69,26 @@ func (c *CfgExt) SetCfg(key string, value ValueUnit) error {
 	if value.Type != param.ValueType {
 		return ErrValueTypeNotMatch
 	}
-	return c.core.Set(Join("cfg", c.serviceName, param.RealKey), &value)
+	if svr == "" {
+		return ErrParamIsEmpty
+	}
+	// 避免奇怪的冲突
+	if svr == "cfg" || svr == "plat" || svr == "user" {
+		return ErrParamIsInvalid
+	}
+	return c.core.Set(Join("cfg", svr, param.RealKey), &value)
 }
 
-func (c *CfgExt) SetUserCfg(user string, key string, value ValueUnit) error {
+func (c *CfgExt) SetUserCfg(svr, user, key string, value ValueUnit) error {
 	if !c.initTag.IsInitialized() {
 		return ErrNotInitialized
+	}
+	if svr == "" {
+		return ErrParamIsEmpty
+	}
+	// 避免奇怪的冲突
+	if svr == "cfg" || svr == "plat" || svr == "user" {
+		return ErrParamIsInvalid
 	}
 	if user == "" || key == "" {
 		return ErrParamIsEmpty
@@ -91,20 +97,20 @@ func (c *CfgExt) SetUserCfg(user string, key string, value ValueUnit) error {
 	if !ok {
 		return ErrKeyNotFound
 	}
-	userKey := Join("cfg", c.serviceName, "user", user, param.RealKey)
+	userKey := Join("cfg", svr, "user", user, param.RealKey)
 	if value.Type != param.ValueType {
 		return ErrValueTypeNotMatch
 	}
 	return c.core.Set(userKey, &value)
 }
 
-func (c *CfgExt) GetAllCfg() (map[string]ValueUnit, error) {
+func (c *CfgExt) GetAllCfg(svr string) (map[string]ValueUnit, error) {
 	if !c.initTag.IsInitialized() {
 		return nil, ErrNotInitialized
 	}
 	ret := make(map[string]ValueUnit)
 	for k, v := range c.paramMap {
-		value, err := c.core.Get(Join("cfg", c.serviceName, v.RealKey))
+		value, err := c.core.Get(Join("cfg", svr, v.RealKey))
 		if err != nil {
 			return nil, err
 		}
@@ -113,13 +119,13 @@ func (c *CfgExt) GetAllCfg() (map[string]ValueUnit, error) {
 	return ret, nil
 }
 
-func (c *CfgExt) GetUserCfg(user string) (map[string]ValueUnit, error) {
+func (c *CfgExt) GetUserCfg(svr, user string) (map[string]ValueUnit, error) {
 	if !c.initTag.IsInitialized() {
 		return nil, ErrNotInitialized
 	}
 	ret := make(map[string]ValueUnit)
 	for k, v := range c.paramMap {
-		value, err := c.core.Get(Join("cfg", c.serviceName, "user", user, v.RealKey))
+		value, err := c.core.Get(Join("cfg", svr, "user", user, v.RealKey))
 		if err != nil {
 			return nil, err
 		}
