@@ -12,14 +12,22 @@ type CfgParam struct {
 
 // CfgExt 为xstorage增加一个通用的配置机制
 type CfgExt struct {
-	core     *XStorage
-	paramMap map[string]*CfgParam
-	initTag  misc.InitTag
+	core        *XStorage
+	serviceName string
+	paramMap    map[string]*CfgParam
+	initTag     misc.InitTag
 }
 
-func (c *CfgExt) Init(core *XStorage) error {
+func (c *CfgExt) Init(core *XStorage, serviceName string) error {
 	if core == nil {
 		return ErrCoreIsNil
+	}
+	if serviceName == "" {
+		return ErrParamIsEmpty
+	}
+	// 避免奇怪的冲突
+	if serviceName == "cfg" || serviceName == "user" {
+		return ErrParamIsInvalid
 	}
 	c.paramMap = make(map[string]*CfgParam)
 	c.core = core
@@ -27,9 +35,9 @@ func (c *CfgExt) Init(core *XStorage) error {
 	return nil
 }
 
-func NewCfgExt(core *XStorage) (*CfgExt, error) {
+func NewCfgExt(core *XStorage, serviceName string) (*CfgExt, error) {
 	ret := &CfgExt{}
-	err := ret.Init(core)
+	err := ret.Init(core, serviceName)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +77,7 @@ func (c *CfgExt) SetCfg(key string, value ValueUnit) error {
 	if value.Type != param.ValueType {
 		return ErrValueTypeNotMatch
 	}
-	return c.core.Set(Join("cfg", param.RealKey), &value)
+	return c.core.Set(Join("cfg", c.serviceName, param.RealKey), &value)
 }
 
 func (c *CfgExt) SetUserCfg(user string, key string, value ValueUnit) error {
@@ -83,7 +91,7 @@ func (c *CfgExt) SetUserCfg(user string, key string, value ValueUnit) error {
 	if !ok {
 		return ErrKeyNotFound
 	}
-	userKey := Join("cfg", user, param.RealKey)
+	userKey := Join("cfg", c.serviceName, "user", user, param.RealKey)
 	if value.Type != param.ValueType {
 		return ErrValueTypeNotMatch
 	}
@@ -96,7 +104,7 @@ func (c *CfgExt) GetAllCfg() (map[string]ValueUnit, error) {
 	}
 	ret := make(map[string]ValueUnit)
 	for k, v := range c.paramMap {
-		value, err := c.core.Get(Join("cfg", v.RealKey))
+		value, err := c.core.Get(Join("cfg", c.serviceName, v.RealKey))
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +119,7 @@ func (c *CfgExt) GetUserCfg(user string) (map[string]ValueUnit, error) {
 	}
 	ret := make(map[string]ValueUnit)
 	for k, v := range c.paramMap {
-		value, err := c.core.Get(Join("cfg", user, v.RealKey))
+		value, err := c.core.Get(Join("cfg", c.serviceName, "user", user, v.RealKey))
 		if err != nil {
 			return nil, err
 		}
