@@ -2,18 +2,49 @@ package xstorage
 
 import (
 	"github.com/intmian/mian_go_lib/tool/misc"
+	"strings"
+	"sync"
 )
 
 type CfgParam struct {
 	Key       string // 与前端协调的key
-	RealKey   string // storage里面的key
 	ValueType ValueType
+	CanUser   bool   // 是否可以用户配置
+	RealKey   string // storage里面的key
+}
+
+type ParamMap struct {
+	paramMapLock sync.RWMutex
+	paramMap     map[string]*CfgParam
+}
+
+func (p *ParamMap) AddParam(param *CfgParam) error {
+	p.paramMapLock.Lock()
+	defer p.paramMapLock.Unlock()
+	if param == nil {
+		return ErrParamIsNil
+	}
+	if param.Key == "" || param.RealKey == "" || param.ValueType == 0 {
+		return ErrParamIsInvalid
+	}
+	_, ok := p.paramMap[param.Key]
+	if ok {
+		return ErrKeyAlreadyExist
+	}
+	p.paramMap[param.Key] = param
+	return nil
+}
+
+func (p *ParamMap) GetParam(key string) *CfgParam {
+	p.paramMapLock.RLock()
+	defer p.paramMapLock.RUnlock()
+	return p.paramMap[key]
 }
 
 // CfgExt 为xstorage增加一个通用的配置机制
 type CfgExt struct {
 	core     *XStorage
-	paramMap map[string]*CfgParam
+	paramMap ParamMap
 	initTag  misc.InitTag
 }
 
@@ -21,13 +52,13 @@ func (c *CfgExt) Init(core *XStorage) error {
 	if core == nil {
 		return ErrCoreIsNil
 	}
-	c.paramMap = make(map[string]*CfgParam)
+	c.paramMap.paramMap = make(map[string]*CfgParam)
 	c.core = core
 	c.initTag.SetInitialized()
 	return nil
 }
 
-func NewCfgExt(core *XStorage, serviceName string) (*CfgExt, error) {
+func NewCfgExt(core *XStorage) (*CfgExt, error) {
 	ret := &CfgExt{}
 	err := ret.Init(core)
 	if err != nil {
@@ -37,80 +68,63 @@ func NewCfgExt(core *XStorage, serviceName string) (*CfgExt, error) {
 }
 
 func (c *CfgExt) AddParam(param *CfgParam) error {
+	return c.paramMap.AddParam(param)
+}
+
+func (c *CfgExt) SetCfg(key string, value string) error {
 	if !c.initTag.IsInitialized() {
 		return ErrNotInitialized
 	}
-	// 校验key、以及各个参数的合法性
+	if key == "" || value == "" {
+		return ErrParamIsEmpty
+	}
+	if strings.Contains(key, "cfg") {
+		return ErrParamIsInvalid
+	}
+
+	param := c.paramMap.GetParam(key)
 	if param == nil {
-		return ErrParamIsNil
+		return ErrKeyNotFound
 	}
-	if param.Key == "" || param.RealKey == "" || param.ValueType == 0 {
+	v := StringToUnit(value, param.ValueType)
+	if v == nil {
 		return ErrParamIsInvalid
 	}
-	_, ok := c.paramMap[param.Key]
-	if ok {
-		return ErrKeyAlreadyExist
-	}
-	c.paramMap[param.Key] = param
-	return nil
+
+	return c.core.Set(Join("cfg", param.RealKey), v)
 }
 
-func (c *CfgExt) SetCfg(key string, svr string, value ValueUnit) error {
+func (c *CfgExt) SetUserCfg(user, key string, value string) error {
 	if !c.initTag.IsInitialized() {
 		return ErrNotInitialized
 	}
-	if key == "" {
+	if user == "" || key == "" || value == "" {
 		return ErrParamIsEmpty
 	}
-	param, ok := c.paramMap[key]
-	if !ok {
-		return ErrKeyNotFound
-	}
-	if value.Type != param.ValueType {
-		return ErrValueTypeNotMatch
-	}
-	if svr == "" {
-		return ErrParamIsEmpty
-	}
-	// 避免奇怪的冲突
-	if svr == "cfg" || svr == "plat" || svr == "user" {
+	if strings.Contains(key, "cfg") {
 		return ErrParamIsInvalid
 	}
-	return c.core.Set(Join("cfg", svr, param.RealKey), &value)
-}
 
-func (c *CfgExt) SetUserCfg(svr, user, key string, value ValueUnit) error {
-	if !c.initTag.IsInitialized() {
-		return ErrNotInitialized
-	}
-	if svr == "" {
-		return ErrParamIsEmpty
-	}
-	// 避免奇怪的冲突
-	if svr == "cfg" || svr == "plat" || svr == "user" {
-		return ErrParamIsInvalid
-	}
-	if user == "" || key == "" {
-		return ErrParamIsEmpty
-	}
-	param, ok := c.paramMap[key]
-	if !ok {
+	param := c.paramMap.GetParam(key)
+	if param == nil {
 		return ErrKeyNotFound
 	}
-	userKey := Join("cfg", svr, "user", user, param.RealKey)
-	if value.Type != param.ValueType {
-		return ErrValueTypeNotMatch
+
+	v := StringToUnit(value, param.ValueType)
+	if v == nil {
+		return ErrParamIsInvalid
 	}
-	return c.core.Set(userKey, &value)
+
+	return c.core.Set(Join("cfg", param.RealKey, user), v)
 }
 
-func (c *CfgExt) GetAllCfg(svr string) (map[string]ValueUnit, error) {
+func (c *CfgExt) GetAllCfg() (map[string]ValueUnit, error) {
 	if !c.initTag.IsInitialized() {
 		return nil, ErrNotInitialized
 	}
 	ret := make(map[string]ValueUnit)
-	for k, v := range c.paramMap {
-		value, err := c.core.Get(Join("cfg", svr, v.RealKey))
+	for k, v := range c.paramMap.paramMap {
+		value, err := c.core.Get(Join("cfg", v.RealKey))
 		if err != nil {
 			return nil, err
 		}
@@ -119,17 +133,53 @@ func (c *CfgExt) GetAllCfg(svr string) (map[string]ValueUnit, error) {
 	return ret, nil
 }
 
-func (c *CfgExt) GetUserCfg(svr, user string) (map[string]ValueUnit, error) {
+func (c *CfgExt) GetCfgWithFilter(prefix, user string) (map[string]ValueUnit, error) {
 	if !c.initTag.IsInitialized() {
 		return nil, ErrNotInitialized
 	}
 	ret := make(map[string]ValueUnit)
-	for k, v := range c.paramMap {
-		value, err := c.core.Get(Join("cfg", svr, "user", user, v.RealKey))
-		if err != nil {
-			return nil, err
+	realPrefix := prefix + "."
+	for logicKey, params := range c.paramMap.paramMap {
+		if prefix != "" && !strings.HasPrefix(logicKey, realPrefix) {
+			continue
 		}
-		ret[k] = *value
+		if user == "" {
+			value, err := c.core.Get(Join("cfg", params.RealKey))
+			if err != nil {
+				return nil, err
+			}
+			ret[logicKey] = *value
+		} else {
+			value, err := c.core.Get(Join("cfg", params.RealKey, user))
+			if err != nil {
+				return nil, err
+			}
+			ret[logicKey] = *value
+		}
 	}
 	return ret, nil
+}
+
+func (c *CfgExt) Get(user string, keys ...string) (*ValueUnit, error) {
+	if !c.initTag.IsInitialized() {
+		return nil, ErrNotInitialized
+	}
+	if len(keys) == 0 {
+		return nil, ErrParamIsEmpty
+	}
+	realLogicKey := Join("cfg", Join(keys...))
+	param := c.paramMap.GetParam(realLogicKey)
+	if param == nil {
+		return nil, ErrParamIsInvalid
+	}
+	if user != "" {
+		if !param.CanUser {
+			return nil, ErrParamIsInvalid
+		}
+		v, err := c.core.Get(Join("cfg", param.RealKey, user))
+		return v, err
+	} else {
+		v, err := c.core.Get(Join("cfg", param.RealKey))
+		return v, err
+	}
 }
