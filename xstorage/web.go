@@ -184,6 +184,12 @@ func (w *WebPack) WebSet(c *gin.Context) {
 		})
 		return
 	}
+	if req.Value == "null" {
+		c.JSON(200, gin.H{
+			"code": WebCodeFail,
+			"msg":  WebFailReasonNoLegalParam,
+		})
+	}
 	if req.Value == "\"\"" {
 		err := w.storageCore.Delete(req.Key)
 		if err != nil {
