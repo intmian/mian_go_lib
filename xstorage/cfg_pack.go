@@ -76,7 +76,7 @@ func (c *CfgExt) AddParam(param *CfgParam) error {
 	if err != nil {
 		return err
 	}
-	if param.Default != nil && param.CanUser {
+	if param.Default != nil && !param.CanUser {
 		err = c.core.SetDefault(param.RealKey, param.Default)
 		if err != nil {
 			return err
@@ -85,7 +85,7 @@ func (c *CfgExt) AddParam(param *CfgParam) error {
 	return nil
 }
 
-func (c *CfgExt) SetCfg(key string, value string) error {
+func (c *CfgExt) Set(key string, value string) error {
 	if !c.initTag.IsInitialized() {
 		return ErrNotInitialized
 	}
@@ -105,7 +105,7 @@ func (c *CfgExt) SetCfg(key string, value string) error {
 	return c.core.Set(param.RealKey, v)
 }
 
-func (c *CfgExt) SetUserCfg(user, key string, value string) error {
+func (c *CfgExt) SetUser(user, key string, value string) error {
 	if !c.initTag.IsInitialized() {
 		return ErrNotInitialized
 	}
@@ -126,7 +126,7 @@ func (c *CfgExt) SetUserCfg(user, key string, value string) error {
 	return c.core.Set(Join(param.RealKey, user), v)
 }
 
-func (c *CfgExt) GetAllCfg() (map[string]ValueUnit, error) {
+func (c *CfgExt) GetAll() (map[string]ValueUnit, error) {
 	if !c.initTag.IsInitialized() {
 		return nil, ErrNotInitialized
 	}
@@ -141,7 +141,7 @@ func (c *CfgExt) GetAllCfg() (map[string]ValueUnit, error) {
 	return ret, nil
 }
 
-func (c *CfgExt) GetCfgWithFilter(prefix, user string) (map[string]ValueUnit, error) {
+func (c *CfgExt) GetWithFilter(prefix, user string) (map[string]ValueUnit, error) {
 	if !c.initTag.IsInitialized() {
 		return nil, ErrNotInitialized
 	}
@@ -168,7 +168,7 @@ func (c *CfgExt) GetCfgWithFilter(prefix, user string) (map[string]ValueUnit, er
 	return ret, nil
 }
 
-func (c *CfgExt) Get(user string, keys ...string) (*ValueUnit, error) {
+func (c *CfgExt) GetUser(user string, keys ...string) (*ValueUnit, error) {
 	if !c.initTag.IsInitialized() {
 		return nil, ErrNotInitialized
 	}
@@ -180,14 +180,26 @@ func (c *CfgExt) Get(user string, keys ...string) (*ValueUnit, error) {
 	if param == nil {
 		return nil, ErrParamIsInvalid
 	}
-	if user != "" {
-		if !param.CanUser {
-			return nil, ErrParamIsInvalid
-		}
-		v, err := c.core.Get(Join(param.RealKey, user))
-		return v, err
-	} else {
-		v, err := c.core.Get(param.RealKey)
-		return v, err
+	if !param.CanUser {
+		return nil, ErrParamIsInvalid
 	}
+	v, err := c.core.Get(Join(param.RealKey, user))
+	return v, err
+}
+
+func (c *CfgExt) Get(keys ...string) (*ValueUnit, error) {
+	if !c.initTag.IsInitialized() {
+		return nil, ErrNotInitialized
+	}
+	if len(keys) == 0 {
+		return nil, ErrParamIsEmpty
+	}
+	realLogicKey := Join(keys...)
+	param := c.paramMap.GetParam(realLogicKey)
+	if param == nil {
+		return nil, ErrParamIsInvalid
+	}
+
+	v, err := c.core.Get(param.RealKey)
+	return v, err
 }

@@ -92,40 +92,45 @@ func StringToUnit(value string, valueType ValueType) *ValueUnit {
 		if err != nil {
 			return nil
 		}
+		return ToUnit(v, valueType)
 	case ValueTypeBool:
 		var v bool
 		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
+		return ToUnit(v, valueType)
 	case ValueTypeSliceInt:
 		var v []int
 		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
+		return ToUnit(v, valueType)
 	case ValueTypeSliceString:
 		var v []string
 		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
+		return ToUnit(v, valueType)
 	case ValueTypeSliceFloat:
 		var v []float32
 		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
+		return ToUnit(v, valueType)
 	case ValueTypeSliceBool:
 		var v []bool
 		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
+		return ToUnit(v, valueType)
 	default:
 		return nil
 	}
-	return nil
 }
 
 func UnitToString(unit *ValueUnit) string {
