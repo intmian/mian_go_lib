@@ -125,6 +125,7 @@ func StringToUnit(value string, valueType ValueType) *ValueUnit {
 	default:
 		return nil
 	}
+	return nil
 }
 
 func UnitToString(unit *ValueUnit) string {

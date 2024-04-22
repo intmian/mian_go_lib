@@ -9,8 +9,9 @@ import (
 type CfgParam struct {
 	Key       string // 与前端协调的key
 	ValueType ValueType
-	CanUser   bool   // 是否可以用户配置
-	RealKey   string // storage里面的key
+	CanUser   bool       // 是否可以用户配置
+	RealKey   string     // storage里面的key
+	Default   *ValueUnit // 如果这个值不为空，且storage里面没有这个值，就会使用这个值
 }
 
 type ParamMap struct {
@@ -68,7 +69,20 @@ func NewCfgExt(core *XStorage) (*CfgExt, error) {
 }
 
 func (c *CfgExt) AddParam(param *CfgParam) error {
-	return c.paramMap.AddParam(param)
+	if !c.initTag.IsInitialized() {
+		return ErrNotInitialized
+	}
+	err := c.paramMap.AddParam(param)
+	if err != nil {
+		return err
+	}
+	if param.Default != nil && param.CanUser {
+		err = c.core.SetDefault(param.RealKey, param.Default)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *CfgExt) SetCfg(key string, value string) error {

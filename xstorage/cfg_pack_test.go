@@ -16,11 +16,23 @@ func TestCfg(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg.AddParam(&CfgParam{
+	err1 := cfg.AddParam(&CfgParam{
 		Key:       "test1",
 		ValueType: ValueTypeString,
 		CanUser:   false,
 		RealKey:   "test1",
 	})
-
+	err2 := cfg.AddParam(&CfgParam{
+		Key:       "test2",
+		ValueType: ValueTypeSliceString,
+		CanUser:   true,
+		RealKey:   "test2real",
+	})
+	err = misc.JoinErr(err1, err2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Run("have not key", func(t *testing.T) {
+		err := cfg.SetCfg()
+	})
 }
