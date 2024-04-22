@@ -69,6 +69,7 @@ func JStructToUnit[T any](value *T) *ValueUnit {
 	return ToUnit(string(s), ValueTypeString)
 }
 
+// StringToUnit 将json字符串转为ValueUnit
 func StringToUnit(value string, valueType ValueType) *ValueUnit {
 	switch valueType {
 	case ValueTypeString:
@@ -79,91 +80,48 @@ func StringToUnit(value string, valueType ValueType) *ValueUnit {
 		}
 		return ToUnit(v, valueType)
 	case ValueTypeInt:
-		var v string
+		var v int
 		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
-		}
-		v2, err := strconv.Atoi(v)
-		if err != nil {
-			return nil
-		}
-		return ToUnit(v2, valueType)
-	case ValueTypeFloat:
-		var v string
-		err := json.Unmarshal([]byte(value), &v)
-		if err != nil {
-			return nil
-		}
-		v2, err := strconv.ParseFloat(v, 32)
-		if err != nil {
-			return nil
-		}
-		v3 := float32(v2)
-		return ToUnit(v3, valueType)
-	case ValueTypeBool:
-		var v string
-		err := json.Unmarshal([]byte(value), &v)
-		if err != nil {
-			return nil
-		}
-		v2, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil
-		}
-		return ToUnit(v2, valueType)
-	case ValueTypeSliceInt:
-		var v1 []string
-		err := json.Unmarshal([]byte(value), &v1)
-		if err != nil {
-			return nil
-		}
-		var v []int
-		for _, val := range v1 {
-			v2, err := strconv.Atoi(val)
-			if err != nil {
-				return nil
-			}
-			v = append(v, v2)
 		}
 		return ToUnit(v, valueType)
+	case ValueTypeFloat:
+		var v float32
+		err := json.Unmarshal([]byte(value), &v)
+		if err != nil {
+			return nil
+		}
+	case ValueTypeBool:
+		var v bool
+		err := json.Unmarshal([]byte(value), &v)
+		if err != nil {
+			return nil
+		}
+	case ValueTypeSliceInt:
+		var v []int
+		err := json.Unmarshal([]byte(value), &v)
+		if err != nil {
+			return nil
+		}
 	case ValueTypeSliceString:
 		var v []string
 		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
-		return ToUnit(v, valueType)
 	case ValueTypeSliceFloat:
-		var v []string
+		var v []float32
 		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
-		var v2 []float32
-		for _, val := range v {
-			v3, err := strconv.ParseFloat(val, 32)
-			if err != nil {
-				return nil
-			}
-			v2 = append(v2, float32(v3))
-		}
-		return ToUnit(v2, valueType)
 	case ValueTypeSliceBool:
-		var v []string
+		var v []bool
 		err := json.Unmarshal([]byte(value), &v)
 		if err != nil {
 			return nil
 		}
-		var v2 []bool
-		for _, val := range v {
-			v3, err := strconv.ParseBool(val)
-			if err != nil {
-				return nil
-			}
-			v2 = append(v2, v3)
-		}
-		return ToUnit(v2, valueType)
 	default:
 		return nil
 	}

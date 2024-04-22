@@ -78,9 +78,6 @@ func (c *CfgExt) SetCfg(key string, value string) error {
 	if key == "" || value == "" {
 		return ErrParamIsEmpty
 	}
-	if strings.Contains(key, "cfg") {
-		return ErrParamIsInvalid
-	}
 
 	param := c.paramMap.GetParam(key)
 	if param == nil {
@@ -91,7 +88,7 @@ func (c *CfgExt) SetCfg(key string, value string) error {
 		return ErrParamIsInvalid
 	}
 
-	return c.core.Set(Join("cfg", param.RealKey), v)
+	return c.core.Set(param.RealKey, v)
 }
 
 func (c *CfgExt) SetUserCfg(user, key string, value string) error {
@@ -101,9 +98,6 @@ func (c *CfgExt) SetUserCfg(user, key string, value string) error {
 	if user == "" || key == "" || value == "" {
 		return ErrParamIsEmpty
 	}
-	if strings.Contains(key, "cfg") {
-		return ErrParamIsInvalid
-	}
 
 	param := c.paramMap.GetParam(key)
 	if param == nil {
@@ -115,7 +109,7 @@ func (c *CfgExt) SetUserCfg(user, key string, value string) error {
 		return ErrParamIsInvalid
 	}
 
-	return c.core.Set(Join("cfg", param.RealKey, user), v)
+	return c.core.Set(Join(param.RealKey, user), v)
 }
 
 func (c *CfgExt) GetAllCfg() (map[string]ValueUnit, error) {
@@ -124,7 +118,7 @@ func (c *CfgExt) GetAllCfg() (map[string]ValueUnit, error) {
 	}
 	ret := make(map[string]ValueUnit)
 	for k, v := range c.paramMap.paramMap {
-		value, err := c.core.Get(Join("cfg", v.RealKey))
+		value, err := c.core.Get(v.RealKey)
 		if err != nil {
 			return nil, err
 		}
@@ -144,13 +138,13 @@ func (c *CfgExt) GetCfgWithFilter(prefix, user string) (map[string]ValueUnit, er
 			continue
 		}
 		if user == "" {
-			value, err := c.core.Get(Join("cfg", params.RealKey))
+			value, err := c.core.Get(params.RealKey)
 			if err != nil {
 				return nil, err
 			}
 			ret[logicKey] = *value
 		} else {
-			value, err := c.core.Get(Join("cfg", params.RealKey, user))
+			value, err := c.core.Get(Join(params.RealKey, user))
 			if err != nil {
 				return nil, err
 			}
@@ -167,7 +161,7 @@ func (c *CfgExt) Get(user string, keys ...string) (*ValueUnit, error) {
 	if len(keys) == 0 {
 		return nil, ErrParamIsEmpty
 	}
-	realLogicKey := Join("cfg", Join(keys...))
+	realLogicKey := Join(keys...)
 	param := c.paramMap.GetParam(realLogicKey)
 	if param == nil {
 		return nil, ErrParamIsInvalid
@@ -176,10 +170,10 @@ func (c *CfgExt) Get(user string, keys ...string) (*ValueUnit, error) {
 		if !param.CanUser {
 			return nil, ErrParamIsInvalid
 		}
-		v, err := c.core.Get(Join("cfg", param.RealKey, user))
+		v, err := c.core.Get(Join(param.RealKey, user))
 		return v, err
 	} else {
-		v, err := c.core.Get(Join("cfg", param.RealKey))
+		v, err := c.core.Get(param.RealKey)
 		return v, err
 	}
 }
