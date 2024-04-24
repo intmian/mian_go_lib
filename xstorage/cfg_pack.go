@@ -10,9 +10,9 @@ import (
 type CfgParam struct {
 	Key       string // 与前端协调的key
 	ValueType ValueType
-	CanUser   bool       // 是否可以用户配置
-	RealKey   string     // storage里面的key
-	Default   *ValueUnit // 如果这个值不为空，且storage里面没有这个值，就会使用这个值
+	CanUser   bool      // 是否可以用户配置
+	RealKey   string    // storage里面的key
+	Default   ValueUnit // 如果storage里面没有这个值，就会使用这个值。
 }
 
 type ParamMap struct {
@@ -179,8 +179,12 @@ func (c *CfgExt) GetUser(user string, keys ...string) (*ValueUnit, error) {
 		return nil, ErrParamIsInvalid
 	}
 	v, err := c.core.Get(Join(param.RealKey, user))
-	if errors.Is(err, ErrKeyNotFound) && param.Default != nil {
-		return param.Default, nil
+	if err != nil {
+		if errors.Is(err, ErrKeyNotFound) {
+			return &param.Default, nil
+		} else {
+			return nil, err
+		}
 	}
 	return v, err
 }
@@ -199,8 +203,12 @@ func (c *CfgExt) Get(keys ...string) (*ValueUnit, error) {
 	}
 
 	v, err := c.core.Get(param.RealKey)
-	if errors.Is(err, ErrKeyNotFound) && param.Default != nil {
-		return param.Default, nil
+	if err != nil {
+		if errors.Is(err, ErrKeyNotFound) {
+			return &param.Default, nil
+		} else {
+			return nil, err
+		}
 	}
 	return v, err
 }
