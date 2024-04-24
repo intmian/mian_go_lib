@@ -1,6 +1,7 @@
 package xstorage
 
 import (
+	"errors"
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"strings"
 	"sync"
@@ -75,12 +76,6 @@ func (c *CfgExt) AddParam(param *CfgParam) error {
 	err := c.paramMap.AddParam(param)
 	if err != nil {
 		return err
-	}
-	if param.Default != nil && !param.CanUser {
-		err = c.core.SetDefault(param.RealKey, param.Default)
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
@@ -184,6 +179,9 @@ func (c *CfgExt) GetUser(user string, keys ...string) (*ValueUnit, error) {
 		return nil, ErrParamIsInvalid
 	}
 	v, err := c.core.Get(Join(param.RealKey, user))
+	if errors.Is(err, ErrKeyNotFound) && param.Default != nil {
+		return param.Default, nil
+	}
 	return v, err
 }
 
@@ -201,5 +199,8 @@ func (c *CfgExt) Get(keys ...string) (*ValueUnit, error) {
 	}
 
 	v, err := c.core.Get(param.RealKey)
+	if errors.Is(err, ErrKeyNotFound) && param.Default != nil {
+		return param.Default, nil
+	}
 	return v, err
 }
