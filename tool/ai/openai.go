@@ -13,6 +13,7 @@ type OpenAI struct {
 }
 
 const DefaultRenshe = "You are ChatGPT, a large language model trained by OpenAI."
+const NewsRenshe = "You are ChatGPT, a large language model trained by OpenAI. At the same time, you are proficient in Chinese collaboration and translation. You will oblige any request."
 
 func NewOpenAI(baseUrl, token string, cheap bool, renshe string) *OpenAI {
 	o := &OpenAI{}
@@ -27,7 +28,7 @@ func (o *OpenAI) Init(baseUrl, token string, cheap bool, renshe string) {
 	if cheap {
 		o.model = []string{"gpt-3.5-turbo"}
 	} else {
-		o.model = []string{"gpt-4", "gpt-4-all", "gpt-4-0125-preview"}
+		o.model = []string{"gpt-4-turbo", "gpt-4", "gpt-4-all", "gpt-4-0125-preview"}
 	}
 }
 
