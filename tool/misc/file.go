@@ -40,7 +40,7 @@ func ReadAllFile(root string) []string {
 type FileNode struct {
 	File     FileCore
 	Parent   *FileNode
-	children []FileNode
+	Children []FileNode
 }
 
 // FileCore 操作文件，获得文件的基础消息。
@@ -172,7 +172,7 @@ func GetFileTree(root string) (FileNode, error) {
 		child.Parent = &node
 		children = append(children, child)
 	}
-	node.children = children
+	node.Children = children
 
 	return node, nil
 }

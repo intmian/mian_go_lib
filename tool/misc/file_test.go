@@ -35,7 +35,7 @@ func TestFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if fSystem.children[0].File.Equal(f) {
+	if fSystem.Children[0].File.Equal(f) {
 		t.Fatal("GetFileTree error")
 	}
 
