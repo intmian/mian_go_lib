@@ -54,6 +54,14 @@ type FileCore struct {
 	IsDir     bool
 }
 
+func (f *FileCore) GetSize() int64 {
+	fileInfo, err := os.Stat(f.Addr)
+	if err != nil {
+		return 0
+	}
+	return fileInfo.Size()
+}
+
 func (f *FileCore) Valid() bool {
 	return PathExist(f.Addr)
 }
