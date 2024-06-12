@@ -28,7 +28,7 @@ func (o *OpenAI) Init(baseUrl, token string, cheap bool, renshe string) {
 	if cheap {
 		o.model = []string{"gpt-3.5-turbo"}
 	} else {
-		o.model = []string{"gpt-4-turbo", "gpt-4", "gpt-4-all", "gpt-4-0125-preview"}
+		o.model = []string{"gpt-4o", "gpt-4-turbo", "gpt-4", "gpt-4-all", "gpt-4-0125-preview"}
 	}
 }
 
