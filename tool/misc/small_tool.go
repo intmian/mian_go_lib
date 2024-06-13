@@ -284,16 +284,18 @@ func GetIpAddr(Ip string) string {
 	url := api + Ip
 	resp, err := http.Get(url)
 	if err != nil {
-		return "获取失败"
+		return "地址服务失效"
+	}
+	if resp.StatusCode != 200 {
+		return "地址服务失效"
 	}
 	defer resp.Body.Close()
 	var ipApi IpApi
-	err = json.NewDecoder(resp.Body).Decode(&ipApi)
+	var buf = make([]byte, 1024)
+	n, _ := resp.Body.Read(buf)
+	err = json.Unmarshal(buf[:n], &ipApi)
 	if err != nil {
-		return "解析失败"
-	}
-	if ipApi.Code != 200 {
-		return "查询失败"
+		return "地址服务失效"
 	}
 	return ipApi.Ipdata.Info1 + " " + ipApi.Ipdata.Info2 + " " + ipApi.Ipdata.Info3 + " " + ipApi.Ipdata.Isp
 }
