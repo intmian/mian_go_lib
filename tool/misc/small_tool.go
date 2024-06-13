@@ -3,10 +3,12 @@ package misc
 import (
 	"bufio"
 	"cmp"
+	"encoding/json"
 	"fmt"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -245,4 +247,53 @@ func WriteGBKFileLine(addr string, content string) error {
 	}
 
 	return nil
+}
+
+type IpApi struct {
+	Code   int    `json:"code"`
+	Msg    string `json:"msg"`
+	Ipinfo struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+		Cnip bool   `json:"cnip"`
+	} `json:"ipinfo"`
+	Ipdata struct {
+		Info1 string `json:"info1"`
+		Info2 string `json:"info2"`
+		Info3 string `json:"info3"`
+		Isp   string `json:"isp"`
+	} `json:"ipdata"`
+	Adcode struct {
+		O string `json:"o"`
+		P string `json:"p"`
+		C string `json:"c"`
+		N string `json:"n"`
+		R string `json:"r"`
+		A string `json:"a"`
+		I bool   `json:"i"`
+	} `json:"adcode"`
+	Tips string `json:"tips"`
+	Time int    `json:"time"`
+}
+
+func GetIpAddr(Ip string) string {
+	if Ip == "" {
+		return "地址不合法"
+	}
+	api := "https://api.vore.top/api/IPdata?ip="
+	url := api + Ip
+	resp, err := http.Get(url)
+	if err != nil {
+		return "获取失败"
+	}
+	defer resp.Body.Close()
+	var ipApi IpApi
+	err = json.NewDecoder(resp.Body).Decode(&ipApi)
+	if err != nil {
+		return "解析失败"
+	}
+	if ipApi.Code != 200 {
+		return "查询失败"
+	}
+	return ipApi.Ipdata.Info1 + " " + ipApi.Ipdata.Info2 + " " + ipApi.Ipdata.Info3 + " " + ipApi.Ipdata.Isp
 }
