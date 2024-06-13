@@ -8,12 +8,14 @@ import (
 	"time"
 )
 
+// JwtMgr jwt认证与管理器
 type JwtMgr struct {
 	salt1 string
 	salt2 string
 	rwL   sync.RWMutex
 }
 
+// NewJwtMgr 创建一个jwt管理器。salt1建议是一个固定的值，salt2建议是一个动态的值（最好是启动时随机一个，如果置为一个固定的值会降低安全性，但是可以重启服务器不用重新登录）
 func NewJwtMgr(salt1 string, salt2 string) *JwtMgr {
 	m := &JwtMgr{salt1: salt1, salt2: salt2}
 	m.rwL = sync.RWMutex{}
@@ -35,6 +37,7 @@ func (m *JwtMgr) SetSalt(salt1, salt2 string) {
 	m.salt2 = salt2
 }
 
+// GenToken 生成一个token user是用户名，permission是权限，validTime是有效时间
 func (m *JwtMgr) GenToken(user string, permission []string, validTime int64) string {
 	m.rwL.RLock()
 	defer m.rwL.RUnlock()
