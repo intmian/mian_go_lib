@@ -157,7 +157,7 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 		bn.href = result2[5]
 		result = append(result, bn)
 	}
-	if len(result) == 0 && page == 0 {
+	if len(result) == 0 && page <= 1 {
 		// 一般不会第一页都没有数据。报错+打印内容方便debug。
 		f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
 		f.WriteString(string(webText))
