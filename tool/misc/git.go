@@ -21,8 +21,15 @@ func GetGitVersion(repoPath string) (string, error) {
 	return head.Hash().String(), nil
 }
 
+type GitCommit struct {
+	Hash    string
+	Author  string
+	Date    string
+	Message string
+}
+
 // CompareGitVersion 比较git库的版本并返回差异
-func CompareGitVersion(repoPath, version string) (bool, []string, error) {
+func CompareGitVersion(repoPath, version string) (bool, []GitCommit, error) {
 	currentVersion, err := GetGitVersion(repoPath)
 	if err != nil {
 		return false, nil, err
@@ -32,8 +39,8 @@ func CompareGitVersion(repoPath, version string) (bool, []string, error) {
 		return true, nil, nil
 	}
 
-	// 获取所有版本的差异
-	cmd := exec.Command("git", "log", "--pretty=format:%H", version+".."+currentVersion)
+	// 获取所有版本的差异和具体改动
+	cmd := exec.Command("git", "log", "--pretty=format:%H###%ar###%cn###%s", version+".."+currentVersion)
 	cmd.Dir = repoPath
 	out, err := cmd.Output()
 	if err != nil {
@@ -41,5 +48,21 @@ func CompareGitVersion(repoPath, version string) (bool, []string, error) {
 	}
 
 	versions := strings.Split(string(out), "\n")
-	return false, versions, nil
+	commits := make([]GitCommit, 0, len(versions))
+	for _, v := range versions {
+		if v == "" {
+			continue
+		}
+		s := strings.Split(v, "###")
+		if s == nil || len(s) < 4 {
+			continue
+		}
+		commits = append(commits, GitCommit{
+			Hash:    s[0],
+			Date:    s[1],
+			Author:  s[2],
+			Message: s[3],
+		})
+	}
+	return false, commits, nil
 }
