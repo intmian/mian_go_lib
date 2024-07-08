@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -127,13 +128,13 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	if err != nil {
 		return nil, errors.WithMessage(err, "client.Do error")
 	}
-	text, err := ioutil.ReadAll(response.Body)
+	webText, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return nil, errors.WithMessage(err, "ioutil.ReadAll error")
 	}
 	//f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
-	//f.WriteString(string(text))
-	if strings.Contains(string(text), "网络不给力，请稍后重试") {
+	//f.WriteString(string(webText))
+	if strings.Contains(string(webText), "网络不给力，请稍后重试") {
 		return nil, errors.New("网络不给力，请稍后重试")
 	}
 	reStr := `\{"titleAriaLabel":"标题[： ](.*)","absAriaLabel":"摘要[： ](.*)","sourceAriaLabel":"新闻来源[： ](.*)","timeAriaLabel":"发布于[： ](.{0,20})"\}.*href="(.*)" target`
@@ -142,7 +143,7 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 		return
 	}
 	//根据规则提取关键信息
-	results := reg1.FindAllStringSubmatch(string(text), -1)
+	results := reg1.FindAllStringSubmatch(string(webText), -1)
 	for _, result2 := range results {
 		bn := BaiduNew{}
 		if len(result2) != 6 {
@@ -155,6 +156,12 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 		bn.time = result2[4]
 		bn.href = result2[5]
 		result = append(result, bn)
+	}
+	if len(result) == 0 && page == 0 {
+		// 一般不会第一页都没有数据。报错+打印内容方便debug。
+		f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
+		f.WriteString(string(webText))
+		return nil, errors.New("no news")
 	}
 	return
 }
