@@ -161,7 +161,7 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	// 加入全量打印用于调试。报错+打印内容方便debug。
 	f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
 	f.WriteString(string(webText))
-	return nil, errors.New("no news")
+	//return nil, errors.New("no news")
 	//}
 	return
 }
