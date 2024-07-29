@@ -19,7 +19,7 @@ type BaiduNew struct {
 	content string
 	source  string
 	time    string
-	valid   float64
+	same    float64
 	href    string
 }
 
@@ -96,10 +96,10 @@ func ParseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 	return s
 }
 
-func CutInvalidNews(news []BaiduNew, valid float64) []BaiduNew {
+func CutInvalidNews(news []BaiduNew, maxSame float64) []BaiduNew {
 	newsReturn := make([]BaiduNew, 0)
 	for _, baiduNew := range news {
-		if baiduNew.valid < valid {
+		if baiduNew.same < maxSame {
 			newsReturn = append(newsReturn, baiduNew)
 		}
 	}
@@ -157,12 +157,103 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 		bn.href = result2[5]
 		result = append(result, bn)
 	}
-	//if len(result) == 0 && page <= 1 {
-	// 加入全量打印用于调试。报错+打印内容方便debug。
-	f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
-	f.WriteString(string(webText))
-	//return nil, errors.New("no news")
-	//}
+	if len(result) == 0 && page <= 1 {
+		//加入全量打印用于调试。报错+打印内容方便debug。
+		f, _ := os.Create(fmt.Sprintf("baidu_%s_%d_%s.html", keyword, page, time.Now().Format("2006-01-02_15:04:05")))
+		f.WriteString(string(webText))
+		return nil, errors.New("no news")
+	}
+	return
+}
+
+// GetBaiduNewsNew 获取百度新闻。由于最近的新闻接口非常不稳定，所以需要传入上一次的最新链接，以便获取新的新闻。
+func GetBaiduNewsNew(keyword string, lastLink string, maxSame float64) (results []BaiduNew, newestLink string, err error, retry int) {
+	// 前置处理
+	keyword = strings.Replace(keyword, " ", "+", -1)
+
+	// 查找新闻
+	page := 1
+	for {
+		retryTimes := 20
+		var news []BaiduNew
+		// 重试，至多20次
+		for retryTimes > 0 {
+			news, err = getBaiduNewsPage(keyword, page)
+			if err == nil {
+				break
+			}
+			retryTimes--
+			retry++
+			// 休眠一分钟
+			time.Sleep(time.Minute)
+		}
+		if err != nil {
+			err = errors.WithMessage(err, "getBaiduNewsPage error after retry")
+			return
+		}
+
+		// 没有数据也返回
+		if len(news) == 0 {
+			break
+		}
+
+		results = append(results, news...)
+
+		findLast := false
+		for _, news1 := range news {
+			if news1.href == lastLink {
+				findLast = true
+				break
+			}
+		}
+		// 如果找到了上一次的链接，那么就返回，不然肯定在后面的页数
+		if findLast {
+			break
+		}
+		page++
+
+		// 为空的情况下就读两页
+		if lastLink == "" && page > 2 {
+			break
+		}
+
+		if page > 20 {
+			break
+		}
+	}
+
+	// 删除lastLink及之前的数据
+	lastLinkIndex := -1
+	for i, news1 := range results {
+		if news1.href == lastLink {
+			lastLinkIndex = i
+			break
+		}
+	}
+	if lastLinkIndex != -1 {
+		results = results[0:lastLinkIndex]
+	}
+
+	// 获得最新链接
+	if len(results) > 0 {
+		newestLink = results[0].href
+	}
+
+	// 计算有效性，重复度
+	for i := 0; i < len(results); i++ {
+		for j := i + 1; j < len(results); j++ {
+			valid1 := strsim.Compare(results[i].title, results[j].title)
+			valid2 := strsim.Compare(results[i].content, results[j].content)
+			maxValid := valid1
+			if valid2 > maxValid {
+				maxValid = valid2
+			}
+			if maxValid > 0.1 && maxValid > results[j].same {
+				results[j].same = maxValid
+			}
+		}
+	}
+	results = CutInvalidNews(results, maxSame)
 	return
 }
 
@@ -227,15 +318,15 @@ func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error, retry 
 			if valid2 > maxValid {
 				maxValid = valid2
 			}
-			if maxValid > 0.1 && maxValid > newsReturn[j].valid {
-				newsReturn[j].valid = maxValid
+			if maxValid > 0.1 && maxValid > newsReturn[j].same {
+				newsReturn[j].same = maxValid
 			}
 		}
 	}
 	//// 写入到1.log
 	//f, _ := os.Create("1.log")
 	//for i := 0; i < len(newsReturn); i++ {
-	//	f.WriteString(fmt.Sprintf("%s %f\n", newsReturn[i].title, newsReturn[i].valid))
+	//	f.WriteString(fmt.Sprintf("%s %f\n", newsReturn[i].title, newsReturn[i].same))
 	//}
 	/*
 		以下参数由以上数据参考决定
