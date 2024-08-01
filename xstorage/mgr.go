@@ -1,6 +1,7 @@
 package xstorage
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"sync"
@@ -271,6 +272,33 @@ func (m *XStorage) SetDefaultAsync(key string, defaultValue *ValueUnit) (error, 
 		return errors.Join(ErrSetValue, err), nil
 	}
 	return nil, c
+}
+
+func (m *XStorage) SetToJson(key string, value interface{}) error {
+	str, err := json.Marshal(value)
+	if err != nil {
+		return errors.Join(errors.New("json marshal err"), err)
+	}
+	err = m.Set(key, ToUnit(string(str), ValueTypeString))
+	if err != nil {
+		return errors.Join(errors.New("set value err"), err)
+	}
+	return nil
+}
+
+func (m *XStorage) GetFromJson(key string, value interface{}) error {
+	rec, err := m.Get(key)
+	if err != nil {
+		return errors.Join(ErrGet, err)
+	}
+	if rec == nil {
+		return nil
+	}
+	err = json.Unmarshal([]byte(ToBase[string](rec)), value)
+	if err != nil {
+		return errors.Join(errors.New("json unmarshal err"), err)
+	}
+	return nil
 }
 
 func (m *XStorage) Set(key string, value *ValueUnit) error {

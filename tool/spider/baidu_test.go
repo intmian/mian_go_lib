@@ -76,3 +76,28 @@ func TestGetBaiduNewsNew(t *testing.T) {
 		}
 	}
 }
+
+func TestGetBaiduNewsWithoutOld(t *testing.T) {
+	param := "iphone16"
+
+	// 测试初始化
+	results, newLink, err, _ := GetBaiduNewsWithoutOld(param, []string{}, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("results len: %d", len(results))
+	t.Logf("newLink: %d", len(newLink))
+	newLink = newLink[5:10]
+
+	// 测试新闻获取
+	results2, newLink2, err2, _ := GetBaiduNewsWithoutOld(param, newLink, 1)
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+	if len(results2) != 5 {
+		t.Fatal("results2 error")
+	}
+	if len(newLink2) != 10 {
+		t.Fatal("newLink2 error")
+	}
+}

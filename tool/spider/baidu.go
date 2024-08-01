@@ -166,7 +166,133 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	return
 }
 
-// GetBaiduNewsNew 获取百度新闻。由于最近的新闻接口非常不稳定，所以需要传入上一次的最新链接，以便获取新的新闻。
+func GetBaiduNewsWithoutOld(keyword string, lastLinks []string, maxSame float64) (results []BaiduNew, newLinks []string, err error, retry int) {
+	/*
+		由于最近的新闻接口非常不稳定，所以需要传入上一次的最新链接，以便获取新的新闻。很多新闻最近没有时间了，而且有时会丢失.
+		最多保存40条（对应4页）
+		1.向后翻页一直翻到找到上一次的链接，再向后翻页直到，没有任何上次缓存的链接
+		2.将所有最后一条缓存链接前的新闻，且不为缓存链接的新闻加入返回列表
+		3.返回新的缓存链接（前40条）
+	*/
+	// 前置处理
+	keyword = strings.Replace(keyword, " ", "+", -1)
+	needInit := len(lastLinks) == 0
+
+	// 初始化时，最多就读个20条
+	if needInit {
+		needNewsLen := 20
+		for page := 1; page <= 5; page++ {
+			news, PageRetry, err1 := getBaiduNewsPageRetry(keyword, page, 20)
+			if err1 != nil {
+				err = errors.WithMessage(err1, "getBaiduNewsPage error after retry")
+				return
+			}
+			retry += PageRetry
+
+			// 提取不到数据就要中断流程
+			if len(news) == 0 {
+				break
+			}
+			results = append(results, news...)
+			if len(results) > needNewsLen {
+				break
+			}
+		}
+		if len(results) > needNewsLen {
+			results = results[0:needNewsLen]
+		}
+		for _, news := range results {
+			newLinks = append(newLinks, news.href)
+		}
+		return
+	}
+
+	// 建立一个map，用于快速查找
+	lastLinkMap := make(map[string]bool)
+	for _, lastLink := range lastLinks {
+		lastLinkMap[lastLink] = true
+	}
+
+	news1 := make([]BaiduNew, 0)
+	findLastLink := false
+	noLastLink := false
+	for page := 1; page <= 20; page++ {
+		pageNews, PageRetry, err1 := getBaiduNewsPageRetry(keyword, page, 20)
+		if err1 != nil {
+			err = errors.WithMessage(err1, "getBaiduNewsPage error after retry")
+			return
+		}
+		retry += PageRetry
+		if !findLastLink {
+			for _, news := range pageNews {
+				if lastLinkMap[news.href] {
+					findLastLink = true
+				}
+			}
+		}
+		if findLastLink {
+			allNotLastLink := true
+			for _, news := range pageNews {
+				if lastLinkMap[news.href] {
+					allNotLastLink = false
+					break
+				}
+			}
+			if allNotLastLink {
+				noLastLink = true
+			}
+		}
+		// 向后翻页一直翻到没有之前链接的一页，但是去除最后一页的数据
+		if !noLastLink {
+			news1 = append(news1, pageNews...)
+		} else {
+			break
+		}
+	}
+
+	// 找到最后一条缓存链接的位置，去除之后的
+	lastLinkIndex := -1
+	for i, news := range news1 {
+		if lastLinkMap[news.href] {
+			lastLinkIndex = i
+			break
+		}
+	}
+	var news2 []BaiduNew
+	if lastLinkIndex != -1 {
+		news2 = news1[0:lastLinkIndex]
+	}
+
+	// 筛选出没有出现过的新闻，且不为缓存链接的新闻
+	for _, news := range news2 {
+		if !lastLinkMap[news.href] {
+			results = append(results, news)
+		}
+	}
+
+	// 将news1的链接加入newLinks
+	if len(news1) > 40 {
+		news1 = news1[0:40]
+	}
+	for _, news := range news1 {
+		newLinks = append(newLinks, news.href)
+	}
+	return
+}
+
+func getBaiduNewsPageRetry(keyword string, page int, retryMax int) (results []BaiduNew, retry int, err error) {
+	results = make([]BaiduNew, 0)
+	for retry = 0; retry < retryMax; retry++ {
+		results, err = getBaiduNewsPage(keyword, page)
+		if err == nil {
+			return
+		}
+		time.Sleep(time.Minute)
+	}
+	return
+}
+
+// GetBaiduNewsNew 获取百度新闻。由于最近的新闻接口非常不稳定，所以需要传入上一次的最新链接，以便获取新的新闻。很多新闻最近没有时间了，而且有时会丢失
 func GetBaiduNewsNew(keyword string, lastLink string, maxSame float64) (results []BaiduNew, newestLink string, err error, retry int) {
 	// 前置处理
 	keyword = strings.Replace(keyword, " ", "+", -1)
