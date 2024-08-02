@@ -96,7 +96,7 @@ func ParseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 	return s
 }
 
-func CutInvalidNews(news []BaiduNew, maxSame float64) []BaiduNew {
+func CutMoreSameNews(news []BaiduNew, maxSame float64) []BaiduNew {
 	newsReturn := make([]BaiduNew, 0)
 	for _, baiduNew := range news {
 		if baiduNew.same < maxSame {
@@ -277,6 +277,9 @@ func GetBaiduNewsWithoutOld(keyword string, lastLinks []string, maxSame float64)
 	for _, news := range news1 {
 		newLinks = append(newLinks, news.href)
 	}
+	if maxSame > 0 {
+		results = CutInvalidNews(results, maxSame)
+	}
 	return
 }
 
@@ -365,6 +368,11 @@ func GetBaiduNewsNew(keyword string, lastLink string, maxSame float64) (results 
 		newestLink = results[0].href
 	}
 
+	results = CutInvalidNews(results, maxSame)
+	return
+}
+
+func CutInvalidNews(results []BaiduNew, maxSame float64) []BaiduNew {
 	// 计算有效性，重复度
 	for i := 0; i < len(results); i++ {
 		for j := i + 1; j < len(results); j++ {
@@ -379,8 +387,8 @@ func GetBaiduNewsNew(keyword string, lastLink string, maxSame float64) (results 
 			}
 		}
 	}
-	results = CutInvalidNews(results, maxSame)
-	return
+	results = CutMoreSameNews(results, maxSame)
+	return results
 }
 
 func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error, retry int) {
@@ -492,6 +500,6 @@ func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error, retry 
 		特斯拉盘前大跌! 0.333333
 		特斯拉遭遇最差开年,市值蒸发逾 940 亿美元 0.333333
 	*/
-	newsReturn = CutInvalidNews(newsReturn, 0.2)
+	newsReturn = CutMoreSameNews(newsReturn, 0.2)
 	return
 }
