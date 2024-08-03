@@ -96,14 +96,17 @@ func ParseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 	return s
 }
 
-func CutMoreSameNews(news []BaiduNew, maxSame float64) []BaiduNew {
+func CutMoreSameNews(news []BaiduNew, maxSame float64) ([]BaiduNew, int) {
+	folded := 0
 	newsReturn := make([]BaiduNew, 0)
 	for _, baiduNew := range news {
 		if baiduNew.same < maxSame {
 			newsReturn = append(newsReturn, baiduNew)
+		} else {
+			folded++
 		}
 	}
-	return newsReturn
+	return newsReturn, folded
 }
 
 func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
@@ -166,7 +169,7 @@ func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	return
 }
 
-func GetBaiduNewsWithoutOld(keyword string, lastLinks []string, maxSame float64) (results []BaiduNew, newLinks []string, err error, retry int) {
+func GetBaiduNewsWithoutOld(keyword string, lastLinks []string, maxSame float64) (results []BaiduNew, newLinks []string, err error, retry int, folded int) {
 	/*
 		由于最近的新闻接口非常不稳定，所以需要传入上一次的最新链接，以便获取新的新闻。很多新闻最近没有时间了，而且有时会丢失.
 		最多保存40条（对应4页）
@@ -204,6 +207,7 @@ func GetBaiduNewsWithoutOld(keyword string, lastLinks []string, maxSame float64)
 		for _, news := range results {
 			newLinks = append(newLinks, news.href)
 		}
+		results, folded = CutInvalidNews(results, maxSame)
 		return
 	}
 
@@ -278,7 +282,7 @@ func GetBaiduNewsWithoutOld(keyword string, lastLinks []string, maxSame float64)
 		newLinks = append(newLinks, news.href)
 	}
 	if maxSame > 0 {
-		results = CutInvalidNews(results, maxSame)
+		results, folded = CutInvalidNews(results, maxSame)
 	}
 	return
 }
@@ -368,11 +372,11 @@ func GetBaiduNewsNew(keyword string, lastLink string, maxSame float64) (results 
 		newestLink = results[0].href
 	}
 
-	results = CutInvalidNews(results, maxSame)
+	results, _ = CutInvalidNews(results, maxSame)
 	return
 }
 
-func CutInvalidNews(results []BaiduNew, maxSame float64) []BaiduNew {
+func CutInvalidNews(results []BaiduNew, maxSame float64) ([]BaiduNew, int) {
 	// 计算有效性，重复度
 	for i := 0; i < len(results); i++ {
 		for j := i + 1; j < len(results); j++ {
@@ -387,8 +391,9 @@ func CutInvalidNews(results []BaiduNew, maxSame float64) []BaiduNew {
 			}
 		}
 	}
-	results = CutMoreSameNews(results, maxSame)
-	return results
+	var folded int
+	results, folded = CutMoreSameNews(results, maxSame)
+	return results, folded
 }
 
 func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error, retry int) {
@@ -500,6 +505,6 @@ func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error, retry 
 		特斯拉盘前大跌! 0.333333
 		特斯拉遭遇最差开年,市值蒸发逾 940 亿美元 0.333333
 	*/
-	newsReturn = CutMoreSameNews(newsReturn, 0.2)
+	newsReturn, _ = CutMoreSameNews(newsReturn, 0.2)
 	return
 }
