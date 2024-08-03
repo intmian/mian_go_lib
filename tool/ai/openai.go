@@ -53,7 +53,7 @@ func (o *OpenAI) Chat(content string) (string, error) {
 				},
 			},
 		)
-		if err == nil && resp.Choices[0].Message.Content != "" {
+		if err == nil && len(resp.Choices) >= 1 && resp.Choices[0].Message.Content != "" {
 			suc = true
 			break
 		}
