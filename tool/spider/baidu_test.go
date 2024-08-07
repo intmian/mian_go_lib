@@ -1,6 +1,7 @@
 package spider
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -81,7 +82,7 @@ func TestGetBaiduNewsWithoutOld(t *testing.T) {
 	param := "iphone16"
 
 	// 测试初始化
-	results, newLink, err, _ := GetBaiduNewsWithoutOld(param, []string{}, 1)
+	results, newLink, err, _, _ := GetBaiduNewsWithoutOld(param, []string{}, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +91,7 @@ func TestGetBaiduNewsWithoutOld(t *testing.T) {
 	newLink = newLink[5:10]
 
 	// 测试新闻获取
-	results2, newLink2, err2, _ := GetBaiduNewsWithoutOld(param, newLink, 1)
+	results2, newLink2, err2, _, _ := GetBaiduNewsWithoutOld(param, newLink, 1)
 	if err2 != nil {
 		t.Fatal(err2)
 	}
@@ -99,5 +100,46 @@ func TestGetBaiduNewsWithoutOld(t *testing.T) {
 	}
 	if len(newLink2) != 10 {
 		t.Fatal("newLink2 error")
+	}
+}
+
+func TestMergeArrays(t *testing.T) {
+	testCases := []struct {
+		old    []string
+		new    []string
+		expect []string
+	}{
+		{
+			old:    []string{"a", "b", "c", "d", "e"},
+			new:    []string{"a", "12", "b", "121212", "d", "e"},
+			expect: []string{"a", "12", "b", "c", "121212", "d", "e"},
+		},
+		{
+			old:    []string{"a", "b", "c", "d", "e"},
+			new:    []string{"a", "b", "c", "d", "e"},
+			expect: []string{"a", "b", "c", "d", "e"},
+		},
+		{
+			old:    []string{"a", "b", "c"},
+			new:    []string{"x", "y"},
+			expect: []string{"x", "y"},
+		},
+		{
+			old:    []string{"a", "b", "c"},
+			new:    []string{"a", "c"},
+			expect: []string{"a", "b", "c"},
+		},
+		{
+			old:    []string{"a", "b", "c"},
+			new:    []string{"a", "x", "c"},
+			expect: []string{"a", "b", "x", "c"},
+		},
+	}
+
+	for _, tc := range testCases {
+		result := mergeLinks(tc.old, tc.new)
+		if !reflect.DeepEqual(result, tc.expect) {
+			t.Errorf("mergeArrays(%v, %v) = %v; want %v", tc.old, tc.new, result, tc.expect)
+		}
 	}
 }

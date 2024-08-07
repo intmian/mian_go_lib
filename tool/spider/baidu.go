@@ -255,6 +255,7 @@ func GetBaiduNewsWithoutOld(keyword string, lastLinks []string, maxSame float64)
 	}
 
 	// 找到最后一条缓存链接的位置，去除之后的
+	// news1全量 news2去除了最后一条缓存链接之后的
 	lastLinkIndex := -1
 	for i, news := range news1 {
 		if lastLinkMap[news.href] {
@@ -275,16 +276,54 @@ func GetBaiduNewsWithoutOld(keyword string, lastLinks []string, maxSame float64)
 	}
 
 	// 将news1的链接加入newLinks
-	if len(news1) > 40 {
-		news1 = news1[0:40]
-	}
 	for _, news := range news1 {
 		newLinks = append(newLinks, news.href)
 	}
+	// 将lastLinks的链接加入newLinks。
+	// 从前向后扫描一遍，如果出现lastLinks的链接就标记位置，之后将没有出现的lastLinks插入到上一个出现的lastlink的上方。（因为上一次有的这一次可能没有，如果删除了，下一次又冒出来了）
+	newLinks = mergeLinks(lastLinks, newLinks)
+	newLinks = newLinks[0:40]
+
+	// 裁剪重复新闻
 	if maxSame > 0 {
 		results, folded = CutInvalidNews(results, maxSame)
 	}
 	return
+}
+
+func mergeLinks(old, new []string) []string {
+	result := []string{}
+	oldMap := make(map[string]int)
+	newMap := make(map[string]bool)
+
+	// 构建 oldMap 用于快速查找
+	for i, val := range old {
+		oldMap[val] = i
+	}
+
+	// 构建 newMap 用于快速查找
+	for _, val := range new {
+		newMap[val] = true
+	}
+
+	i := 0 // old 的指针
+	for _, val := range new {
+		result = append(result, val)
+		// 如果当前元素在 old 中
+		if idx, exists := oldMap[val]; exists {
+			// 插入 old 中当前元素之后但不在 new 中的所有元素
+			for i < len(old) && i < idx {
+				i++
+			}
+			i++ // 跳过当前元素
+			for i < len(old) && !newMap[old[i]] {
+				result = append(result, old[i])
+				i++
+			}
+		}
+	}
+
+	return result
 }
 
 func getBaiduNewsPageRetry(keyword string, page int, retryMax int) (results []BaiduNew, retry int, err error) {
