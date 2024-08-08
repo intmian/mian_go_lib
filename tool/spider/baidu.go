@@ -282,8 +282,9 @@ func GetBaiduNewsWithoutOld(keyword string, lastLinks []string, maxSame float64)
 	// 将lastLinks的链接加入newLinks。
 	// 从前向后扫描一遍，如果出现lastLinks的链接就标记位置，之后将没有出现的lastLinks插入到上一个出现的lastlink的上方。（因为上一次有的这一次可能没有，如果删除了，下一次又冒出来了）
 	newLinks = mergeLinks(lastLinks, newLinks)
-	newLinks = newLinks[0:40]
-
+	if len(newLinks) > 40 {
+		newLinks = newLinks[0:40]
+	}
 	// 裁剪重复新闻
 	if maxSame > 0 {
 		results, folded = CutInvalidNews(results, maxSame)
