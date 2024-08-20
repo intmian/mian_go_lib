@@ -143,3 +143,37 @@ func TestUnitLock(t *testing.T) {
 		}
 	})
 }
+
+func TestSafeArr(t *testing.T) {
+	m := SafeArr[int]{}
+	m.Append(1)
+	m.Append(2)
+	v, ok := m.Get(0)
+	if !ok || v != 1 {
+		t.Fatal("get error")
+	}
+	v, ok = m.Get(1)
+	if !ok || v != 2 {
+		t.Fatal("get error")
+	}
+	m.Set(0, 3)
+	v, ok = m.Get(0)
+	if !ok || v != 3 {
+		t.Fatal("get error")
+	}
+	if m.Len() != 2 {
+		t.Fatal("len error")
+	}
+	m.Delete(0)
+	if m.Len() != 1 {
+		t.Fatal("len error")
+	}
+	v, ok = m.Get(0)
+	if !ok || v != 2 {
+		t.Fatal("get error")
+	}
+	v, ok = m.Get(1)
+	if ok {
+		t.Fatal("get error")
+	}
+}
