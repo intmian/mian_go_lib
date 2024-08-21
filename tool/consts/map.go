@@ -30,24 +30,10 @@ func (m CMap[K, V]) Len() int {
 	return len(m.m)
 }
 
-// Delete 复制 map 并删除指定的键，返回修改后的新 map
-func (m CMap[K, V]) Delete(key K) map[K]V {
-	newMap := m.Copy()
-	delete(newMap, key)
-	return newMap
-}
-
 // Get 获取指定键的值及其存在状态
 func (m CMap[K, V]) Get(key K) (V, bool) {
 	v, ok := m.m[key]
 	return v, ok
-}
-
-// Set 复制 map 并设置指定键的值，返回修改后的新 map
-func (m CMap[K, V]) Set(key K, value V) map[K]V {
-	newMap := m.Copy()
-	newMap[key] = value
-	return newMap
 }
 
 // Range 遍历 map 并调用指定的函数，直到函数返回 false 为止
