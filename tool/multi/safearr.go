@@ -7,6 +7,10 @@ type SafeArr[ValueType any] struct {
 	lock sync.RWMutex
 }
 
+func NewSafeArr[ValueType any](arr []ValueType) *SafeArr[ValueType] {
+	return &SafeArr[ValueType]{arr: arr}
+}
+
 func (m *SafeArr[ValueType]) Append(value ValueType) {
 	m.lock.Lock()
 	m.arr = append(m.arr, value)
@@ -62,4 +66,12 @@ func (m *SafeArr[ValueType]) Range(f func(index int, value ValueType) bool) {
 			break
 		}
 	}
+}
+
+func (m *SafeArr[ValueType]) Copy() []ValueType {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	arr := make([]ValueType, len(m.arr))
+	copy(arr, m.arr)
+	return arr
 }
