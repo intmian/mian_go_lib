@@ -12,6 +12,10 @@ const(
     ErrParamIsInvalid = ErrStr("param is invalid")  // auto generated from .\cfg_pack.go
     ErrKeyAlreadyExist = ErrStr("key already exist")  // auto generated from .\cfg_pack.go
     ErrParamIsEmpty = ErrStr("param is empty")  // auto generated from .\cfg_pack.go
+    ErrJsonMarshalErr = ErrStr("json marshal err")  // auto generated from .\mgr.go
+    ErrSetValueErr = ErrStr("set value err")  // auto generated from .\mgr.go
+    ErrNoData = ErrStr("no data")  // auto generated from .\mgr.go
+    ErrJsonUnmarshalErr = ErrStr("json unmarshal err")  // auto generated from .\mgr.go
 )
 
 func (e ErrStr) Error() string { return string(e) }

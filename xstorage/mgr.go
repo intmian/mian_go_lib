@@ -277,11 +277,11 @@ func (m *XStorage) SetDefaultAsync(key string, defaultValue *ValueUnit) (error, 
 func (m *XStorage) SetToJson(key string, value interface{}) error {
 	str, err := json.Marshal(value)
 	if err != nil {
-		return errors.Join(errors.New("json marshal err"), err)
+		return errors.Join(ErrJsonMarshalErr, err)
 	}
 	err = m.Set(key, ToUnit(string(str), ValueTypeString))
 	if err != nil {
-		return errors.Join(errors.New("set value err"), err)
+		return errors.Join(ErrSetValueErr, err)
 	}
 	return nil
 }
@@ -292,11 +292,11 @@ func (m *XStorage) GetFromJson(key string, value interface{}) error {
 		return errors.Join(ErrGet, err)
 	}
 	if rec == nil {
-		return nil
+		return ErrNoData
 	}
 	err = json.Unmarshal([]byte(ToBase[string](rec)), value)
 	if err != nil {
-		return errors.Join(errors.New("json unmarshal err"), err)
+		return errors.Join(ErrJsonUnmarshalErr, err)
 	}
 	return nil
 }
