@@ -53,3 +53,13 @@ func (m *SafeArr[ValueType]) SafeUse(f func(arr []ValueType)) {
 	defer m.lock.RUnlock()
 	f(m.arr)
 }
+
+func (m *SafeArr[ValueType]) Range(f func(index int, value ValueType) bool) {
+	m.lock.RLock()
+	defer m.lock.RUnlock()
+	for i, v := range m.arr {
+		if !f(i, v) {
+			break
+		}
+	}
+}

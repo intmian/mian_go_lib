@@ -24,7 +24,7 @@ func (m *SafeMap[KeyType, ValueType]) Delete(key any) {
 	m.lock.Delete(key)
 }
 
-func (m *SafeMap[KeyType, ValueType]) Range(f func(key KeyType, value ValueType) bool) {
+func (m *SafeMap[KeyType, ValueType]) Range(f func(key any, value ValueType) bool) {
 	m.lock.Range(func(key, value interface{}) bool {
 		return f(key, value.(ValueType))
 	})
