@@ -272,3 +272,10 @@ func GetFileContent(path string) string {
 func DeleteFileAndChild(path string) error {
 	return os.RemoveAll(path)
 }
+
+func CreateDirWhenNotExist(path string) error {
+	if !PathExist(path) {
+		return os.MkdirAll(path, os.ModePerm)
+	}
+	return nil
+}
