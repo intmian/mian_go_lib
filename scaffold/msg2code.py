@@ -51,3 +51,13 @@ for i in range(len(cmd_matches)):
     print(f'    // TODO')
     print(f'}}\n')
     
+# 输出生成的代码
+for i in range(len(cmd_matches)):
+    cmd_name, cmd_value = cmd_matches[i]
+    req_name = req_matches[i]
+    ret_name = ret_matches[i]
+    
+    # sendXxx 函数部分
+    print(f'export function send{cmd_name}(req, callback) {{')
+    print(f'    UniPost(config.api_base_url + \'/{cmd_value}\', req).then(callback)')
+    print(f'}}\n')
