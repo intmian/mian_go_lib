@@ -19,16 +19,17 @@ class Msg:
         struct = []
         for match in matches:
             if len(match) == 2:
-                # 如果是int、int32、int64、float32、float64、uint32、uint64类型，转换为number
-                if match[1] in ['int','int32','int64','float32','float64','uint32','uint64']:
-                    match = (match[0],'number')
-                elif match[1] in ['bool']:
-                    match = (match[0],'boolean')
-                elif match[1] in ['string']:
-                    match = (match[0],'string')
-                else:
-                    match = (match[0],match[1])
-                struct.append(match)
+                name = match[0]
+                typ = match[1]
+                # 如果是[]开头，转换为[]结尾
+                if typ.startswith('[]'):
+                    typ = typ[2:] + '[]'
+                # 替换
+                numberType = ['int','int32','int64','float32','float64','uint32','uint64']
+                for number in numberType:
+                    typ = typ.replace(number,'number')
+                typ = typ.replace('bool','boolean')
+                struct.append((name,typ))
         return struct
     
     def makeCase(self):
@@ -98,7 +99,7 @@ with open(addr, "r", encoding="utf-8") as file:
 matches = re.findall(msg_pattern,content)
 
 # 生成辅助结构体
-helpers = []
+helpers : list[Msg] = []
 for match in matches:
     helpers.append(Msg(match[0],match[3],match[5]))
     
@@ -119,8 +120,19 @@ for helper in helpers:
 typescript_send = ""
 for helper in helpers:
     typescript_send += helper.makeSendFunction()
+    
+# 生成最新的结构体
+latest_struct = ""
+last = helpers[-1]
+latest_struct += '===golang===\n'
+latest_struct += last.makeCase()
+latest_struct += last.makeOnFunction()
+latest_struct += '===typescript===\n'
+latest_struct += last.makeTypeScriptInterface()
+latest_struct += last.makeSendFunction()
+    
 
-mode = input("""请输入模式：
+mode = input("""
 1. 显示golang case代码
 2. 复制golang case代码到剪贴板
 3. 显示golang on代码
@@ -130,6 +142,8 @@ mode = input("""请输入模式：
 7. 显示typescript send代码
 8. 复制typescript send代码到剪贴板
 9. 复制typescript全部代码到剪贴板
+10.显示最新的结构体
+请输入模式：__\b\b
 """)
 
 import pyperclip
@@ -157,3 +171,5 @@ elif mode == '8':
 elif mode == '9':
     pyperclip.copy(typescript_interface + '\n' + typescript_send)
     print("已复制到剪贴板")
+elif mode == '10':
+    print(latest_struct)
