@@ -3,7 +3,7 @@ import re
 import sys
 
 msg_pattern = r'const\s+Cmd(\w+)\s+.*Cmd\s+=\s+"(\w+)"\n*type\s+(\w+)Req\s+struct\s+\{([\s\S]*?)\}\n*type\s+(\w+)Ret\s+struct\s+\{([\s\S]*?)\}'
-struct_value_pattern = r'\s(\w*)\s*(\w*)\n'
+struct_value_pattern = r'(\w+)\s*(.+)\n'
 
 class Msg:
     def __init__(self,cmd,reqStructStr,retStructStr) -> None:
@@ -22,8 +22,12 @@ class Msg:
                 # 如果是int、int32、int64、float32、float64、uint32、uint64类型，转换为number
                 if match[1] in ['int','int32','int64','float32','float64','uint32','uint64']:
                     match = (match[0],'number')
-                if match[1] in ['bool']:
+                elif match[1] in ['bool']:
                     match = (match[0],'boolean')
+                elif match[1] in ['string']:
+                    match = (match[0],'string')
+                else:
+                    match = (match[0],match[1])
                 struct.append(match)
         return struct
     
