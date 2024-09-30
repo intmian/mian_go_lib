@@ -25,7 +25,7 @@ class Msg:
                 if typ.startswith('[]'):
                     typ = typ[2:] + '[]'
                 # 替换
-                numberType = ['int','int32','int64','float32','float64','uint32','uint64']
+                numberType = ['int32','int64','float32','float64','uint32','uint64','int','uint']
                 for number in numberType:
                     typ = typ.replace(number,'number')
                 typ = typ.replace('bool','boolean')
