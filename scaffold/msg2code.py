@@ -143,8 +143,7 @@ mode = input("""
 8. 复制typescript send代码到剪贴板
 9. 复制typescript全部代码到剪贴板
 10.显示最新的结构体
-请输入模式：__\b\b
-""")
+请输入模式：__\b\b""")
 
 import pyperclip
 
