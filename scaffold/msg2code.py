@@ -74,8 +74,9 @@ class Msg:
         convert = ''
         for field in self.retStruct:
             if len(field[1]) > 4 and field[1][0:4] == 'map[':
-                convert += f'result.data.{field[0]} = new Map(Object.entries(result.data.{field[0]}));\n'
-        
+                convert += f'   result.data.{field[0]} = new Map(Object.entries(result.data.{field[0]}));\n'
+        if convert != '':
+            convert = 'if (result.ok) {' + convert + '}\n'
         sendFunction = f'export function send{self.firstUpperCmd}(req: {self.firstUpperCmd}Req, callback: (ret: {{ data: {self.firstUpperCmd}Ret, ok: boolean }}) => void) {{\n'
         sendFunction += f'    UniPost({baseUrl} + \'{self.firstLowerCmd}\', req).then((res: UniResult) => {{\n'
         sendFunction += f'        const result: {{ data: {self.firstUpperCmd}Ret, ok: boolean }} = {{\n'
