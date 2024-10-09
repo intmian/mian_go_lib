@@ -6,13 +6,15 @@ msg_pattern = r'const\s+Cmd(\w+)\s+.*Cmd\s+=\s+"(\w+)"\n*type\s+(\w+)Req\s+struc
 struct_value_pattern = r'(\w+)\s*(.+)\n'
 
 class Msg:
-    def __init__(self,cmd,reqStructStr,retStructStr) -> None:
+    def __init__(self,svrName,cmd,reqStructStr,retStructStr) -> None:
         # 将cmd，分别以首字母大写和小写的形式保存
         self.firstUpperCmd = cmd
         self.firstLowerCmd = cmd[0].lower() + cmd[1:]
         # 从structStr中解析出字段名和字段类型
         self.reqStruct = self.parseStruct(reqStructStr)
         self.retStruct = self.parseStruct(retStructStr)
+        
+        self.svrName = svrName
         
     def parseStruct(self,structStr):
         matches = re.findall(struct_value_pattern,structStr)
@@ -67,12 +69,20 @@ class Msg:
         return interface
     
     def makeSendFunction(self):
+        baseUrl = f'{self.svrName}_api_base_url'
+        # 适配js的map解析，如果ret中有map，则将解析过后的object转换为map
+        convert = ''
+        for field in self.retStruct:
+            if len(field[1]) > 4 and field[1][0:4] == 'map[':
+                convert += f'result.data.{field[0]} = new Map(Object.entries(result.data.{field[0]}));\n'
+        
         sendFunction = f'export function send{self.firstUpperCmd}(req: {self.firstUpperCmd}Req, callback: (ret: {{ data: {self.firstUpperCmd}Ret, ok: boolean }}) => void) {{\n'
-        sendFunction += f'    UniPost(config.api_base_url + \'{self.firstLowerCmd}\', req).then((res: UniResult) => {{\n'
+        sendFunction += f'    UniPost({baseUrl} + \'{self.firstLowerCmd}\', req).then((res: UniResult) => {{\n'
         sendFunction += f'        const result: {{ data: {self.firstUpperCmd}Ret, ok: boolean }} = {{\n'
         sendFunction += f'            data: res.data as {self.firstUpperCmd}Ret,\n'
         sendFunction += f'            ok: res.ok\n'
         sendFunction += f'        }};\n'
+        sendFunction += f'        {convert}\n'
         sendFunction += f'        callback(result);\n'
         sendFunction += f'    }});\n'
         sendFunction += f'}}\n'
@@ -94,6 +104,9 @@ else:
     addr = "msg.go"
 with open(addr, "r", encoding="utf-8") as file:
     content = file.read()
+    
+# 读取上层文件夹名作为服务名
+service_name = os.path.basename(os.path.dirname(addr))
 
 # 匹配所有的msg
 matches = re.findall(msg_pattern,content)
@@ -101,7 +114,7 @@ matches = re.findall(msg_pattern,content)
 # 生成辅助结构体
 helpers : list[Msg] = []
 for match in matches:
-    helpers.append(Msg(match[0],match[3],match[5]))
+    helpers.append(Msg(service_name,match[0],match[3],match[5]))
     
 # 生成golang代码
 golang_case = ""
@@ -118,6 +131,7 @@ typescript_interface = ""
 for helper in helpers:
     typescript_interface += helper.makeTypeScriptInterface()
 typescript_send = ""
+typescript_send += f'const {service_name}_api_base_url = TODO;\n'
 for helper in helpers:
     typescript_send += helper.makeSendFunction()
     
