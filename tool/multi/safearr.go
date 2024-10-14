@@ -1,6 +1,8 @@
 package multi
 
-import "sync"
+import (
+	"sync"
+)
 
 type SafeArr[ValueType any] struct {
 	arr  []ValueType
@@ -13,8 +15,8 @@ func NewSafeArr[ValueType any](arr []ValueType) *SafeArr[ValueType] {
 
 func (m *SafeArr[ValueType]) Append(value ValueType) {
 	m.lock.Lock()
+	defer m.lock.Unlock()
 	m.arr = append(m.arr, value)
-	m.lock.Unlock()
 }
 
 func (m *SafeArr[ValueType]) Get(index int) (value ValueType, ok bool) {
@@ -56,6 +58,17 @@ func (m *SafeArr[ValueType]) SafeUse(f func(arr []ValueType)) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	f(m.arr)
+}
+
+func (m *SafeArr[ValueType]) DeleteByValue(value ValueType, equal func(a, b ValueType) bool) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	for i, v := range m.arr {
+		if equal(v, value) {
+			m.arr = append(m.arr[:i], m.arr[i+1:]...)
+			return
+		}
+	}
 }
 
 func (m *SafeArr[ValueType]) Range(f func(index int, value ValueType) bool) {
