@@ -89,7 +89,7 @@ func (t *FileUnit[T]) SaveOther(addr string) error {
 }
 
 // SafeUseData 线程安全的使用数据的函数
-func (t *FileUnit[T]) SafeUseData(f func(any), isWrite bool) {
+func (t *FileUnit[T]) SafeUseData(f func(T), isWrite bool) {
 	if isWrite {
 		t.lock.Lock()
 		defer t.lock.Unlock()
