@@ -30,6 +30,7 @@ func (o *OpenAI) Init(baseUrl, token string, cheap bool, renshe string) {
 	} else {
 		o.model = []string{"gpt-4o", "gpt-4-turbo", "gpt-4", "gpt-4-all", "gpt-4-0125-preview"}
 	}
+	o.renshe = renshe
 }
 
 func (o *OpenAI) Chat(content string) (string, error) {
