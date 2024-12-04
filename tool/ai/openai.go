@@ -26,9 +26,9 @@ func (o *OpenAI) Init(baseUrl, token string, cheap bool, renshe string) {
 	config.BaseURL = baseUrl
 	o.cl = openai.NewClientWithConfig(config)
 	if cheap {
-		o.model = []string{"gpt-4o-mini"}
+		o.model = []string{"o1-mini"}
 	} else {
-		o.model = []string{"gpt-4o", "gpt-4-turbo", "gpt-4", "gpt-4-all", "gpt-4-0125-preview"}
+		o.model = []string{"o1-preview", "gpt-4o"}
 	}
 	o.renshe = renshe
 }
