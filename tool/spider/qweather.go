@@ -84,7 +84,7 @@ func QueryTodayIndex(key string, location string) (IndexReturn, error) {
 	return indexReturn, nil
 }
 
-func QueryTodayWeather(key string, location string) (WeatherReturn, error) {
+func queryTodayWeather(key string, location string) (WeatherReturn, error) {
 	queryUrl := qWeatherApi + "/v7/weather/3d?location=" + url.QueryEscape(location) + "&key=" + key
 	resp, err := http.Get(queryUrl)
 	if err != nil {
@@ -168,7 +168,7 @@ func GetTodayWeatherMD(cityName string, key string) (string, error) {
 	if err != nil {
 		return "", errors.WithMessage(err, "index error")
 	}
-	weatherReturn, err := QueryTodayWeather(key, location)
+	weatherReturn, err := queryTodayWeather(key, location)
 	if err != nil {
 		return "", errors.WithMessage(err, "weather error")
 	}
@@ -177,4 +177,12 @@ func GetTodayWeatherMD(cityName string, key string) (string, error) {
 		return "", errors.WithMessage(err, "make md error")
 	}
 	return md, nil
+}
+
+func QueryTodayWeather(key string, city string) (WeatherReturn, error) {
+	location := QueryCity(city, key)
+	if location == "" {
+		return WeatherReturn{}, errors.New("city not found")
+	}
+	return queryTodayWeather(key, location)
 }

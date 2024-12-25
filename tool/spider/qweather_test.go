@@ -19,7 +19,7 @@ func TestQueryCity(t *testing.T) {
 func TestQueryTodayWeather(t *testing.T) {
 	key := "cd893779afce417a8cd6eec2d23b4bc8"
 	location := "101210101"
-	weatherReturn, err := QueryTodayWeather(key, location)
+	weatherReturn, err := queryTodayWeather(key, location)
 	if err != nil {
 		t.Error(err)
 	}
