@@ -1,9 +1,12 @@
 package spider
 
 import (
+	"fmt"
+	"github.com/antlabs/strsim"
 	"github.com/mmcdole/gofeed"
 	"github.com/pkg/errors"
 	"net/http"
+	"net/url"
 	"sort"
 	"time"
 )
@@ -68,11 +71,47 @@ type GoogleRssItem struct {
 	Description string    `json:"description"`
 	Link        string    `json:"link"`
 	PubDate     time.Time `json:"pubDate"`
+	same        float64
+}
+
+func CutGoogleInvalidNews(results []GoogleRssItem, maxSame float64) ([]GoogleRssItem, int) {
+	// 计算有效性，重复度
+	for i := 0; i < len(results); i++ {
+		for j := i + 1; j < len(results); j++ {
+			valid1 := strsim.Compare(results[i].Title, results[j].Title)
+			//valid2 := strsim.Compare(results[i].Description, results[j].Description)
+			valid2 := 0.0 // 谷歌新闻描述具备符号，很多都是高度相似的，所以先过滤下。
+			maxValid := valid1
+			if valid2 > maxValid {
+				maxValid = valid2
+			}
+			if maxValid > 0.1 && maxValid > results[j].same {
+				results[j].same = maxValid
+			}
+		}
+	}
+	var folded int
+	results, folded = CutGoogleMoreSameNews(results, maxSame)
+	return results, folded
+}
+
+func CutGoogleMoreSameNews(newses []GoogleRssItem, maxSame float64) ([]GoogleRssItem, int) {
+	folded := 0
+	newsReturn := make([]GoogleRssItem, 0)
+	for _, news := range newses {
+		if news.same < maxSame {
+			newsReturn = append(newsReturn, news)
+		} else {
+			folded++
+		}
+	}
+	return newsReturn, folded
 }
 
 func GetGoogleRss(keyWord string, client *http.Client) ([]GoogleRssItem, error) {
 	// 先支持中文搜索再说
-	const googleRssUrl = "https://news.google.com/rss/search?q=%s&hl=zh-CN&gl=CN&ceid=CN%3Azh-Hans"
+	googleRssUrl := "https://news.google.com/rss/search?q=%s&hl=zh-CN&gl=CN&ceid=CN%3Azh-Hans"
+	googleRssUrl = fmt.Sprintf(googleRssUrl, url.QueryEscape(keyWord))
 	fp := gofeed.NewParser()
 	if client != nil {
 		fp.Client = client
@@ -97,6 +136,8 @@ func GetGoogleRss(keyWord string, client *http.Client) ([]GoogleRssItem, error) 
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].PubDate.After(items[j].PubDate)
 	})
+	// 去除重复新闻
+	items, _ = CutGoogleInvalidNews(items, 0.3)
 	return items, nil
 }
 

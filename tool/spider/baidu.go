@@ -96,19 +96,6 @@ func ParseNewToMarkdown(keywords []string, news [][]BaiduNew) string {
 	return s
 }
 
-func CutMoreSameNews(news []BaiduNew, maxSame float64) ([]BaiduNew, int) {
-	folded := 0
-	newsReturn := make([]BaiduNew, 0)
-	for _, baiduNew := range news {
-		if baiduNew.same < maxSame {
-			newsReturn = append(newsReturn, baiduNew)
-		} else {
-			folded++
-		}
-	}
-	return newsReturn, folded
-}
-
 func getBaiduNewsPage(keyword string, page int) (result []BaiduNew, err error) {
 	result = make([]BaiduNew, 0)
 	/*
@@ -434,6 +421,19 @@ func CutInvalidNews(results []BaiduNew, maxSame float64) ([]BaiduNew, int) {
 	var folded int
 	results, folded = CutMoreSameNews(results, maxSame)
 	return results, folded
+}
+
+func CutMoreSameNews(news []BaiduNew, maxSame float64) ([]BaiduNew, int) {
+	folded := 0
+	newsReturn := make([]BaiduNew, 0)
+	for _, baiduNew := range news {
+		if baiduNew.same < maxSame {
+			newsReturn = append(newsReturn, baiduNew)
+		} else {
+			folded++
+		}
+	}
+	return newsReturn, folded
 }
 
 func GetTodayBaiduNews(keyword string) (newsReturn []BaiduNew, err error, retry int) {

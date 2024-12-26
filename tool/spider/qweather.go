@@ -159,6 +159,20 @@ func MakeTodayWeatherMD(cityName string, index IndexReturn, w WeatherReturn) (st
 	return md.ToStr(), nil
 }
 
+func MakeMiniWeatherMD(cityName string, w WeatherReturn) (string, error) {
+	if len(w.Daily) == 0 {
+		return "", errors.New("no data")
+	}
+	todayWeather := w.Daily[0]
+	md := misc.MarkdownTool{}
+	md.AddTitle(cityName+"今日天气", 3)
+	s := ""
+	s = `白天%s->晚上%s，温度%s℃-%s℃，湿度%s%%，日出%s，日落%s`
+	s = fmt.Sprintf(s, todayWeather.TextDay, todayWeather.TextNight, todayWeather.TempMin, todayWeather.TempMax, todayWeather.Humidity, todayWeather.Sunrise, todayWeather.Sunset)
+	md.AddContent(s)
+	return md.ToStr(), nil
+}
+
 func GetTodayWeatherMD(cityName string, key string) (string, error) {
 	location := QueryCity(cityName, key)
 	if location == "" {
