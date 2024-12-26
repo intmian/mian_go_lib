@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type BBCRssItem struct {
 }
 
 func GetBBCRss(client *http.Client) ([]BBCRssItem, error) {
+	// 没有简体中文，只有繁体中文
 	const bbcRssUrl = "https://feeds.bbci.co.uk/zhongwen/trad/rss.xml"
 	fp := gofeed.NewParser()
 	// 配置代理 7890
@@ -36,10 +38,12 @@ func GetBBCRss(client *http.Client) ([]BBCRssItem, error) {
 		if err != nil {
 			return nil, errors.WithMessage(err, "GetBBCRss")
 		}
+		// 替换链接
+		link := strings.Replace(item.Link, "/trad", "/simp", 1)
 		items = append(items, BBCRssItem{
 			Title:       item.Title,
 			Description: item.Description,
-			Link:        item.Link,
+			Link:        link,
 			PubDate:     newsTime,
 		})
 	}
