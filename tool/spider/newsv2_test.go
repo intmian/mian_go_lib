@@ -50,7 +50,7 @@ func TestGetGoogleRss(t *testing.T) {
 	print("len(google):", len(google))
 
 	// 昨天
-	google, err = GetGoogleRssWithDay("特斯拉", time.Now().AddDate(0, 0, -1), &http.Client{
+	google, err = GetGoogleRssWithDay("model3", time.Now().AddDate(0, 0, -1), &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyURL(&url.URL{
 				Scheme: "http",

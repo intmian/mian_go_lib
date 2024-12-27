@@ -63,7 +63,7 @@ func GetBBCRssWithDay(day time.Time, client *http.Client) ([]BBCRssItem, error) 
 	}
 	var res []BBCRssItem
 	for _, item := range items {
-		if item.PubDate.Day() == day.Day() {
+		if item.PubDate.Day() == day.Day() && item.PubDate.Month() == day.Month() && item.PubDate.Year() == day.Year() {
 			res = append(res, item)
 		}
 	}
@@ -152,7 +152,7 @@ func GetGoogleRssWithDay(keyWord string, day time.Time, client *http.Client) ([]
 	}
 	var res []GoogleRssItem
 	for _, item := range items {
-		if item.PubDate.Day() == day.Day() {
+		if item.PubDate.Day() == day.Day() && item.PubDate.Month() == day.Month() && item.PubDate.Year() == day.Year() {
 			res = append(res, item)
 		}
 	}
@@ -227,7 +227,7 @@ func GetNYTimesRssWithDay(day time.Time, client *http.Client) ([]NYTimesRssItem,
 	}
 	var res []NYTimesRssItem
 	for _, item := range items {
-		if item.PubDate.Day() == day.Day() {
+		if item.PubDate.Day() == day.Day() && item.PubDate.Month() == day.Month() && item.PubDate.Year() == day.Year() {
 			res = append(res, item)
 		}
 	}
