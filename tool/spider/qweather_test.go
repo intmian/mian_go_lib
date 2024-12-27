@@ -5,7 +5,7 @@ import "testing"
 func TestQueryTodayIndex(t *testing.T) {
 	key := "cd893779afce417a8cd6eec2d23b4bc8"
 	location := "101210101"
-	indexReturn, err := QueryTodayIndex(key, location)
+	indexReturn, err := queryTodayIndex(key, location)
 	if err != nil {
 		t.Error(err)
 	}

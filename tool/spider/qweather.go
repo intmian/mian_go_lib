@@ -69,7 +69,15 @@ type WeatherReturn struct {
 	} `json:"refer"`
 }
 
-func QueryTodayIndex(key string, location string) (IndexReturn, error) {
+func QueryTodayIndex(key string, city string) (IndexReturn, error) {
+	location := QueryCity(city, key)
+	if location == "" {
+		return IndexReturn{}, errors.New("city not found")
+	}
+	return queryTodayIndex(key, location)
+}
+
+func queryTodayIndex(key string, location string) (IndexReturn, error) {
 	queryUrl := qWeatherApi + "/v7/indices/1d?type=1,3,6,8,9,11,14,16&location=" + url.QueryEscape(location) + "&key=" + key
 	resp, err := http.Get(queryUrl)
 	if err != nil {
@@ -177,7 +185,7 @@ func GetTodayWeatherMD(cityName string, key string) (string, error) {
 	if location == "" {
 		return "", errors.New("city not found")
 	}
-	indexReturn, err := QueryTodayIndex(key, location)
+	indexReturn, err := queryTodayIndex(key, location)
 	if err != nil {
 		return "", errors.WithMessage(err, "index error")
 	}
