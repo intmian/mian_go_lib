@@ -63,7 +63,8 @@ func GetBBCRssWithDay(day time.Time, client *http.Client) ([]BBCRssItem, error) 
 	}
 	var res []BBCRssItem
 	for _, item := range items {
-		if item.PubDate.Day() == day.Day() && item.PubDate.Month() == day.Month() && item.PubDate.Year() == day.Year() {
+		itemPubDate := item.PubDate.In(day.Location())
+		if itemPubDate.Day() == day.Day() && itemPubDate.Month() == day.Month() && itemPubDate.Year() == day.Year() {
 			res = append(res, item)
 		}
 	}
@@ -152,7 +153,8 @@ func GetGoogleRssWithDay(keyWord string, day time.Time, client *http.Client) ([]
 	}
 	var res []GoogleRssItem
 	for _, item := range items {
-		if item.PubDate.Day() == day.Day() && item.PubDate.Month() == day.Month() && item.PubDate.Year() == day.Year() {
+		itemPubDate := item.PubDate.In(day.Location())
+		if itemPubDate.Day() == day.Day() && itemPubDate.Month() == day.Month() && itemPubDate.Year() == day.Year() {
 			res = append(res, item)
 		}
 	}
@@ -227,9 +229,11 @@ func GetNYTimesRssWithDay(day time.Time, client *http.Client) ([]NYTimesRssItem,
 	}
 	var res []NYTimesRssItem
 	for _, item := range items {
-		if item.PubDate.Day() == day.Day() && item.PubDate.Month() == day.Month() && item.PubDate.Year() == day.Year() {
+		itemPubDate := item.PubDate.In(day.Location())
+		if itemPubDate.Day() == day.Day() && itemPubDate.Month() == day.Month() && itemPubDate.Year() == day.Year() {
 			res = append(res, item)
 		}
 	}
+
 	return res, nil
 }

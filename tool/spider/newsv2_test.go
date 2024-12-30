@@ -92,3 +92,16 @@ func TestGetNYTimesRss(t *testing.T) {
 	}
 	print("len(nytimes):", len(nytimes))
 }
+
+func TestUTCTime(t *testing.T) {
+	now := time.Now().Add(-time.Hour * 24)
+	nowUTC := time.Now().UTC()
+	for i := 0; i < 40; i++ {
+		testTime := nowUTC.Add(time.Duration(-i) * time.Hour)
+		if testTime.Year() == now.Year() && testTime.Month() == now.Month() && testTime.Day() == now.Day() {
+			t.Logf("testTime:%v same day", testTime)
+		} else {
+			t.Logf("testTime:%v", testTime)
+		}
+	}
+}
