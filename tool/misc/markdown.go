@@ -56,6 +56,7 @@ func (m *MarkdownTool) AddList(content string, lv int) {
 
 func (m *MarkdownTool) AddMd(md string) {
 	m.s += md
+	m.inContent = true
 }
 
 // MarkdownToHTML 提供markdown到html的功能
