@@ -198,6 +198,16 @@ func GetNYTimesRss(client *http.Client) ([]NYTimesRssItem, error) {
 		}
 	}
 
+	// 去重
+	titleMap := make(map[string]bool)
+	var newItems []NYTimesRssItem
+	for _, item := range items {
+		if _, ok := titleMap[item.Title]; !ok {
+			titleMap[item.Title] = true
+			newItems = append(newItems, item)
+		}
+	}
+
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].PubDate.After(items[j].PubDate)
 	})
@@ -212,14 +222,10 @@ func GetNYTimesRssWithDay(day time.Time, client *http.Client) ([]NYTimesRssItem,
 	}
 	// 因为新闻会重复出现（不同天等），所以在这里去重
 	var res []NYTimesRssItem
-	var titles = make(map[string]bool)
 	for _, item := range items {
 		itemPubDate := item.PubDate.In(day.Location())
 		if itemPubDate.Day() == day.Day() && itemPubDate.Month() == day.Month() && itemPubDate.Year() == day.Year() {
-			if _, ok := titles[item.Title]; !ok {
-				titles[item.Title] = true
-				res = append(res, item)
-			}
+			res = append(res, item)
 		}
 	}
 
