@@ -174,7 +174,6 @@ func GetNYTimesRss(client *http.Client) ([]NYTimesRssItem, error) {
 	const nyTimesRssAsiaUrl = "https://rss.nytimes.com/services/xml/rss/nyt/AsiaPacific.xml"
 	var feeds = []string{nyTimesRssHomeUrl, nyTimesRssWorldUrl, nyTimesRssAsiaUrl}
 	var items []NYTimesRssItem
-	titleMap := make(map[string]bool)
 	fp := gofeed.NewParser()
 	if client != nil {
 		fp.Client = client
@@ -196,10 +195,6 @@ func GetNYTimesRss(client *http.Client) ([]NYTimesRssItem, error) {
 				Link:        item.Link,
 				PubDate:     newsTime,
 			})
-			if _, ok := titleMap[item.Title]; ok {
-				continue
-			}
-			titleMap[item.Title] = true
 		}
 	}
 
@@ -215,11 +210,16 @@ func GetNYTimesRssWithDay(day time.Time, client *http.Client) ([]NYTimesRssItem,
 	if err != nil {
 		return nil, errors.WithMessage(err, "GetNYTimesRssWithDay")
 	}
+	// 因为新闻会重复出现（不同天等），所以在这里去重
 	var res []NYTimesRssItem
+	var titles = make(map[string]bool)
 	for _, item := range items {
 		itemPubDate := item.PubDate.In(day.Location())
 		if itemPubDate.Day() == day.Day() && itemPubDate.Month() == day.Month() && itemPubDate.Year() == day.Year() {
-			res = append(res, item)
+			if _, ok := titles[item.Title]; !ok {
+				titles[item.Title] = true
+				res = append(res, item)
+			}
 		}
 	}
 
