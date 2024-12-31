@@ -221,7 +221,6 @@ func GetNYTimesRssWithDay(day time.Time, client *http.Client) ([]NYTimesRssItem,
 	if err != nil {
 		return nil, errors.WithMessage(err, "GetNYTimesRssWithDay")
 	}
-	// 因为新闻会重复出现（不同天等），所以在这里去重
 	var res []NYTimesRssItem
 	for _, item := range items {
 		itemPubDate := item.PubDate.In(day.Location())
