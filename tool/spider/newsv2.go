@@ -207,6 +207,7 @@ func GetNYTimesRss(client *http.Client) ([]NYTimesRssItem, error) {
 			newItems = append(newItems, item)
 		}
 	}
+	items = newItems
 
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].PubDate.After(items[j].PubDate)
