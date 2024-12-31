@@ -169,52 +169,40 @@ type NYTimesRssItem struct {
 }
 
 func GetNYTimesRss(client *http.Client) ([]NYTimesRssItem, error) {
+	const nyTimesRssHomeUrl = "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
 	const nyTimesRssWorldUrl = "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
 	const nyTimesRssAsiaUrl = "https://rss.nytimes.com/services/xml/rss/nyt/AsiaPacific.xml"
-
+	var feeds = []string{nyTimesRssHomeUrl, nyTimesRssWorldUrl, nyTimesRssAsiaUrl}
+	var items []NYTimesRssItem
 	titleMap := make(map[string]bool)
-
 	fp := gofeed.NewParser()
 	if client != nil {
 		fp.Client = client
 	}
-	feed, err := fp.ParseURL(nyTimesRssWorldUrl)
-	if err != nil {
-		return nil, errors.WithMessage(err, "GetNYTimesRss")
-	}
-	var items []NYTimesRssItem
-	for _, item := range feed.Items {
-		newsTime, err := time.Parse(time.RFC1123Z, item.Published)
+
+	for _, feedUrl := range feeds {
+		feed, err := fp.ParseURL(feedUrl)
 		if err != nil {
 			return nil, errors.WithMessage(err, "GetNYTimesRss")
 		}
-		items = append(items, NYTimesRssItem{
-			Title:       item.Title,
-			Description: item.Description,
-			Link:        item.Link,
-			PubDate:     newsTime,
-		})
-		titleMap[item.Title] = true
-	}
-	feed, err = fp.ParseURL(nyTimesRssAsiaUrl)
-	if err != nil {
-		return nil, errors.WithMessage(err, "GetNYTimesRss")
-	}
-	for _, item := range feed.Items {
-		newsTime, err := time.Parse(time.RFC1123Z, item.Published)
-		if err != nil {
-			return nil, errors.WithMessage(err, "GetNYTimesRss")
+		for _, item := range feed.Items {
+			newsTime, err := time.Parse(time.RFC1123Z, item.Published)
+			if err != nil {
+				return nil, errors.WithMessage(err, "GetNYTimesRss")
+			}
+			items = append(items, NYTimesRssItem{
+				Title:       item.Title,
+				Description: item.Description,
+				Link:        item.Link,
+				PubDate:     newsTime,
+			})
+			if _, ok := titleMap[item.Title]; ok {
+				continue
+			}
+			titleMap[item.Title] = true
 		}
-		if _, ok := titleMap[item.Title]; ok {
-			continue
-		}
-		items = append(items, NYTimesRssItem{
-			Title:       item.Title,
-			Description: item.Description,
-			Link:        item.Link,
-			PubDate:     newsTime,
-		})
 	}
+
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].PubDate.After(items[j].PubDate)
 	})
