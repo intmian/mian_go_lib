@@ -207,7 +207,7 @@ func parseLog(sLevel string, ts string, from string, info string) string {
 }
 
 func geneLogAddr(t time.Time) string {
-	perm := `%d_%d_%d.txt`
+	perm := `%d_%d_%d.log`
 	return fmt.Sprintf(perm, t.Year(), t.Month(), t.Day())
 }
 
