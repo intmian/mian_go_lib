@@ -49,7 +49,7 @@ func (m *JwtMgr) GenToken(user string, permission []string, validTime int64) str
 	return token
 }
 
-func (m *JwtMgr) CheckSignature(data *Data, now time.Time, wantPermission string) bool {
+func (m *JwtMgr) CheckPermission(data *Data, now time.Time, wantPermission string) bool {
 	// 时间戳
 	if data.ValidTime < now.Unix() {
 		return false
@@ -65,6 +65,10 @@ func (m *JwtMgr) CheckSignature(data *Data, now time.Time, wantPermission string
 		}
 	}
 	return false
+}
+
+func (m *JwtMgr) CheckToken(data *Data) bool {
+	return m.GenToken(data.User, data.Permission, data.ValidTime) == data.Token
 }
 
 func (m *JwtMgr) Signature(data *Data) {

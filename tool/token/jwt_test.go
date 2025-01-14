@@ -62,7 +62,7 @@ func TestJwt(t *testing.T) {
 	for _, test := range tests {
 		t2 := time.Unix(test.time, 0)
 		t.Run(test.name, func(ttt *testing.T) {
-			if got := a.CheckSignature(&d, t2, test.permission); got != test.want {
+			if got := a.CheckPermission(&d, t2, test.permission); got != test.want {
 				ttt.Errorf("Check(%v, %v) = %v, want %v\n", d.Token, test.permission, got, test.want)
 			} else {
 				ttt.Logf("Check(%v, %v) = %v, want %v\n", d.Token, test.permission, got, test.want)
@@ -72,7 +72,7 @@ func TestJwt(t *testing.T) {
 
 	d.Permission = append(d.Permission, "delete")
 	t.Run("fake permission, in time", func(ttt *testing.T) {
-		if got := a.CheckSignature(&d, time.Now().Add(time.Hour*24*6), "delete"); got != false {
+		if got := a.CheckPermission(&d, time.Now().Add(time.Hour*24*6), "delete"); got != false {
 			ttt.Errorf("Check(%v, %v) = %v, want %v\n", d.Token, "fake", got, false)
 		} else {
 			ttt.Logf("Check(%v, %v) = %v, want %v\n", d.Token, "fake", got, false)
