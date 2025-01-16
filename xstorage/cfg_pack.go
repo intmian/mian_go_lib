@@ -151,11 +151,17 @@ func (c *CfgExt) GetWithFilter(prefix, user string) (map[string]ValueUnit, error
 			if err != nil {
 				return nil, err
 			}
+			if value == nil {
+				return nil, ErrKeyNotFound
+			}
 			ret[logicKey] = *value
 		} else {
 			value, err := c.core.Get(Join(params.RealKey, user))
 			if err != nil {
 				return nil, err
+			}
+			if value == nil {
+				return nil, ErrKeyNotFound
 			}
 			ret[logicKey] = *value
 		}

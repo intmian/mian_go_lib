@@ -73,12 +73,7 @@ func JStructToUnit[T any](value *T) *ValueUnit {
 func StringToUnit(value string, valueType ValueType) *ValueUnit {
 	switch valueType {
 	case ValueTypeString:
-		var v string
-		err := json.Unmarshal([]byte(value), &v)
-		if err != nil {
-			return nil
-		}
-		return ToUnit(v, valueType)
+		return ToUnit(value, valueType)
 	case ValueTypeInt:
 		var v int
 		err := json.Unmarshal([]byte(value), &v)
