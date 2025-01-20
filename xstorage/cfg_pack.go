@@ -131,6 +131,9 @@ func (c *CfgExt) GetAll() (map[string]ValueUnit, error) {
 		if err != nil {
 			return nil, err
 		}
+		if value == nil {
+			continue
+		}
 		ret[k] = *value
 	}
 	return ret, nil
