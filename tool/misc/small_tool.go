@@ -299,3 +299,23 @@ func GetIpAddr(Ip string) string {
 	}
 	return ipApi.Ipdata.Info1 + " " + ipApi.Ipdata.Info2 + " " + ipApi.Ipdata.Info3 + " " + ipApi.Ipdata.Isp
 }
+
+func InputWithFile(key string) string {
+	u := NewFileUnit[map[string]string](FileUnitJson, "./SecConfig.json")
+	_ = u.Load()
+	if u.data == nil {
+		u.data = map[string]string{}
+	}
+	if v, ok := u.data[key]; ok && v != "" {
+		return v
+	}
+	// 清空缓存区
+	ClearIOBuffer()
+	value := InputString("请输入" + key + ":")
+	u.data[key] = value
+	err := u.Save()
+	if err != nil {
+		return ""
+	}
+	return value
+}
