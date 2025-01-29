@@ -300,6 +300,7 @@ func GetIpAddr(Ip string) string {
 	return ipApi.Ipdata.Info1 + " " + ipApi.Ipdata.Info2 + " " + ipApi.Ipdata.Info3 + " " + ipApi.Ipdata.Isp
 }
 
+// InputWithFile 从文件中读取配置，如果没有则输入，如果是test中不会触发输入，直接去生成的文件改
 func InputWithFile(key string) string {
 	u := NewFileUnit[map[string]string](FileUnitJson, "./SecConfig.json")
 	_ = u.Load()
