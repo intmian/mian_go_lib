@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"strings"
 
-	d1 "github.com/intmian/mian_go_lib/d1_gorm_adapter"
-	_ "github.com/intmian/mian_go_lib/d1_gorm_adapter/stdlib"
+	d1 "github.com/intmian/mian_go_lib/fork/d1_gorm_adapter"
+	_ "github.com/intmian/mian_go_lib/fork/d1_gorm_adapter/stdlib"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"

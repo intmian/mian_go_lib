@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	d1 "github.com/intmian/mian_go_lib/d1_gorm_adapter"
+	d1 "github.com/intmian/mian_go_lib/fork/d1_gorm_adapter"
 )
 
 var defaultTimeFields = []string{

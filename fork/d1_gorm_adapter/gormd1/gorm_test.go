@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	d1 "github.com/intmian/mian_go_lib/d1_gorm_adapter"
-	"github.com/intmian/mian_go_lib/d1_gorm_adapter/gormd1"
-	_ "github.com/intmian/mian_go_lib/d1_gorm_adapter/stdlib"
+	d1 "github.com/intmian/mian_go_lib/fork/d1_gorm_adapter"
+	"github.com/intmian/mian_go_lib/fork/d1_gorm_adapter/gormd1"
+	_ "github.com/intmian/mian_go_lib/fork/d1_gorm_adapter/stdlib"
 	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	d1 "github.com/intmian/mian_go_lib/d1_gorm_adapter"
-	_ "github.com/intmian/mian_go_lib/d1_gorm_adapter/stdlib"
+	d1 "github.com/intmian/mian_go_lib/fork/d1_gorm_adapter"
+	_ "github.com/intmian/mian_go_lib/fork/d1_gorm_adapter/stdlib"
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
