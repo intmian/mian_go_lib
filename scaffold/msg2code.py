@@ -3,7 +3,7 @@ import re
 import sys
 
 msg_pattern = r'const\s+Cmd(\w+)\s+.*Cmd\s+=\s+"(\w+)"\n*type\s+(\w+)Req\s+struct\s+\{([\s\S]*?)\}\n*type\s+(\w+)Ret\s+struct\s+\{([\s\S]*?)\}'
-struct_value_pattern = r'(\w+)\s*(.+)\n'
+struct_value_pattern = r'(\w+)\s*([\[\]\w.]+)\s*(\/\/.*)?\n'
 
 class Msg:
     def __init__(self,svrName,cmd,reqStructStr,retStructStr) -> None:
@@ -20,17 +20,24 @@ class Msg:
         matches = re.findall(struct_value_pattern,structStr)
         struct = []
         for match in matches:
-            if len(match) == 2:
+            if len(match) >= 2:
                 name = match[0]
                 typ = match[1]
+                isArr = False
                 # 如果是[]开头，转换为[]结尾
                 if typ.startswith('[]'):
-                    typ = typ[2:] + '[]'
+                    typ = typ[2:]
+                    isArr = True
                 # 替换
                 numberType = ['int32','int64','float32','float64','uint32','uint64','int','uint']
-                for number in numberType:
-                    typ = typ.replace(number,'number')
-                typ = typ.replace('bool','boolean')
+                if typ in numberType:
+                    typ = 'number'
+                elif typ == 'bool':
+                    typ = 'boolean'
+                if len (match) == 3:
+                    typ += match[2]
+                if isArr:
+                    typ = typ + '[]'
                 struct.append((name,typ))
         return struct
     
