@@ -135,6 +135,7 @@ for helper in helpers:
     golang_on += helper.makeOnFunction()
 
 # 生成typescript代码
+typescript_head = 'import {UniPost, UniResult} from "../common/newSendHttp";'
 typescript_interface = ""
 for helper in helpers:
     typescript_interface += helper.makeTypeScriptInterface()
@@ -190,7 +191,7 @@ elif mode == '8':
     pyperclip.copy(typescript_send)
     print("已复制到剪贴板")
 elif mode == '9':
-    pyperclip.copy(typescript_interface + '\n' + typescript_send)
+    pyperclip.copy(typescript_head + '\n' + typescript_interface + '\n' + typescript_send)
     print("已复制到剪贴板")
 elif mode == '10':
     print(latest_struct)
