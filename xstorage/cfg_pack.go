@@ -26,8 +26,11 @@ func (p *ParamMap) AddParam(param *CfgParam) error {
 	if param == nil {
 		return ErrParamIsNil
 	}
-	if param.Key == "" || param.RealKey == "" || param.ValueType == 0 {
+	if param.Key == "" || param.ValueType == 0 {
 		return ErrParamIsInvalid
+	}
+	if param.RealKey == "" {
+		param.RealKey = param.Key
 	}
 	_, ok := p.paramMap[param.Key]
 	if ok {
