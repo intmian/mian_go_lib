@@ -37,7 +37,7 @@ class Msg:
                 if len (match) == 3:
                     typ += match[2]
                 if isArr:
-                    typ = typ + '[]'
+                    typ = typ + '[] | null'
                 struct.append((name,typ))
         return struct
     
