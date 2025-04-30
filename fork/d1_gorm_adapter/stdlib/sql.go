@@ -7,7 +7,6 @@ import (
 	"errors"
 	"io"
 	"math"
-	"slices"
 	"strings"
 	"time"
 
@@ -184,7 +183,7 @@ func (r *Rows) Next(dest []driver.Value) (err error) {
 			dest[i] = row[i].(int64)
 		case string:
 			sv := row[i].(string)
-			if slices.Contains(defaultTimeFields, strings.ToLower(r.results.Columns[i])) {
+			if strings.HasPrefix(strings.ToLower(r.results.Columns[i]), "time_") {
 				dest[i], err = time.Parse(time.RFC3339Nano, sv)
 				if err != nil {
 					d1.Trace("Rows.Next parse time string failed: %s", err)

@@ -9,14 +9,14 @@ current support date types list.
 - ⚠️ Part support.
 - ❌ Not support.
 
-| Go type | D1 JSON | Support | Notes |
-|:---|:---|:---|:---|
-| bool | String | ✅ | |
-| int,int32,int64 | Number | ⚠️ | auto convert to int64 if math.Trunc euqal. |
-| float32,float64 | Number | ✅ ||
-| string | String| ✅ | |
-| []byte | String | ✅ | auto convert between unicode escape and bytes|
-| time.Time| String | ⚠️ | if column name in `github.com/kofj/gorm-driver-d1/stdlib.defaultTimeFields` slice. |
+| Go type | D1 JSON | Support | Notes                                         |
+|:---|:---|:---|:----------------------------------------------|
+| bool | String | ✅ |                                               |
+| int,int32,int64 | Number | ⚠️ | auto convert to int64 if math.Trunc euqal.    |
+| float32,float64 | Number | ✅ |                                               |
+| string | String| ✅ |                                               |
+| []byte | String | ✅ | auto convert between unicode escape and bytes |
+| time.Time| String | ⚠️ | if column has prefix "time_".                  |
 
 
 ## Useage
