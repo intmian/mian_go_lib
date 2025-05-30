@@ -127,7 +127,7 @@ func TestMigrator(t *testing.T) {
 		assert.NotEqualf(t, updatedAt, nuser.UpdatedAt, "UpdatedAt should not equal")
 	})
 
-	t.Run("Delete", func(t *testing.T) {
+	t.Run("OnDelete", func(t *testing.T) {
 		var tx = gdb.Delete(&User{}, 1)
 		var err = tx.Error
 		if err != nil {
