@@ -3,8 +3,9 @@ package ai
 import (
 	"context"
 	"errors"
-	openai "github.com/sashabaranov/go-openai"
 	"strings"
+
+	openai "github.com/sashabaranov/go-openai"
 )
 
 // OpenAI 一个简易的客户端，对类openai的请求都进行了封装
@@ -51,9 +52,9 @@ func (o *OpenAI) Init(baseUrl, token string, cheap bool, aiType AiType) {
 
 	// 默认是ChatGPT
 	if cheap {
-		o.model = []string{"gpt-4o-mini", "o1-mini"}
+		o.model = []string{"gpt-5-mini", "gpt-4.1-mini"}
 	} else {
-		o.model = []string{"o1-preview", "gpt-4o"}
+		o.model = []string{"gpt-5", "gpt-4.1"}
 	}
 	o.renshe = DefaultRenshe
 }
