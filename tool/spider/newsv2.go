@@ -2,14 +2,15 @@ package spider
 
 import (
 	"fmt"
-	"github.com/antlabs/strsim"
-	"github.com/mmcdole/gofeed"
-	"github.com/pkg/errors"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/antlabs/strsim"
+	"github.com/mmcdole/gofeed"
+	"github.com/pkg/errors"
 )
 
 type BBCRssItem struct {
@@ -34,10 +35,16 @@ func GetBBCRss(client *http.Client) ([]BBCRssItem, error) {
 	var items []BBCRssItem
 	for _, item := range feed.Items {
 		//<lastBuildDate>Wed, 25 Dec 2024 08:20:58 GMT</lastBuildDate>
-		newsTime, err := time.Parse(time.RFC1123, item.Published)
-		if err != nil {
-			return nil, errors.WithMessage(err, "GetBBCRss")
+		var newsTime time.Time
+		if item.Published == "" {
+
+		} else {
+			newsTime, err = time.Parse(time.RFC1123, item.Published)
+			if err != nil {
+				return nil, errors.WithMessage(err, "GetBBCRss")
+			}
 		}
+
 		// 替换链接
 		link := strings.Replace(item.Link, "/trad", "/simp", 1)
 		items = append(items, BBCRssItem{
@@ -65,6 +72,8 @@ func GetBBCRssWithDay(day time.Time, client *http.Client) ([]BBCRssItem, error) 
 	for _, item := range items {
 		itemPubDate := item.PubDate.In(day.Location())
 		if itemPubDate.Day() == day.Day() && itemPubDate.Month() == day.Month() && itemPubDate.Year() == day.Year() {
+			res = append(res, item)
+		} else if itemPubDate.IsZero() {
 			res = append(res, item)
 		}
 	}
