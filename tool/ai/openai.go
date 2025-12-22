@@ -54,7 +54,7 @@ func (o *OpenAI) Init(baseUrl, token string, cheap bool, aiType AiType) {
 	if cheap {
 		o.model = []string{"gpt-5-mini", "gpt-4.1-mini"}
 	} else {
-		o.model = []string{"gpt-5", "gpt-4.1"}
+		o.model = []string{"gpt-5.2", "gpt-5.2-chat-latest"}
 	}
 	o.renshe = DefaultRenshe
 }

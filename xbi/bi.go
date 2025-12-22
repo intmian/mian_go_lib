@@ -1,4 +1,4 @@
-package XBi
+package xbi
 
 import (
 	"context"
@@ -11,32 +11,33 @@ import (
 
 // XBi 是轻量业务日志结构体，封装了 SLS 客户端和项目、日志库信息
 type XBi struct {
-	client  *sls.Client
-	project string // SLS 项目名
+	client  sls.ClientInterface
+	project PpjName
+	DbName  DbName
+	table   TableName
 }
 
-// NewXBi 初始化 SLS 客户端，传入 endpoint、accessKeyID、accessKeySecret、project、logstore
-func NewXBi(endpoint, accessKeyID, accessKeySecret, project, logstore string) *XBi {
-	client := sls.CreateNormalInterface(endpoint, accessKeyID, accessKeySecret)
+// NewXBi 初始化 SLS 客户端，传入 Endpoint、AccessKeyID、AccessKeySecret、project、logstore
+func NewXBi(setting Setting) *XBi {
+	client := sls.CreateNormalInterface(setting.Endpoint, setting.AccessKeyID, setting.AccessKeySecret, setting.SecurityToken)
 	return &XBi{
-		client:   client,
-		project:  project,
-		logstore: logstore,
+		client:  client,
+		project: setting.PpjName,
+		DbName:  setting.DbName,
+		table:   setting.TableName,
 	}
 }
 
 // LogEntry 业务日志实体，支持任意结构，实际写入会被序列化成 JSON
 type LogEntry struct {
-	Biz       string                 `json:"biz"`       // 业务名
-	Timestamp int64                  `json:"timestamp"` // 时间戳，单位秒
-	Data      map[string]interface{} `json:"data"`      // 业务数据，任意键值对
+	Timestamp int64       `json:"timestamp"` // 时间戳，单位秒
+	Data      interface{} `json:"data"`      // 业务数据，任意键值对
 }
 
 // WriteLog 发送日志到 SLS，参数是业务名和具体业务数据（map），自动填充时间戳
-func (x *XBi) WriteLog(ctx context.Context, biz string, data map[string]interface{}) error {
+func (x *XBi) WriteLog(data interface{}) error {
 	// 构造日志内容
 	logEntry := LogEntry{
-		Biz:       biz,
 		Timestamp: time.Now().Unix(),
 		Data:      data,
 	}
