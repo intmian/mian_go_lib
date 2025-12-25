@@ -20,7 +20,7 @@ type testLogEntity struct {
 	data testLog
 }
 
-func (t *testLogEntity) TableName() TableName {
+func (t *testLogEntity) TableName() string {
 	return "log_test_db"
 }
 
@@ -41,14 +41,20 @@ func TestNewXBi(t *testing.T) {
 		t.Fatal("连接数据库失败:", err)
 	}
 
-	err = db.AutoMigrate(toRealEntity[*testLog](&testLogEntity{}))
-	if err != nil {
-		t.Fatal("创建数据表失败:", err)
-	}
-
-	xbi := NewXBi(Setting{
-		Db: db,
+	ctx := context.Background()
+	errChan := make(chan error, 1)
+	xbi, err := NewXBi(Setting{
+		Db:        db,
+		errorChan: errChan,
+		ctx:       ctx,
 	})
+	if err != nil {
+		t.Fatal("创建XBi失败:", err)
+	}
+	err = RegisterLogEntity[testLog](xbi, &testLogEntity{})
+	if err != nil {
+		t.Fatal("注册日志实体失败:", err)
+	}
 
 	if xbi == nil {
 		t.Fatal("创建XBi失败")
@@ -56,13 +62,10 @@ func TestNewXBi(t *testing.T) {
 
 	testLog1 := &testLogEntity{}
 	testLog1Data := testLog1.GetWriteableData()
-	testLog1Data.A = "testA"
+	testLog1Data.A = "testB"
 	testLog1Data.B = 123
 
-	ctx := context.Background()
-	errChan := make(chan error)
-
-	err = WriteLog[*testLog](xbi, testLog1, ctx, errChan)
+	err = WriteLog[testLog](xbi, testLog1)
 	if err != nil {
 		t.Fatal("写入日志失败:", err)
 	}
@@ -77,8 +80,11 @@ func TestNewXBi(t *testing.T) {
 	default:
 	}
 
-	logEntitie := testLogEntity{}
-	data, err := ReadLog[testLog](xbi, string(logEntitie.TableName()), nil, 1, 0, ctx)
+	entity := testLogEntity{}
+	conditions := map[string]interface{}{
+		"A": "testB",
+	}
+	data, err := ReadLog[testLog](xbi, string(entity.TableName()), conditions, 0, 0)
 
 	if err != nil {
 		t.Fatal("读取日志失败:", err)
@@ -87,4 +93,10 @@ func TestNewXBi(t *testing.T) {
 	if len(data) == 0 {
 		t.Fatal("读取日志为空")
 	}
+
+	for _, v := range data {
+		t.Log("读取日志:", v)
+	}
+
+	t.Log("XBi测试通过")
 }
