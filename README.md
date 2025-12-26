@@ -24,6 +24,7 @@
 | xstorage | 线程安全、使用方便得，支持复杂配置的自落盘cache | 支持int、float、bool、string和对应的slice，包含一个简单的web外包装 |
 | xnews    | topic based缓存              | 支持根据topic配置限流器，定时清除，单条自定义默认过期时间                |
 | xres     | 转表工具                       | 支持toml配置元信息进行excel处理                           |
+| xbi      | 业务日志工具                    | 支持简单的查询和业务日志存储                           |
 
 ### scaffold 脚手架 代码生成器相关
 
