@@ -3,8 +3,9 @@ package xnews
 import (
 	"context"
 	"errors"
-	"github.com/intmian/mian_go_lib/tool/misc"
 	"sync"
+
+	"github.com/intmian/mian_go_lib/tool/misc"
 )
 
 type XNews struct {
@@ -41,7 +42,7 @@ func (x *XNews) AddTopic(name string, setting TopicSetting) error {
 		return ErrTopicAlreadyExist
 	}
 	t := &Topic{}
-	ctx := context.WithoutCancel(x.ctx)
+	ctx := x.ctx
 	err := t.Init(name, setting, ctx)
 	x.topics[name] = t
 	if err != nil {
