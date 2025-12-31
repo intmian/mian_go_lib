@@ -9,6 +9,10 @@ import (
 type Setting struct {
 	// 权限配置
 	Db        *gorm.DB
-	errorChan chan<- error
-	ctx       context.Context
+	ErrorChan chan<- error
+	Ctx       context.Context
+}
+
+func GetDefaultSetting() Setting {
+	return Setting{}
 }

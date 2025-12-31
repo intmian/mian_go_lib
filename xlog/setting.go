@@ -1,6 +1,10 @@
 package xlog
 
-import "github.com/intmian/mian_go_lib/xpush"
+import (
+	"context"
+
+	"github.com/intmian/mian_go_lib/xpush"
+)
 
 type LogSetting struct {
 	LogInfo
@@ -30,6 +34,7 @@ type LogRecordStrategy struct {
 
 type PushInfo struct {
 	PushMgr *xpush.XPush
+	Ctx     context.Context
 }
 
 type LogPrint struct {

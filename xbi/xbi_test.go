@@ -45,8 +45,8 @@ func TestNewXBi(t *testing.T) {
 	errChan := make(chan error, 1)
 	xbi, err := NewXBi(Setting{
 		Db:        db,
-		errorChan: errChan,
-		ctx:       ctx,
+		ErrorChan: errChan,
+		Ctx:       ctx,
 	})
 	if err != nil {
 		t.Fatal("创建XBi失败:", err)

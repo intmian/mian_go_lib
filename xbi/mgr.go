@@ -18,7 +18,7 @@ func NewXBi(setting Setting) (*XBi, error) {
 		setting: setting,
 	}
 
-	if xbi.setting.Db == nil || setting.errorChan == nil || setting.ctx == nil {
+	if xbi.setting.Db == nil || setting.ErrorChan == nil || setting.Ctx == nil {
 		return nil, errors.New("XBi setting is invalid")
 	}
 
@@ -60,10 +60,10 @@ func WriteLog[T any](x *XBi, log LogEntity[T]) error {
 
 	go func() {
 		realLog := toDbData(log)
-		err := x.setting.Db.WithContext(x.setting.ctx).Table(tableName).Create(&realLog).Error
+		err := x.setting.Db.WithContext(x.setting.Ctx).Table(tableName).Create(&realLog).Error
 		select {
-		case x.setting.errorChan <- err:
-		case <-x.setting.ctx.Done():
+		case x.setting.ErrorChan <- err:
+		case <-x.setting.Ctx.Done():
 		}
 	}()
 
@@ -83,14 +83,14 @@ func ReadLog[T any](x *XBi, tableName string, conditions map[string]any, pageNum
 
 	var results []DbLogData[T]
 	if pageNum <= 0 {
-		err := x.setting.Db.WithContext(x.setting.ctx).Table(tableName).Where(conditions).Find(&results).Error
+		err := x.setting.Db.WithContext(x.setting.Ctx).Table(tableName).Where(conditions).Find(&results).Error
 		if err != nil {
 			return nil, errors.Wrap(err, "ReadLog failed")
 		}
 		return results, nil
 	}
 
-	err := x.setting.Db.WithContext(x.setting.ctx).Table(tableName).Where(conditions).Offset((pageNum - 1) * page).Limit(pageNum).Find(&results).Error
+	err := x.setting.Db.WithContext(x.setting.Ctx).Table(tableName).Where(conditions).Offset((pageNum - 1) * page).Limit(pageNum).Find(&results).Error
 	if err != nil {
 		return nil, errors.Wrap(err, "ReadLog failed")
 	}

@@ -3,10 +3,11 @@ package xlog
 import (
 	"errors"
 	"fmt"
-	"github.com/intmian/mian_go_lib/tool/misc"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/intmian/mian_go_lib/tool/misc"
 )
 
 // XLog 日志管理器，支持以对应策略记录日志。目前暂不支持复杂策略，可以考虑组合使用多个xLog来实现
@@ -198,6 +199,22 @@ func (receiver *XLog) detailLog(level LogLevel, from string, info string, ifMisc
 	}
 
 	return err
+}
+
+// GetLogChan 获取一个日志错误通道，用于接收异步日志记录错误
+func (receiver *XLog) GetLogChan(module string) chan error {
+	c := make(chan error)
+	go func() {
+		for {
+			select {
+			case err := <-c:
+				receiver.ErrorErr(module, err)
+			case <-receiver.Ctx.Done():
+				return
+			}
+		}
+	}()
+	return c
 }
 
 func parseLog(sLevel string, ts string, from string, info string) string {
