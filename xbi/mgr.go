@@ -61,9 +61,11 @@ func WriteLog[T any](x *XBi, log LogEntity[T]) error {
 	go func() {
 		realLog := toDbData(log)
 		err := x.setting.Db.WithContext(x.setting.Ctx).Table(tableName).Create(&realLog).Error
-		select {
-		case x.setting.ErrorChan <- err:
-		case <-x.setting.Ctx.Done():
+		if err != nil {
+			select {
+			case x.setting.ErrorChan <- err:
+			case <-x.setting.Ctx.Done():
+			}
 		}
 	}()
 
