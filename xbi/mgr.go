@@ -72,6 +72,85 @@ func WriteLog[T any](x *XBi, log LogEntity[T]) error {
 	return nil
 }
 
+type ReadLogFilter struct {
+	conditions map[string]any
+	page       *struct {
+		Num  int
+		Size int
+	}
+	orderBy *struct {
+		Field string
+		Desc  bool
+	}
+}
+
+func (r *ReadLogFilter) SetConditions(conditions map[string]any) *ReadLogFilter {
+	r.conditions = conditions
+	return r
+}
+
+func (r *ReadLogFilter) SetPage(num, size int) *ReadLogFilter {
+	r.page = &struct {
+		Num  int
+		Size int
+	}{
+		Num:  num,
+		Size: size,
+	}
+	return r
+}
+
+func (r *ReadLogFilter) SetOrderBy(field string, desc bool) *ReadLogFilter {
+	r.orderBy = &struct {
+		Field string
+		Desc  bool
+	}{
+		Field: field,
+		Desc:  desc,
+	}
+	return r
+}
+
+func ReadLogWithFilter[T any](x *XBi, tableName string, filter ReadLogFilter) ([]DbLogData[T], error) {
+	if x == nil {
+		return nil, errors.New("XBi instance is nil")
+	}
+	if !x.ini.IsInitialized() {
+		return nil, errors.New("XBi file not initialized")
+	}
+	if tableName == "" {
+		return nil, errors.New("table name is empty")
+	}
+
+	tx := x.setting.Db.WithContext(x.setting.Ctx).Table(tableName)
+
+	if filter.conditions != nil {
+		tx = tx.Where(filter.conditions)
+	}
+
+	if filter.orderBy != nil {
+		orderStr := filter.orderBy.Field
+		if filter.orderBy.Desc {
+			orderStr += " desc"
+		}
+		tx = tx.Order(orderStr)
+	}
+
+	if filter.page != nil {
+		if filter.page.Num <= 0 {
+			filter.page.Num = 1
+		}
+		tx = tx.Offset((filter.page.Num - 1) * filter.page.Size).Limit(filter.page.Size)
+	}
+
+	var results []DbLogData[T]
+	err := tx.Find(&results).Error
+	if err != nil {
+		return nil, errors.Wrap(err, "ReadLogWithFilter failed")
+	}
+	return results, nil
+}
+
 func ReadLog[T any](x *XBi, tableName string, conditions map[string]any, pageNum, page int) ([]DbLogData[T], error) {
 	if x == nil {
 		return nil, errors.New("XBi instance is nil")

@@ -84,6 +84,9 @@ func TestNewXBi(t *testing.T) {
 	conditions := map[string]interface{}{
 		"A": "testB",
 	}
+	pageNum := 1
+	page := 0
+
 	data, err := ReadLog[testLog](xbi, string(entity.TableName()), conditions, 0, 0)
 
 	if err != nil {
@@ -98,5 +101,21 @@ func TestNewXBi(t *testing.T) {
 		t.Log("读取日志:", v)
 	}
 
-	t.Log("XBi测试通过")
+	filter := ReadLogFilter{}
+	filter.SetConditions(conditions).SetPage(page, pageNum).SetOrderBy("A", true)
+	data, err = ReadLogWithFilter[testLog](xbi, string(entity.TableName()), filter)
+
+	if err != nil {
+		t.Fatal("使用过滤器读取日志失败:", err)
+	}
+
+	if len(data) == 0 {
+		t.Fatal("使用过滤器读取日志为空")
+	}
+
+	for _, v := range data {
+		t.Log("使用过滤器读取日志:", v)
+	}
+
+	t.Log("XBi 测试通过")
 }
