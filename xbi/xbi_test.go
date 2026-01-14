@@ -101,7 +101,7 @@ func TestNewXBi(t *testing.T) {
 		t.Log("读取日志:", v)
 	}
 
-	filter := ReadLogFilter{}
+	filter := &ReadLogFilter{}
 	filter.SetConditions(conditions).SetPage(page, pageNum).SetOrderBy("A", true)
 	data, err = ReadLogWithFilter[testLog](xbi, string(entity.TableName()), filter)
 

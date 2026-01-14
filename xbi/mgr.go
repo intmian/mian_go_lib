@@ -1,6 +1,8 @@
 package xbi
 
 import (
+	"strings"
+
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"github.com/pkg/errors"
 )
@@ -111,21 +113,35 @@ func (r *ReadLogFilter) SetOrderBy(field string, desc bool) *ReadLogFilter {
 	return r
 }
 
-func ReadLogWithFilter[T any](x *XBi, tableName string, filter ReadLogFilter) ([]DbLogData[T], error) {
+func ReadLogWithFilter[T any](x *XBi, tableName string, filter *ReadLogFilter) ([]DbLogData[T], int64, error) {
 	if x == nil {
-		return nil, errors.New("XBi instance is nil")
+		return nil, 0, errors.New("XBi instance is nil")
 	}
 	if !x.ini.IsInitialized() {
-		return nil, errors.New("XBi file not initialized")
+		return nil, 0, errors.New("XBi file not initialized")
 	}
 	if tableName == "" {
-		return nil, errors.New("table name is empty")
+		return nil, 0, errors.New("table name is empty")
+	}
+	if filter == nil {
+		return nil, 0, errors.New("filter is nil")
 	}
 
 	tx := x.setting.Db.WithContext(x.setting.Ctx).Table(tableName)
 
 	if filter.conditions != nil {
-		tx = tx.Where(filter.conditions)
+		for k, v := range filter.conditions {
+			if strings.Contains(k, " ") {
+				tx = tx.Where(k+" ?", v)
+			} else {
+				tx = tx.Where(k+" = ?", v)
+			}
+		}
+	}
+
+	var count int64
+	if err := tx.Count(&count).Error; err != nil {
+		return nil, 0, errors.Wrap(err, "count failed")
 	}
 
 	if filter.orderBy != nil {
@@ -146,9 +162,9 @@ func ReadLogWithFilter[T any](x *XBi, tableName string, filter ReadLogFilter) ([
 	var results []DbLogData[T]
 	err := tx.Find(&results).Error
 	if err != nil {
-		return nil, errors.Wrap(err, "ReadLogWithFilter failed")
+		return nil, 0, errors.Wrap(err, "ReadLogWithFilter failed")
 	}
-	return results, nil
+	return results, count, nil
 }
 
 func ReadLog[T any](x *XBi, tableName string, conditions map[string]any, pageNum, page int) ([]DbLogData[T], error) {

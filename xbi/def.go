@@ -8,7 +8,7 @@ type LogEntity[DataType any] interface {
 
 type DbLogData[DataType any] struct {
 	// 一些公共字段
-	RecordTime int64 // ms 时间戳
+	RecordTime int64 `json:"record_time" gorm:"column:record_time"` // 记录时间戳ms
 	// 内嵌真实的数据
 	Data DataType `gorm:"embedded"`
 }
