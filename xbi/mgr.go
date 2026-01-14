@@ -1,6 +1,8 @@
 package xbi
 
 import (
+	"strings"
+
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"github.com/pkg/errors"
 )
@@ -129,7 +131,11 @@ func ReadLogWithFilter[T any](x *XBi, tableName string, filter *ReadLogFilter) (
 
 	if filter.conditions != nil {
 		for k, v := range filter.conditions {
-			tx = tx.Where(k, v)
+			if strings.Contains(k, "?") {
+				tx = tx.Where(k, v)
+			} else {
+				tx = tx.Where(k+" = ?", v)
+			}
 		}
 	}
 
