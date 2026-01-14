@@ -1,10 +1,22 @@
 package xbi
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"github.com/pkg/errors"
+)
+
+var (
+	// 用于校验包含 ? 的复杂条件，例如 "Data.Duration > ?"
+	// 允许的格式: 字段名 + 空格 + 操作符 + 空格(可选) + ?
+	// 操作符白名单: =, <, >, <=, >=, <>, !=, LIKE, NOT LIKE
+	// (?i) 表示不区分大小写
+	regexComplexCondition = regexp.MustCompile(`(?i)^[a-zA-Z0-9_.]+\s+(?:=|!=|<>|>|<|>=|<=|LIKE|NOT\s+LIKE)\s*\?$`)
+
+	// 用于校验普通字段名，例如 "Data.Rows"
+	regexSimpleColumn = regexp.MustCompile(`^[a-zA-Z0-9_.]+$`)
 )
 
 // XBi 是轻量业务日志结构体，封装了 gorm 客户端和项目、日志库信息
@@ -132,8 +144,16 @@ func ReadLogWithFilter[T any](x *XBi, tableName string, filter *ReadLogFilter) (
 	if filter.conditions != nil {
 		for k, v := range filter.conditions {
 			if strings.Contains(k, "?") {
+				// 安全检查：防止 SQL 注入
+				if !regexComplexCondition.MatchString(k) {
+					return nil, 0, errors.Errorf("invalid query condition key: %s", k)
+				}
 				tx = tx.Where(k, v)
 			} else {
+				// 安全检查：防止作为列名传入奇怪的 SQL 片段
+				if !regexSimpleColumn.MatchString(k) {
+					return nil, 0, errors.Errorf("invalid query column name: %s", k)
+				}
 				tx = tx.Where(k+" = ?", v)
 			}
 		}
@@ -145,7 +165,13 @@ func ReadLogWithFilter[T any](x *XBi, tableName string, filter *ReadLogFilter) (
 	}
 
 	if filter.orderBy != nil {
-		orderStr := filter.orderBy.Field
+		field := filter.orderBy.Field
+		// 安全检查：防止 Order By 注入
+		if !regexSimpleColumn.MatchString(field) {
+			return nil, 0, errors.Errorf("invalid order by field: %s", field)
+		}
+
+		orderStr := field
 		if filter.orderBy.Desc {
 			orderStr += " desc"
 		}
