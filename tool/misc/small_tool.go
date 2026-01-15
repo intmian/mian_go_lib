@@ -5,8 +5,6 @@ import (
 	"cmp"
 	"encoding/json"
 	"fmt"
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/transform"
 	"io"
 	"net/http"
 	"os"
@@ -14,6 +12,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 )
 
 // Str2list 将json风格的数组字符串s转换为字符串
@@ -98,7 +99,7 @@ func GetTimeStr() string {
 	return time.Now().Format("2006-01-02 15:04:05")
 }
 
-func InputStr(len int) string {
+func genInputNoticeDash(len int) string {
 	re := ""
 	for i := 0; i < len; i++ {
 		re += "_"
@@ -110,7 +111,7 @@ func InputStr(len int) string {
 }
 
 func Input(hint string, len int, a ...interface{}) error {
-	print(hint + InputStr(len))
+	print(hint + genInputNoticeDash(len))
 	_, err := fmt.Scan(a...)
 	return err
 }

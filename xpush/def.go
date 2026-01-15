@@ -7,5 +7,6 @@ const (
 	PushTypeEmail
 	PushTypePushDeer
 	PushTypeDing
+	PushTypeFeishu
 	PushTypeMax
 )

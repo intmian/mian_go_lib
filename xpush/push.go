@@ -1,10 +1,11 @@
 package xpush
 
 import (
+	"sync"
+
 	"github.com/intmian/mian_go_lib/tool/misc"
 	"github.com/intmian/mian_go_lib/xpush/pushmod"
 	"github.com/pkg/errors"
-	"sync"
 )
 
 type XPush struct {
@@ -69,6 +70,12 @@ func (m *XPush) AddDingDing(setting pushmod.DingSetting) error {
 	var Ding pushmod.DingRobotMgr
 	Ding.Init(setting)
 	return m.add(PushTypeDing, &Ding)
+}
+
+func (m *XPush) AddFeishu(setting pushmod.FeishuSetting) error {
+	var Feishu pushmod.FeishuRobotMgr
+	Feishu.Init(setting)
+	return m.add(PushTypeFeishu, &Feishu)
 }
 
 func (m *XPush) AddPushDeer(setting pushmod.PushDeerSetting) error {
