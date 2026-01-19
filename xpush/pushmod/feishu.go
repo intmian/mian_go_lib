@@ -5,11 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/intmian/mian_go_lib/tool/misc"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"time"
+
+	"github.com/intmian/mian_go_lib/tool/misc"
+	"github.com/pkg/errors"
 )
 
 type FeishuSetting struct {
@@ -85,15 +87,20 @@ func (m *FeishuRobotMgr) pushFeishu(title string, content string, markDown bool)
 	if !m.isInit {
 		return misc.ErrNotInit
 	}
-	var mes FeishuMessage
+
 	if markDown {
-		mes = NewFeishuCard(title, content)
-	} else {
-		if title != "" {
-			content = title + "\n" + content
-		}
-		mes = NewFeishuText(content)
+		// 飞书只支持部分markdown语法，需要反向解析
+		// 1. 标题 # -> **
+		reg := regexp.MustCompile(`(?m)^#+\s`)
+		content = reg.ReplaceAllString(content, "**")
+		reg = regexp.MustCompile(`(?m)\s#+$`)
+		content = reg.ReplaceAllString(content, "**")
+		// 2. 换行
+		// 飞书卡片里的markdown换行不需要两个换行符
+		content = regexp.MustCompile(`\n\n`).ReplaceAllString(content, "\n")
 	}
+
+	mes := NewFeishuCard(title, content, markDown)
 	return m.Send(mes)
 }
 
@@ -168,23 +175,35 @@ func NewFeishuText(content string) *FeishuText {
 	}
 }
 
+type FeishuCardTitle struct {
+	Tag     string `json:"tag"`
+	Content string `json:"content"`
+}
+
+type FeishuCardHeader struct {
+	Title    FeishuCardTitle `json:"title"`
+	Template string          `json:"template,omitempty"`
+}
+
 type FeishuCard struct {
 	MsgType string `json:"msg_type"`
 	Card    struct {
-		Header *struct {
-			Title struct {
-				Tag     string `json:"tag"`
-				Content string `json:"content"`
-			} `json:"title"`
-			Template string `json:"template,omitempty"`
-		} `json:"header,omitempty"`
-		Elements []interface{} `json:"elements"`
+		Header   *FeishuCardHeader `json:"header,omitempty"`
+		Elements []interface{}     `json:"elements"`
 	} `json:"card"`
 }
 
 type FeishuMarkdownElement struct {
 	Tag     string `json:"tag"`
 	Content string `json:"content"`
+}
+
+type FeishuDivElement struct {
+	Tag  string `json:"tag"`
+	Text struct {
+		Tag     string `json:"tag"`
+		Content string `json:"content"`
+	} `json:"text"`
 }
 
 func (m *FeishuCard) ToJson() string {
@@ -195,32 +214,38 @@ func (m *FeishuCard) ToJson() string {
 	return string(b)
 }
 
-func NewFeishuCard(title string, content string) *FeishuCard {
+func NewFeishuCard(title string, content string, markDown bool) *FeishuCard {
 	c := &FeishuCard{
 		MsgType: "interactive",
 	}
 	if title != "" {
-		c.Card.Header = &struct {
-			Title struct {
-				Tag     string `json:"tag"`
-				Content string `json:"content"`
-			} `json:"title"`
-			Template string `json:"template,omitempty"`
-		}{
-			Title: struct {
-				Tag     string `json:"tag"`
-				Content string `json:"content"`
-			}{
+		c.Card.Header = &FeishuCardHeader{
+			Title: FeishuCardTitle{
 				Tag:     "plain_text",
 				Content: title,
 			},
 		}
 	}
-	c.Card.Elements = []interface{}{
-		FeishuMarkdownElement{
-			Tag:     "markdown",
-			Content: content,
-		},
+	if markDown {
+		c.Card.Elements = []interface{}{
+			FeishuMarkdownElement{
+				Tag:     "markdown",
+				Content: content,
+			},
+		}
+	} else {
+		c.Card.Elements = []interface{}{
+			FeishuDivElement{
+				Tag: "div",
+				Text: struct {
+					Tag     string `json:"tag"`
+					Content string `json:"content"`
+				}{
+					Tag:     "plain_text",
+					Content: content,
+				},
+			},
+		}
 	}
 	return c
 }
