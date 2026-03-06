@@ -201,6 +201,9 @@ func (c *CfgExt) GetUser(user string, keys ...string) (*ValueUnit, error) {
 			return nil, err
 		}
 	}
+	if v == nil {
+		return &param.Default, nil
+	}
 	return v, err
 }
 
@@ -224,6 +227,9 @@ func (c *CfgExt) Get(keys ...string) (*ValueUnit, error) {
 		} else {
 			return nil, err
 		}
+	}
+	if v == nil {
+		return &param.Default, nil
 	}
 	return v, err
 }
