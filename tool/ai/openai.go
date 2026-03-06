@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -33,11 +34,49 @@ func NewOpenAI(baseUrl, token string, cheap bool, aiType AiType) *OpenAI {
 	return o
 }
 
-func (o *OpenAI) Init(baseUrl, token string, cheap bool, aiType AiType) {
+func NewOpenAIWithModels(baseUrl, token string, cheap bool, aiType AiType, customModels ...string) *OpenAI {
+	o := &OpenAI{}
+	o.Init(baseUrl, token, cheap, aiType, customModels...)
+	return o
+}
+
+func NewOpenAIWithMode(baseUrl, token string, mode ModelMode, aiType AiType, modelPools map[ModelMode][]string) *OpenAI {
+	models := SelectModels(mode, modelPools)
+	return NewOpenAIWithModels(baseUrl, token, false, aiType, models...)
+}
+
+func ParseModelList(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	fields := strings.FieldsFunc(raw, func(r rune) bool {
+		return r == ',' || r == '\n' || r == '\r'
+	})
+	models := make([]string, 0, len(fields))
+	for _, field := range fields {
+		model := strings.TrimSpace(field)
+		if model == "" || slices.Contains(models, model) {
+			continue
+		}
+		models = append(models, model)
+	}
+	return models
+}
+
+func (o *OpenAI) Init(baseUrl, token string, cheap bool, aiType AiType, customModels ...string) {
 	config := openai.DefaultConfig(token)
 	config.BaseURL = baseUrl
 	o.cl = openai.NewClientWithConfig(config)
 	o.aiType = aiType
+	if len(customModels) > 0 {
+		o.model = customModels
+		if aiType == AiTypeDeepSeek {
+			o.renshe = DeepSeekRenshe
+		} else {
+			o.renshe = DefaultRenshe
+		}
+		return
+	}
 
 	// deepseek
 	if aiType == AiTypeDeepSeek {

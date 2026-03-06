@@ -135,6 +135,7 @@ func (c *CfgExt) GetAll() (map[string]ValueUnit, error) {
 			return nil, err
 		}
 		if value == nil {
+			ret[k] = v.Default
 			continue
 		}
 		ret[k] = *value
@@ -158,7 +159,8 @@ func (c *CfgExt) GetWithFilter(prefix, user string) (map[string]ValueUnit, error
 				return nil, err
 			}
 			if value == nil {
-				return nil, ErrKeyNotFound
+				ret[logicKey] = params.Default
+				continue
 			}
 			ret[logicKey] = *value
 		} else {
@@ -167,7 +169,8 @@ func (c *CfgExt) GetWithFilter(prefix, user string) (map[string]ValueUnit, error
 				return nil, err
 			}
 			if value == nil {
-				return nil, ErrKeyNotFound
+				ret[logicKey] = params.Default
+				continue
 			}
 			ret[logicKey] = *value
 		}

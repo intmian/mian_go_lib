@@ -33,14 +33,14 @@ func TestCfg(t *testing.T) {
 		Key:       "test3",
 		ValueType: ValueTypeInt,
 		CanUser:   true,
-		Default:   ToUnit(123, ValueTypeInt),
+		Default:   *ToUnit(123, ValueTypeInt),
 		RealKey:   "test3real",
 	})
 	err4 := cfg.AddParam(&CfgParam{
 		Key:       "test4",
 		ValueType: ValueTypeInt,
 		CanUser:   false,
-		Default:   ToUnit(123, ValueTypeInt),
+		Default:   *ToUnit(123, ValueTypeInt),
 		RealKey:   "test4real",
 	})
 	err = misc.JoinErr(err1, err2, err3, err4)
@@ -56,12 +56,12 @@ func TestCfg(t *testing.T) {
 
 	// 测试默认
 	v, _ = cfg.Get("test3")
-	if v != nil {
-		t.Fatal("test3 should be nil")
+	if v == nil || ToBase[int](v) != 123 {
+		t.Fatal("test3 should use default value")
 	}
 	v, _ = cfg.Get("test4")
-	if v == nil {
-		t.Fatal("test4 should not be nil")
+	if v == nil || ToBase[int](v) != 123 {
+		t.Fatal("test4 should use default value")
 	}
 
 	// 测非用户的
