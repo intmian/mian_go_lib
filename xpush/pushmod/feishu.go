@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/intmian/mian_go_lib/tool/misc"
@@ -89,19 +90,26 @@ func (m *FeishuRobotMgr) pushFeishu(title string, content string, markDown bool)
 	}
 
 	if markDown {
-		// 飞书只支持部分markdown语法，需要反向解析
-		// 1. 标题 # -> **
-		reg := regexp.MustCompile(`(?m)^#+\s`)
-		content = reg.ReplaceAllString(content, "**")
-		reg = regexp.MustCompile(`(?m)\s#+$`)
-		content = reg.ReplaceAllString(content, "**")
-		// 2. 换行
-		// 飞书卡片里的markdown换行不需要两个换行符
-		content = regexp.MustCompile(`\n\n`).ReplaceAllString(content, "\n")
+		content = normalizeFeishuMarkdown(content)
 	}
 
 	mes := NewFeishuCard(title, content, markDown)
 	return m.Send(mes)
+}
+
+var feishuHeadingPattern = regexp.MustCompile(`^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$`)
+
+func normalizeFeishuMarkdown(content string) string {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		match := feishuHeadingPattern.FindStringSubmatch(line)
+		if len(match) == 2 {
+			lines[i] = "**" + strings.TrimSpace(match[1]) + "**"
+		}
+	}
+	// 飞书卡片里的 markdown 段落间单空行即可，避免生成过多空白。
+	content = strings.Join(lines, "\n")
+	return regexp.MustCompile(`\n{3,}`).ReplaceAllString(content, "\n\n")
 }
 
 func SendFeishuMessage(webhookUrl string, message FeishuMessage) error {

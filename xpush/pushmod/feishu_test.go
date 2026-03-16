@@ -1,6 +1,7 @@
 package pushmod
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -81,4 +82,16 @@ func TestFeishuRobotMgr_MdPush(t *testing.T) {
 
 	m.PushMarkDown(time.Now().Format("测试标题 2006-01-02 15:04:05"), "#### hahaha xixi heihei")
 	m.pushFeishu("测试标题", "## hahaha \n\n- 1 2", true)
+}
+
+func TestNormalizeFeishuMarkdown_Heading(t *testing.T) {
+	input := "### 日安，03月16日的播报\n白天小雨\n#### 摘要\n第二段"
+	got := normalizeFeishuMarkdown(input)
+
+	if !strings.Contains(got, "**日安，03月16日的播报**\n白天小雨") {
+		t.Fatalf("heading should be converted to a closed bold line, got: %q", got)
+	}
+	if !strings.Contains(got, "\n**摘要**\n第二段") {
+		t.Fatalf("sub heading should be converted to a closed bold line, got: %q", got)
+	}
 }
