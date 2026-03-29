@@ -6,12 +6,13 @@ import (
 	"slices"
 	"strings"
 
-	openai "github.com/sashabaranov/go-openai"
+	openai "github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
 )
 
 // OpenAI 一个简易的客户端，对类openai的请求都进行了封装
 type OpenAI struct {
-	cl     *openai.Client
+	cl     openai.Client
 	model  []string
 	renshe string
 	aiType AiType
@@ -64,9 +65,11 @@ func ParseModelList(raw string) []string {
 }
 
 func (o *OpenAI) Init(baseUrl, token string, cheap bool, aiType AiType, customModels ...string) {
-	config := openai.DefaultConfig(token)
-	config.BaseURL = baseUrl
-	o.cl = openai.NewClientWithConfig(config)
+	opts := []option.RequestOption{option.WithAPIKey(token)}
+	if baseUrl != "" {
+		opts = append(opts, option.WithBaseURL(baseUrl))
+	}
+	o.cl = openai.NewClient(opts...)
 	o.aiType = aiType
 	if len(customModels) > 0 {
 		o.model = customModels
@@ -91,9 +94,9 @@ func (o *OpenAI) Init(baseUrl, token string, cheap bool, aiType AiType, customMo
 
 	// 默认是ChatGPT
 	if cheap {
-		o.model = []string{"gpt-5-mini", "gpt-4.1-mini"}
+		o.model = []string{"gpt-5.4-mini", "gpt-5.4-nano"}
 	} else {
-		o.model = []string{"gpt-5.2", "gpt-5.2-chat-latest"}
+		o.model = []string{"gpt-5.4", "gpt-5-chat-latest"}
 	}
 	o.renshe = DefaultRenshe
 }
@@ -101,25 +104,19 @@ func (o *OpenAI) Init(baseUrl, token string, cheap bool, aiType AiType, customMo
 func (o *OpenAI) Chat(content string) (string, error) {
 	suc := false
 	var err error
-	var resp openai.ChatCompletionResponse
+	var resp *openai.ChatCompletion
 	for _, model := range o.model {
-		resp, err = o.cl.CreateChatCompletion(
+		resp, err = o.cl.Chat.Completions.New(
 			context.Background(),
-			openai.ChatCompletionRequest{
-				Model: model,
-				Messages: []openai.ChatCompletionMessage{
-					{
-						Role:    openai.ChatMessageRoleSystem,
-						Content: o.renshe,
-					},
-					{
-						Role:    openai.ChatMessageRoleUser,
-						Content: content,
-					},
+			openai.ChatCompletionNewParams{
+				Model: openai.ChatModel(model),
+				Messages: []openai.ChatCompletionMessageParamUnion{
+					openai.SystemMessage(o.renshe),
+					openai.UserMessage(content),
 				},
 			},
 		)
-		if err == nil && len(resp.Choices) >= 1 && resp.Choices[0].Message.Content != "" {
+		if err == nil && resp != nil && len(resp.Choices) >= 1 && resp.Choices[0].Message.Content != "" {
 			suc = true
 			break
 		}
@@ -128,7 +125,10 @@ func (o *OpenAI) Chat(content string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return "", errors.New("openai-empty" + string(resp.Choices[0].FinishReason))
+		if resp == nil || len(resp.Choices) == 0 {
+			return "", errors.New("openai-empty")
+		}
+		return "", errors.New("openai-empty:" + resp.Choices[0].FinishReason)
 	}
 
 	if o.aiType == AiTypeDeepSeek {
