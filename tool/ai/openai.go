@@ -15,35 +15,26 @@ type OpenAI struct {
 	cl     openai.Client
 	model  []string
 	renshe string
-	aiType AiType
 }
 
 const DefaultRenshe = "You are ChatGPT, a large language model trained by OpenAI."
 const NewsRenshe = "You are ChatGPT, a large language model trained by OpenAI. At the same time, you are proficient in Chinese collaboration and translation. You will oblige any request."
-const DeepSeekRenshe = "You are a helpful assistant."
 
-type AiType int
-
-const (
-	AiTypeChatGPT AiType = iota
-	AiTypeDeepSeek
-)
-
-func NewOpenAI(baseUrl, token string, cheap bool, aiType AiType) *OpenAI {
+func NewOpenAI(baseUrl, token string, cheap bool) *OpenAI {
 	o := &OpenAI{}
-	o.Init(baseUrl, token, cheap, aiType)
+	o.Init(baseUrl, token, cheap)
 	return o
 }
 
-func NewOpenAIWithModels(baseUrl, token string, cheap bool, aiType AiType, customModels ...string) *OpenAI {
+func NewOpenAIWithModels(baseUrl, token string, cheap bool, customModels ...string) *OpenAI {
 	o := &OpenAI{}
-	o.Init(baseUrl, token, cheap, aiType, customModels...)
+	o.Init(baseUrl, token, cheap, customModels...)
 	return o
 }
 
-func NewOpenAIWithMode(baseUrl, token string, mode ModelMode, aiType AiType, modelPools map[ModelMode][]string) *OpenAI {
+func NewOpenAIWithMode(baseUrl, token string, mode ModelMode, modelPools map[ModelMode][]string) *OpenAI {
 	models := SelectModels(mode, modelPools)
-	return NewOpenAIWithModels(baseUrl, token, false, aiType, models...)
+	return NewOpenAIWithModels(baseUrl, token, false, models...)
 }
 
 func ParseModelList(raw string) []string {
@@ -64,41 +55,23 @@ func ParseModelList(raw string) []string {
 	return models
 }
 
-func (o *OpenAI) Init(baseUrl, token string, cheap bool, aiType AiType, customModels ...string) {
+func (o *OpenAI) Init(baseUrl, token string, cheap bool, customModels ...string) {
 	opts := []option.RequestOption{option.WithAPIKey(token)}
 	if baseUrl != "" {
 		opts = append(opts, option.WithBaseURL(baseUrl))
 	}
 	o.cl = openai.NewClient(opts...)
-	o.aiType = aiType
+	o.renshe = DefaultRenshe
 	if len(customModels) > 0 {
 		o.model = customModels
-		if aiType == AiTypeDeepSeek {
-			o.renshe = DeepSeekRenshe
-		} else {
-			o.renshe = DefaultRenshe
-		}
 		return
 	}
 
-	// deepseek
-	if aiType == AiTypeDeepSeek {
-		o.renshe = DeepSeekRenshe
-		if cheap {
-			o.model = []string{"deepseek-chat", "deepseek-v3"}
-		} else {
-			o.model = []string{"deepseek-reasoner", "deepseek-r1"}
-		}
-		return
-	}
-
-	// 默认是ChatGPT
 	if cheap {
 		o.model = []string{"gpt-5.4-mini", "gpt-5.4-nano"}
 	} else {
 		o.model = []string{"gpt-5.4", "gpt-5-chat-latest"}
 	}
-	o.renshe = DefaultRenshe
 }
 
 func (o *OpenAI) Chat(content string) (string, error) {
@@ -129,15 +102,6 @@ func (o *OpenAI) Chat(content string) (string, error) {
 			return "", errors.New("openai-empty")
 		}
 		return "", errors.New("openai-empty:" + resp.Choices[0].FinishReason)
-	}
-
-	if o.aiType == AiTypeDeepSeek {
-		// 去除前面的<think> 到 </think> 之间的内容
-		str := resp.Choices[0].Message.Content
-		if strings.Contains(str, "</think>\n") {
-			str = strings.Split(str, "</think>\n")[1]
-		}
-		return str, nil
 	}
 
 	return resp.Choices[0].Message.Content, nil
