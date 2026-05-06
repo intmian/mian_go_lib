@@ -1,4 +1,4 @@
-package v2
+package ai
 
 import (
 	"context"
@@ -55,37 +55,29 @@ func (s *fakeChatStream) Close() error {
 }
 
 func TestBaseAgentFallsBackModelsAndRecordsHistory(t *testing.T) {
+	resetDefaultRegistryForTest()
 	provider := &fakeProvider{
 		failByModel: map[string]error{"m1": errors.New("boom")},
 		textByModel: map[string]string{"m2": "answer"},
 	}
-	registry := NewAgentRegistry()
-	if err := registry.AddProvider("main", provider); err != nil {
+	if err := AddProvider(1, provider); err != nil {
 		t.Fatalf("AddProvider error: %v", err)
 	}
 
-	mother, err := NewBaseAgentMother(BaseAgentSetting{
-		ProviderID:      "main",
+	setting := &BaseAgentSetting{
+		ProviderID:      1,
 		SysPrompt:       "system prompt",
 		Models:          []string{"m1", "m2"},
 		ReasoningEffort: ReasoningEffortMedium,
-	})
-	if err != nil {
-		t.Fatalf("NewBaseAgentMother error: %v", err)
 	}
-	if err := registry.AddAgentMother(AgentIDBase, mother); err != nil {
-		t.Fatalf("AddAgentMother error: %v", err)
+	if err := AddAgentSetting(AgentIDBase, setting); err != nil {
+		t.Fatalf("AddAgentSetting error: %v", err)
 	}
 
-	motherAny, ok := registry.GetAgentMother(AgentIDBase)
-	if !ok {
-		t.Fatal("agent mother not registered")
-	}
-	agentAny, err := motherAny.CreateAnyAgent(CoreAgentSetting{ProviderResolver: registry})
+	agent, err := NewBaseAgent()
 	if err != nil {
-		t.Fatalf("CreateAgent error: %v", err)
+		t.Fatalf("NewBaseAgent error: %v", err)
 	}
-	agent := agentAny.(*BaseAgent)
 	text, err := agent.Chat(context.Background(), "hello")
 	if err != nil {
 		t.Fatalf("Chat error: %v", err)
@@ -120,15 +112,15 @@ func TestBaseAgentFallsBackModelsAndRecordsHistory(t *testing.T) {
 }
 
 func TestBaseAgentDoesNotRecordFailedChat(t *testing.T) {
+	resetDefaultRegistryForTest()
 	provider := &fakeProvider{
 		failByModel: map[string]error{"m1": errors.New("boom")},
 	}
-	agent, err := NewBaseAgent(CoreAgentSetting{
-		ProviderResolver: providerResolverFunc(func(id ProviderID) (IProvider, bool) {
-			return provider, true
-		}),
-	}, BaseAgentSetting{
-		ProviderID: "main",
+	if err := AddProvider(1, provider); err != nil {
+		t.Fatalf("AddProvider error: %v", err)
+	}
+	agent, err := NewBaseAgentWithSetting(BaseAgentSetting{
+		ProviderID: 1,
 		Models:     []string{"m1"},
 	})
 	if err != nil {
@@ -144,9 +136,9 @@ func TestBaseAgentDoesNotRecordFailedChat(t *testing.T) {
 }
 
 func TestBaseAgentResolvesProviderAtChatTime(t *testing.T) {
-	registry := NewAgentRegistry()
-	agent, err := NewBaseAgent(CoreAgentSetting{ProviderResolver: registry}, BaseAgentSetting{
-		ProviderID: "late",
+	resetDefaultRegistryForTest()
+	agent, err := NewBaseAgentWithSetting(BaseAgentSetting{
+		ProviderID: 3,
 		Models:     []string{"m1"},
 	})
 	if err != nil {
@@ -156,7 +148,7 @@ func TestBaseAgentResolvesProviderAtChatTime(t *testing.T) {
 		t.Fatal("expected missing provider error before registration")
 	}
 
-	if err := registry.AddProvider("late", &fakeProvider{}); err != nil {
+	if err := AddProvider(3, &fakeProvider{}); err != nil {
 		t.Fatalf("AddProvider error: %v", err)
 	}
 	text, err := agent.Chat(context.Background(), "hello")
@@ -166,10 +158,4 @@ func TestBaseAgentResolvesProviderAtChatTime(t *testing.T) {
 	if text != "ok" {
 		t.Fatalf("unexpected chat text: %q", text)
 	}
-}
-
-type providerResolverFunc func(id ProviderID) (IProvider, bool)
-
-func (f providerResolverFunc) GetProvider(id ProviderID) (IProvider, bool) {
-	return f(id)
 }

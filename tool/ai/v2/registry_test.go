@@ -1,104 +1,88 @@
-package v2
+package ai
 
 import "testing"
 
 func TestAgentRegistryRejectsDuplicateRegistrations(t *testing.T) {
-	registry := NewAgentRegistry()
+	resetDefaultRegistryForTest()
 	provider := &fakeProvider{}
-	if err := registry.AddProvider("main", provider); err != nil {
+	if err := AddProvider(1, provider); err != nil {
 		t.Fatalf("AddProvider error: %v", err)
 	}
-	if err := registry.AddProvider("main", provider); err == nil {
+	if err := AddProvider(1, provider); err == nil {
 		t.Fatal("expected duplicate provider error")
 	}
 
-	mother, err := NewBaseAgentMother(BaseAgentSetting{ProviderID: "main", Models: []string{"m1"}})
-	if err != nil {
-		t.Fatalf("NewBaseAgentMother error: %v", err)
+	setting := &BaseAgentSetting{ProviderID: 1, Models: []string{"m1"}}
+	if err := AddAgentSetting(AgentIDBase, setting); err != nil {
+		t.Fatalf("AddAgentSetting error: %v", err)
 	}
-	if err := registry.AddAgentMother(AgentIDBase, mother); err != nil {
-		t.Fatalf("AddAgentMother error: %v", err)
-	}
-	if err := registry.AddAgentMother(AgentIDBase, mother); err == nil {
-		t.Fatal("expected duplicate mother error")
+	if err := AddAgentSetting(AgentIDBase, setting); err == nil {
+		t.Fatal("expected duplicate setting error")
 	}
 }
 
-func TestAgentMotherCreateAgentWithSettingUsesRegistryAsResolver(t *testing.T) {
-	registry := NewAgentRegistry()
+func TestNewBaseAgentWithSettingUsesRegistryAsResolver(t *testing.T) {
+	resetDefaultRegistryForTest()
 	provider := &fakeProvider{}
-	if err := registry.AddProvider("override", provider); err != nil {
+	if err := AddProvider(2, provider); err != nil {
 		t.Fatalf("AddProvider error: %v", err)
 	}
-	mother, err := NewBaseAgentMother(BaseAgentSetting{ProviderID: "default", Models: []string{"m1"}})
-	if err != nil {
-		t.Fatalf("NewBaseAgentMother error: %v", err)
-	}
-	if err := registry.AddAgentMother(AgentIDBase, mother); err != nil {
-		t.Fatalf("AddAgentMother error: %v", err)
-	}
 
-	motherAny, ok := registry.GetAgentMother(AgentIDBase)
-	if !ok {
-		t.Fatal("agent mother not registered")
-	}
-	agentAny, err := motherAny.CreateAnyAgentWithSetting(CoreAgentSetting{ProviderResolver: registry}, BaseAgentSetting{
-		ProviderID: "override",
+	agent, err := NewBaseAgentWithSetting(BaseAgentSetting{
+		ProviderID: 2,
 		Models:     []string{"m2"},
 	})
 	if err != nil {
-		t.Fatalf("CreateAnyAgentWithSetting error: %v", err)
+		t.Fatalf("NewBaseAgentWithSetting error: %v", err)
 	}
-	agent := agentAny.(*BaseAgent)
-	if agent.setting.ProviderID != "override" {
-		t.Fatalf("expected override provider, got %q", agent.setting.ProviderID)
+	if agent.setting.ProviderID != 2 {
+		t.Fatalf("expected override provider, got %d", agent.setting.ProviderID)
 	}
 	if agent.setting.Models[0] != "m2" {
 		t.Fatalf("expected override model, got %#v", agent.setting.Models)
 	}
 }
 
-func TestAgentRegistrySetAndGetAgentSetting(t *testing.T) {
-	registry := NewAgentRegistry()
-	mother, err := NewBaseAgentMother(BaseAgentSetting{ProviderID: "old", Models: []string{"m1"}})
-	if err != nil {
-		t.Fatalf("NewBaseAgentMother error: %v", err)
-	}
-	if err := registry.AddAgentMother(AgentIDBase, mother); err != nil {
-		t.Fatalf("AddAgentMother error: %v", err)
+func TestAgentRegistryGetAgentSettingAs(t *testing.T) {
+	resetDefaultRegistryForTest()
+	setting := &BaseAgentSetting{ProviderID: 1, Models: []string{"m1"}}
+	if err := AddAgentSetting(AgentIDBase, setting); err != nil {
+		t.Fatalf("AddAgentSetting error: %v", err)
 	}
 
-	next := BaseAgentSetting{ProviderID: "new", Models: []string{"m2"}}
-	motherAny, ok := registry.GetAgentMother(AgentIDBase)
+	got, ok := GetAgentSettingAs[*BaseAgentSetting](AgentIDBase)
 	if !ok {
-		t.Fatal("agent mother not registered")
+		t.Fatal("base agent setting not found")
 	}
-	if err := motherAny.SetAnyAgentSetting(next); err != nil {
-		t.Fatalf("SetAgentSetting error: %v", err)
+	got.ProviderID = 2
+	got.Models = []string{"m2"}
+
+	gotAgain, ok := GetAgentSettingAs[*BaseAgentSetting](AgentIDBase)
+	if !ok {
+		t.Fatal("base agent setting not found after update")
 	}
-	got := motherAny.GetAnyAgentSetting().(BaseAgentSetting)
-	if got.ProviderID != "new" || got.Models[0] != "m2" {
+	if gotAgain.ProviderID != 2 || gotAgain.Models[0] != "m2" {
 		t.Fatalf("unexpected setting: %#v", got)
 	}
 }
 
-func TestGlobalOnlyMaintainsRegistries(t *testing.T) {
-	registry := NewAgentRegistry()
-	id := RegistryID("test-global")
-	if err := AddRegistry(id, registry); err != nil {
-		t.Fatalf("AddRegistry error: %v", err)
+func TestPackageLevelGettersUseDefaultRegistry(t *testing.T) {
+	resetDefaultRegistryForTest()
+	provider := &fakeProvider{}
+	if err := AddProvider(1, provider); err != nil {
+		t.Fatalf("AddProvider error: %v", err)
 	}
-	got, ok := GetRegistry(id)
-	if !ok {
-		t.Fatal("registry not found")
+	gotProvider, ok := GetProvider(1)
+	if !ok || gotProvider != provider {
+		t.Fatal("GetProvider should read from default registry")
 	}
-	if got != registry {
-		t.Fatal("GetRegistry returned a different registry")
+
+	setting := &BaseAgentSetting{ProviderID: 1, Models: []string{"m1"}}
+	if err := AddAgentSetting(AgentIDBase, setting); err != nil {
+		t.Fatalf("AddAgentSetting error: %v", err)
 	}
-	if err := AddRegistry(id, registry); err == nil {
-		t.Fatal("expected duplicate registry error")
-	}
-	if defaultRegistry, ok := GetRegistry(RegistryIDDefault); !ok || defaultRegistry != DefaultRegistry {
-		t.Fatal("default registry should be registered globally")
+	gotSetting, ok := GetAgentSetting(AgentIDBase)
+	if !ok || gotSetting != setting {
+		t.Fatal("GetAgentSetting should read from default registry")
 	}
 }

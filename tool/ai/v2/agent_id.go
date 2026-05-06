@@ -1,4 +1,4 @@
-package v2
+package ai
 
 type AgentID int
 
@@ -6,4 +6,4 @@ const (
 	AgentIDBase AgentID = 1
 )
 
-type ProviderID string
+type ProviderID uint32

@@ -1,45 +1,27 @@
-package v2
+package ai
 
-import (
-	"errors"
-	"sync"
-)
+var defaultRegistry = newAgentRegistry()
 
-type RegistryID string
-
-const RegistryIDDefault RegistryID = "default"
-
-var DefaultRegistry = NewAgentRegistry()
-
-var globalRegistry = struct {
-	mu          sync.RWMutex
-	id2Registry map[RegistryID]*AgentRegistry
-}{
-	id2Registry: map[RegistryID]*AgentRegistry{
-		RegistryIDDefault: DefaultRegistry,
-	},
+func AddProvider(id ProviderID, provider IProvider) error {
+	return defaultRegistry.AddProvider(id, provider)
 }
 
-func AddRegistry(id RegistryID, registry *AgentRegistry) error {
-	if id == "" {
-		return errors.New("registry id is required")
-	}
-	if registry == nil {
-		return errors.New("agent registry is nil")
-	}
-
-	globalRegistry.mu.Lock()
-	defer globalRegistry.mu.Unlock()
-	if _, ok := globalRegistry.id2Registry[id]; ok {
-		return errors.New("agent registry already registered")
-	}
-	globalRegistry.id2Registry[id] = registry
-	return nil
+func GetProvider(id ProviderID) (IProvider, bool) {
+	return defaultRegistry.GetProvider(id)
 }
 
-func GetRegistry(id RegistryID) (*AgentRegistry, bool) {
-	globalRegistry.mu.RLock()
-	defer globalRegistry.mu.RUnlock()
-	registry, ok := globalRegistry.id2Registry[id]
-	return registry, ok
+func AddAgentSetting(agentID AgentID, setting IAgentSetting) error {
+	return defaultRegistry.AddAgentSetting(agentID, setting)
+}
+
+func GetAgentSetting(agentID AgentID) (IAgentSetting, bool) {
+	return defaultRegistry.GetAgentSetting(agentID)
+}
+
+func GetAgentSettingAs[S IAgentSetting](agentID AgentID) (S, bool) {
+	return getAgentSettingAs[S](defaultRegistry, agentID)
+}
+
+func resetDefaultRegistryForTest() {
+	defaultRegistry = newAgentRegistry()
 }

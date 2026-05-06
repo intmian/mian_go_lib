@@ -1,4 +1,4 @@
-package v2
+package ai
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 
 func TestExportSettingJSONOmitsZeroValues(t *testing.T) {
 	data, err := ExportSettingJSON(BaseAgentSetting{
-		ProviderID:      "main",
+		ProviderID:      1,
 		Models:          []string{"m1"},
 		ReasoningEffort: ReasoningEffortMedium,
 	})
@@ -22,20 +22,20 @@ func TestExportSettingJSONOmitsZeroValues(t *testing.T) {
 	if _, ok := got["sysPrompt"]; ok {
 		t.Fatalf("zero sysPrompt should be omitted: %s", data)
 	}
-	if got["providerID"] != "main" {
+	if got["providerID"] != float64(1) {
 		t.Fatalf("providerID missing: %s", data)
 	}
 }
 
 func TestImportSettingJSONDoesNotOverwriteWithZeroValues(t *testing.T) {
 	base := BaseAgentSetting{
-		ProviderID:      "main",
+		ProviderID:      1,
 		SysPrompt:       "old",
 		Models:          []string{"old-model"},
 		ReasoningEffort: ReasoningEffortMedium,
 	}
 	next, err := ImportSettingJSON(base, []byte(`{
-		"providerID": "next",
+		"providerID": 2,
 		"sysPrompt": "",
 		"models": [],
 		"reasoningEffort": ""
@@ -43,8 +43,8 @@ func TestImportSettingJSONDoesNotOverwriteWithZeroValues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ImportSettingJSON error: %v", err)
 	}
-	if next.ProviderID != "next" {
-		t.Fatalf("expected provider override, got %q", next.ProviderID)
+	if next.ProviderID != 2 {
+		t.Fatalf("expected provider override, got %d", next.ProviderID)
 	}
 	if next.SysPrompt != "old" {
 		t.Fatalf("zero string should not overwrite, got %q", next.SysPrompt)
@@ -65,7 +65,7 @@ func TestExportSettingDoc(t *testing.T) {
 	if len(docs) != 4 {
 		t.Fatalf("expected 4 docs, got %d", len(docs))
 	}
-	if docs[0].Name != "providerID" || docs[0].JSONType != "string" {
+	if docs[0].Name != "providerID" || docs[0].JSONType != "number" {
 		t.Fatalf("unexpected first doc: %#v", docs[0])
 	}
 	if docs[2].Name != "models" || !docs[2].IsArray {
