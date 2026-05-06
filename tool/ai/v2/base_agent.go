@@ -16,32 +16,53 @@ type BaseAgentSetting struct {
 }
 
 type BaseAgent struct {
-	providerResolver providerResolver
-	setting          BaseAgentSetting
-	history          []ChatMessage
-	mu               sync.Mutex
+	provider AgentProviderBinding
+	setting  BaseAgentSettingState
+	history  AgentMessageHistory
+	mu       sync.Mutex
 }
 
-func NewBaseAgent() (*BaseAgent, error) {
-	setting, ok := GetAgentSettingAs[*BaseAgentSetting](AgentIDBase)
-	if !ok {
-		return nil, errors.New("base agent setting not registered")
+func NewBaseAgent() *BaseAgent {
+	return &BaseAgent{
+		provider: NewAgentProviderBinding(defaultRegistry),
+		history:  NewAgentMessageHistory(),
 	}
-	return NewBaseAgentWithSetting(*setting)
 }
 
-func NewBaseAgentWithSetting(setting BaseAgentSetting) (*BaseAgent, error) {
+func (a *BaseAgent) GetID() AgentID {
+	return AgentIDBase
+}
+
+func (a *BaseAgent) Init() error {
+	if a == nil {
+		return errors.New("agent is nil")
+	}
+	setting, ok := GetAgentSettingAs[*BaseAgentSetting](a.GetID())
+	if !ok {
+		return errors.New("base agent setting not registered")
+	}
+	return a.InitWithSetting(setting)
+}
+
+func (a *BaseAgent) InitWithSetting(setting *BaseAgentSetting) error {
+	if a == nil {
+		return errors.New("agent is nil")
+	}
+	if setting == nil {
+		return errors.New("base agent setting is nil")
+	}
 	if setting.ProviderID == 0 {
-		return nil, errors.New("provider id is required")
+		return errors.New("provider id is required")
 	}
 	if len(setting.Models) == 0 {
-		return nil, errors.New("agent models are required")
+		return errors.New("agent models are required")
 	}
-	return &BaseAgent{
-		providerResolver: defaultRegistry,
-		setting:          setting,
-		history:          make([]ChatMessage, 0),
-	}, nil
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if err := a.setting.InitWithSetting(setting); err != nil {
+		return err
+	}
+	return a.provider.InitProvider(setting.ProviderID)
 }
 
 func (a *BaseAgent) Chat(ctx context.Context, content string) (string, error) {
@@ -56,14 +77,18 @@ func (a *BaseAgent) Chat(ctx context.Context, content string) (string, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	provider, ok := a.providerResolver.GetProvider(a.setting.ProviderID)
-	if !ok {
-		return "", errors.New("provider not registered")
+	setting, err := a.setting.settingSnapshot()
+	if err != nil {
+		return "", err
 	}
-	messages := a.buildMessages(content)
+	provider, err := a.provider.GetProvider()
+	if err != nil {
+		return "", err
+	}
+	messages := a.history.BuildMessages(setting.SysPrompt, content)
 
 	var errs []error
-	for _, model := range a.setting.Models {
+	for _, model := range setting.Models {
 		model = strings.TrimSpace(model)
 		if model == "" {
 			continue
@@ -71,7 +96,7 @@ func (a *BaseAgent) Chat(ctx context.Context, content string) (string, error) {
 		resp, err := provider.Chat(ctx, ChatRequest{
 			Model:           model,
 			Messages:        messages,
-			ReasoningEffort: a.setting.ReasoningEffort,
+			ReasoningEffort: setting.ReasoningEffort,
 		})
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", model, err))
@@ -82,10 +107,7 @@ func (a *BaseAgent) Chat(ctx context.Context, content string) (string, error) {
 			errs = append(errs, fmt.Errorf("%s: empty response", model))
 			continue
 		}
-		a.history = append(a.history,
-			ChatMessage{Role: ChatRoleUser, Content: content},
-			ChatMessage{Role: ChatRoleAssistant, Content: text},
-		)
+		a.history.AppendExchange(content, text)
 		return text, nil
 	}
 
@@ -95,31 +117,11 @@ func (a *BaseAgent) Chat(ctx context.Context, content string) (string, error) {
 	return "", errors.New("agent models are required")
 }
 
-func (a *BaseAgent) buildMessages(content string) []ChatMessage {
-	messages := make([]ChatMessage, 0, len(a.history)+2)
-	if strings.TrimSpace(a.setting.SysPrompt) != "" {
-		messages = append(messages, ChatMessage{
-			Role:    ChatRoleSystem,
-			Content: a.setting.SysPrompt,
-		})
-	}
-	messages = append(messages, a.history...)
-	messages = append(messages, ChatMessage{
-		Role:    ChatRoleUser,
-		Content: content,
-	})
-	return messages
-}
-
 func (a *BaseAgent) History() []ChatMessage {
 	if a == nil {
 		return nil
 	}
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	history := make([]ChatMessage, len(a.history))
-	copy(history, a.history)
-	return history
+	return a.history.History()
 }
 
 func (s BaseAgentSetting) ExportJSON() ([]byte, error) {

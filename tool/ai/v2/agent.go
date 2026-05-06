@@ -1,7 +1,11 @@
 package ai
 
-import "context"
+type AgentIDProvider interface {
+	GetID() AgentID
+}
 
-type IAgent interface {
-	Chat(ctx context.Context, content string) (string, error)
+type IAgent[S IAgentSetting] interface {
+	AgentIDProvider
+	Init() error
+	InitWithSetting(setting S) error
 }

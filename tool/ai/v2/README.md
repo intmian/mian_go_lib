@@ -8,7 +8,7 @@ The directory name is `v2`, but the Go package name is `ai`:
 import ai "github.com/intmian/mian_go_lib/tool/ai/v2"
 ```
 
-This package does not replace the older `github.com/intmian/mian_go_lib/tool/ai` wrapper yet. Use it when you need provider capabilities, reasoning controls, streaming, or agent settings.
+This package does not replace the older `github.com/intmian/mian_go_lib/tool/ai` wrapper yet. Use it when you need provider capabilities, reasoning controls, streaming, base agent components, or agent setting JSON helpers.
 
 ## Core concepts
 
@@ -17,18 +17,24 @@ This package does not replace the older `github.com/intmian/mian_go_lib/tool/ai`
    - Register providers once with `AddProvider`.
 2. `AgentID` identifies an agent setting.
    - `AgentIDBase` is the built-in base chat agent setting ID.
+   - Agent IDs are for setting registration, not agent construction.
 3. `IAgentSetting` is the persisted/configurable agent setting surface.
    - Settings support JSON export/import and JSON doc generation.
-4. `BaseAgent` is a stateful one-on-one chat agent.
+4. `IAgent[S]` is the minimal typed agent lifecycle surface.
+   - It exposes `GetID`, initialization from registered settings, and initialization from an explicit typed setting.
+   - It does not include chat, streaming, factory, scheduler, or middleware behavior.
+5. `BaseAgent` is a stateful one-on-one chat agent and the built-in minimal implementation.
    - Each `BaseAgent` instance remembers only its own successful chat history.
    - Failed chats do not enter history.
-5. The package uses one package-level registry singleton.
-   - Callers do not create or pass registry objects.
+   - It is composed from the same public provider binding, setting state, and message history components that custom agents can reuse.
+6. The package uses one package-level registry singleton.
+   - Callers register providers and agent settings once.
+   - Callers still initialize agents explicitly; the package does not create agents by ID.
    - Tests inside this package reset the singleton with package-private helpers.
 
 ## Quick start
 
-Register a provider, register the default base agent setting, then create an agent:
+Register a provider, then initialize a base agent with explicit settings:
 
 ```go
 package example
@@ -48,7 +54,8 @@ func Run(ctx context.Context, baseURL string, token string) (string, error) {
 		return "", err
 	}
 
-	if err := ai.AddAgentSetting(ai.AgentIDBase, &ai.BaseAgentSetting{
+	agent := ai.NewBaseAgent()
+	if err := agent.InitWithSetting(&ai.BaseAgentSetting{
 		ProviderID:      1,
 		SysPrompt:       "You are a helpful assistant.",
 		Models:          []string{"gpt-5.4", "gpt-5-chat-latest"},
@@ -56,23 +63,17 @@ func Run(ctx context.Context, baseURL string, token string) (string, error) {
 	}); err != nil {
 		return "", err
 	}
-
-	agent, err := ai.NewBaseAgent()
-	if err != nil {
-		return "", err
-	}
 	return agent.Chat(ctx, "hello")
 }
 ```
 
-Use `NewBaseAgent()` when the package singleton already has `AgentIDBase` registered.
+## Create Agents
 
-## Create with explicit settings
-
-Use `NewBaseAgentWithSetting` for a temporary or child agent. It does not read registered agent settings, but it still resolves providers from the package singleton.
+Use `NewBaseAgent` to create the thin built-in agent, then call `InitWithSetting` for explicit settings or `Init` to read `AgentIDBase` from the setting registry. The agent still resolves providers from the package singleton.
 
 ```go
-agent, err := ai.NewBaseAgentWithSetting(ai.BaseAgentSetting{
+agent := ai.NewBaseAgent()
+err := agent.InitWithSetting(&ai.BaseAgentSetting{
 	ProviderID:      1,
 	SysPrompt:       "Answer briefly.",
 	Models:          []string{"gpt-5.4-mini"},
@@ -80,7 +81,22 @@ agent, err := ai.NewBaseAgentWithSetting(ai.BaseAgentSetting{
 })
 ```
 
-This is the preferred path for sub-agents that share the provider registry but need their own prompt/model list.
+The package does not create agents by ID. Callers own agent selection and pass prompts, models, provider IDs, and reasoning effort through settings.
+
+`BaseAgent` implements:
+
+```go
+var _ ai.IAgent[*ai.BaseAgentSetting] = (*ai.BaseAgent)(nil)
+```
+
+Reusable public components are available for custom agents:
+
+- `AgentProviderBinding`: binds a `ProviderID` and resolves the registered provider.
+- `AgentSettingState[S]`: reads typed settings by `agent.GetID()`, stores typed settings, and returns the stored setting.
+- `BaseAgentSettingState`: alias for `AgentSettingState[*BaseAgentSetting]`.
+- `AgentMessageHistory`: stores successful chat history and builds message lists with an optional system prompt.
+
+`BaseAgent` is a reference composition and the built-in minimal agent; external agents should compose the public components directly rather than embedding or extending `BaseAgent`.
 
 ## Register and read settings
 
@@ -103,12 +119,9 @@ Read the typed setting when the caller knows the type:
 
 ```go
 setting, ok := ai.GetAgentSettingAs[*ai.BaseAgentSetting](ai.AgentIDBase)
-if ok {
-	setting.Models = []string{"gpt-5.4-mini"}
-}
 ```
 
-`GetAgentSettingAs` returns the registered pointer. Mutating it changes future `NewBaseAgent()` calls. Existing `BaseAgent` instances keep the setting copy they were created with.
+`GetAgentSettingAs` returns the registered pointer. Mutating it changes future reads, but it does not mutate already initialized `BaseAgent` instances because `InitWithSetting` copies the setting.
 
 ## BaseAgent behavior
 
@@ -232,15 +245,15 @@ Important validation rules:
 - Duplicate provider IDs are rejected.
 - Duplicate agent setting IDs are rejected.
 - `BaseAgentSetting.Models` must not be empty.
-- `NewBaseAgent()` requires a registered `*BaseAgentSetting` at `AgentIDBase`.
-- `NewBaseAgentWithSetting` requires the referenced provider to be registered before chat, not before construction.
+- `Init` requires a registered `*BaseAgentSetting` at `AgentIDBase`.
+- `InitWithSetting` requires `ProviderID` and at least one model.
+- The referenced provider must be registered before provider access or chat, not before initialization.
 
 Provider lookup happens at chat time. This allows providers to be registered after agent construction, but before the first successful chat.
 
 ## Package notes
 
 - The package singleton is process-local.
-- There is no public registry object by design.
+- The package singleton stores providers and agent settings, but it does not contain agent factories.
 - If a caller needs isolation, add explicit test seams or a separate package-level lifecycle before broadening the public API.
 - Keep business policy outside this package. Pass prompts, models, provider IDs, and reasoning effort through settings.
-

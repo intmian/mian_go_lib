@@ -70,13 +70,10 @@ func TestBaseAgentFallsBackModelsAndRecordsHistory(t *testing.T) {
 		Models:          []string{"m1", "m2"},
 		ReasoningEffort: ReasoningEffortMedium,
 	}
-	if err := AddAgentSetting(AgentIDBase, setting); err != nil {
-		t.Fatalf("AddAgentSetting error: %v", err)
-	}
 
-	agent, err := NewBaseAgent()
-	if err != nil {
-		t.Fatalf("NewBaseAgent error: %v", err)
+	agent := NewBaseAgent()
+	if err := agent.InitWithSetting(setting); err != nil {
+		t.Fatalf("InitWithSetting error: %v", err)
 	}
 	text, err := agent.Chat(context.Background(), "hello")
 	if err != nil {
@@ -119,12 +116,13 @@ func TestBaseAgentDoesNotRecordFailedChat(t *testing.T) {
 	if err := AddProvider(1, provider); err != nil {
 		t.Fatalf("AddProvider error: %v", err)
 	}
-	agent, err := NewBaseAgentWithSetting(BaseAgentSetting{
+	agent := NewBaseAgent()
+	err := agent.InitWithSetting(&BaseAgentSetting{
 		ProviderID: 1,
 		Models:     []string{"m1"},
 	})
 	if err != nil {
-		t.Fatalf("NewBaseAgent error: %v", err)
+		t.Fatalf("InitWithSetting error: %v", err)
 	}
 
 	if _, err := agent.Chat(context.Background(), "hello"); err == nil {
@@ -137,12 +135,13 @@ func TestBaseAgentDoesNotRecordFailedChat(t *testing.T) {
 
 func TestBaseAgentResolvesProviderAtChatTime(t *testing.T) {
 	resetDefaultRegistryForTest()
-	agent, err := NewBaseAgentWithSetting(BaseAgentSetting{
+	agent := NewBaseAgent()
+	err := agent.InitWithSetting(&BaseAgentSetting{
 		ProviderID: 3,
 		Models:     []string{"m1"},
 	})
 	if err != nil {
-		t.Fatalf("NewBaseAgent error: %v", err)
+		t.Fatalf("InitWithSetting error: %v", err)
 	}
 	if _, err := agent.Chat(context.Background(), "hello"); err == nil {
 		t.Fatal("expected missing provider error before registration")
@@ -159,3 +158,68 @@ func TestBaseAgentResolvesProviderAtChatTime(t *testing.T) {
 		t.Fatalf("unexpected chat text: %q", text)
 	}
 }
+
+func TestBaseAgentInitReadsRegisteredSetting(t *testing.T) {
+	resetDefaultRegistryForTest()
+	if err := AddProvider(1, &fakeProvider{}); err != nil {
+		t.Fatalf("AddProvider error: %v", err)
+	}
+	if err := AddAgentSetting(AgentIDBase, &BaseAgentSetting{
+		ProviderID: 1,
+		Models:     []string{"m1"},
+	}); err != nil {
+		t.Fatalf("AddAgentSetting error: %v", err)
+	}
+
+	agent := NewBaseAgent()
+	if err := agent.Init(); err != nil {
+		t.Fatalf("Init error: %v", err)
+	}
+	text, err := agent.Chat(context.Background(), "hello")
+	if err != nil {
+		t.Fatalf("Chat error: %v", err)
+	}
+	if text != "ok" {
+		t.Fatalf("unexpected chat text: %q", text)
+	}
+}
+
+func TestSettingStateGetSettingReturnsStoredReference(t *testing.T) {
+	var state BaseAgentSettingState
+	if err := state.InitWithSetting(&BaseAgentSetting{
+		ProviderID: 1,
+		Models:     []string{"m1"},
+	}); err != nil {
+		t.Fatalf("InitWithSetting error: %v", err)
+	}
+
+	got := state.GetSetting()
+	got.ProviderID = 2
+	got.Models[0] = "m2"
+	gotAgain := state.GetSetting()
+	if gotAgain.ProviderID != 2 || gotAgain.Models[0] != "m2" {
+		t.Fatalf("GetSetting should return stored setting reference, got %#v", gotAgain)
+	}
+}
+
+func TestAgentSettingStateInitReadsByAgentID(t *testing.T) {
+	resetDefaultRegistryForTest()
+	if err := AddAgentSetting(AgentIDBase, &BaseAgentSetting{
+		ProviderID: 1,
+		Models:     []string{"m1"},
+	}); err != nil {
+		t.Fatalf("AddAgentSetting error: %v", err)
+	}
+
+	agent := NewBaseAgent()
+	var state AgentSettingState[*BaseAgentSetting]
+	if err := state.Init(agent); err != nil {
+		t.Fatalf("Init error: %v", err)
+	}
+	setting := state.GetSetting()
+	if setting.ProviderID != 1 || setting.Models[0] != "m1" {
+		t.Fatalf("unexpected setting: %#v", setting)
+	}
+}
+
+var _ IAgent[*BaseAgentSetting] = (*BaseAgent)(nil)

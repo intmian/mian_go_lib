@@ -21,25 +21,27 @@ func TestAgentRegistryRejectsDuplicateRegistrations(t *testing.T) {
 	}
 }
 
-func TestNewBaseAgentWithSettingUsesRegistryAsResolver(t *testing.T) {
+func TestNewBaseAgentUsesRegistryAsResolver(t *testing.T) {
 	resetDefaultRegistryForTest()
 	provider := &fakeProvider{}
 	if err := AddProvider(2, provider); err != nil {
 		t.Fatalf("AddProvider error: %v", err)
 	}
 
-	agent, err := NewBaseAgentWithSetting(BaseAgentSetting{
+	agent := NewBaseAgent()
+	err := agent.InitWithSetting(&BaseAgentSetting{
 		ProviderID: 2,
 		Models:     []string{"m2"},
 	})
 	if err != nil {
-		t.Fatalf("NewBaseAgentWithSetting error: %v", err)
+		t.Fatalf("InitWithSetting error: %v", err)
 	}
-	if agent.setting.ProviderID != 2 {
-		t.Fatalf("expected override provider, got %d", agent.setting.ProviderID)
+	setting := agent.setting.GetSetting()
+	if setting.ProviderID != 2 {
+		t.Fatalf("expected override provider, got %d", setting.ProviderID)
 	}
-	if agent.setting.Models[0] != "m2" {
-		t.Fatalf("expected override model, got %#v", agent.setting.Models)
+	if setting.Models[0] != "m2" {
+		t.Fatalf("expected override model, got %#v", setting.Models)
 	}
 }
 
