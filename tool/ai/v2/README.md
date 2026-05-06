@@ -12,7 +12,7 @@ This package does not replace the older `github.com/intmian/mian_go_lib/tool/ai`
 
 ## Core concepts
 
-1. `ProviderID` is a `uint32`.
+1. `ProviderID` and `AgentID` are `uint32`.
    - `0` means unset and is rejected.
    - Register providers once with `AddProvider`.
 2. `AgentID` identifies an agent setting.
@@ -121,7 +121,7 @@ Read the typed setting when the caller knows the type:
 setting, ok := ai.GetAgentSettingAs[*ai.BaseAgentSetting](ai.AgentIDBase)
 ```
 
-`GetAgentSettingAs` returns the registered pointer. Mutating it changes future reads, but it does not mutate already initialized `BaseAgent` instances because `InitWithSetting` copies the setting.
+`GetAgentSettingAs` returns the registered pointer. `AgentSettingState[S]` stores the setting it receives and does not deep-copy it, so callers that need immutable snapshots should pass their own copy.
 
 ## BaseAgent behavior
 
@@ -136,6 +136,8 @@ setting, ok := ai.GetAgentSettingAs[*ai.BaseAgentSetting](ai.AgentIDBase)
 7. Returns joined model errors when every model fails.
 
 `Models` is a concrete model-name fallback list, not a mode name list.
+
+`BaseAgent.Chat` serializes calls on the same agent instance, including the provider network call. This preserves strict history ordering for the stateful one-on-one chat use case; callers that need parallel requests should use separate agent instances or a custom agent composition.
 
 ## Provider usage
 
@@ -236,6 +238,7 @@ Zero values are treated as not configured:
 
 - JSON export omits zero values.
 - JSON import does not overwrite existing values with zero values.
+- JSON import cannot clear a previously configured scalar or slice by passing a zero value such as `""`, `0`, `false`, or `[]`; omit/zero means "leave the existing value unchanged".
 
 ## Errors and invariants
 
@@ -244,7 +247,7 @@ Important validation rules:
 - `ProviderID == 0` is invalid.
 - Duplicate provider IDs are rejected.
 - Duplicate agent setting IDs are rejected.
-- `BaseAgentSetting.Models` must not be empty.
+- `BaseAgentSetting.Models` must contain at least one non-empty model after trimming whitespace.
 - `Init` requires a registered `*BaseAgentSetting` at `AgentIDBase`.
 - `InitWithSetting` requires `ProviderID` and at least one model.
 - The referenced provider must be registered before provider access or chat, not before initialization.

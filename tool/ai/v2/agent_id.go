@@ -1,6 +1,6 @@
 package ai
 
-type AgentID int
+type AgentID uint32
 
 const (
 	AgentIDBase AgentID = 1

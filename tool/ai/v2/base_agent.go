@@ -37,25 +37,24 @@ func (a *BaseAgent) Init() error {
 	if a == nil {
 		return errors.New("agent is nil")
 	}
-	setting, ok := GetAgentSettingAs[*BaseAgentSetting](a.GetID())
-	if !ok {
-		return errors.New("base agent setting not registered")
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if err := a.setting.Init(a); err != nil {
+		return err
 	}
-	return a.InitWithSetting(setting)
+	setting := a.setting.GetSetting()
+	if err := validateBaseAgentSetting(setting); err != nil {
+		return err
+	}
+	return a.provider.InitProvider(setting.ProviderID)
 }
 
 func (a *BaseAgent) InitWithSetting(setting *BaseAgentSetting) error {
 	if a == nil {
 		return errors.New("agent is nil")
 	}
-	if setting == nil {
-		return errors.New("base agent setting is nil")
-	}
-	if setting.ProviderID == 0 {
-		return errors.New("provider id is required")
-	}
-	if len(setting.Models) == 0 {
-		return errors.New("agent models are required")
+	if err := validateBaseAgentSetting(setting); err != nil {
+		return err
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -142,4 +141,19 @@ func (s *BaseAgentSetting) ImportJSON(data []byte) error {
 
 func (s BaseAgentSetting) ExportJSONDoc() ([]SettingFieldDoc, error) {
 	return ExportSettingDoc(s)
+}
+
+func validateBaseAgentSetting(setting *BaseAgentSetting) error {
+	if setting == nil {
+		return errors.New("base agent setting is nil")
+	}
+	if setting.ProviderID == 0 {
+		return errors.New("provider id is required")
+	}
+	for _, model := range setting.Models {
+		if strings.TrimSpace(model) != "" {
+			return nil
+		}
+	}
+	return errors.New("agent models are required")
 }

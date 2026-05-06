@@ -133,6 +133,17 @@ func TestBaseAgentDoesNotRecordFailedChat(t *testing.T) {
 	}
 }
 
+func TestBaseAgentRejectsBlankModels(t *testing.T) {
+	agent := NewBaseAgent()
+	err := agent.InitWithSetting(&BaseAgentSetting{
+		ProviderID: 1,
+		Models:     []string{" ", "\t"},
+	})
+	if err == nil {
+		t.Fatal("expected blank models error")
+	}
+}
+
 func TestBaseAgentResolvesProviderAtChatTime(t *testing.T) {
 	resetDefaultRegistryForTest()
 	agent := NewBaseAgent()
