@@ -116,6 +116,72 @@ func (a *BaseAgent) Chat(ctx context.Context, content string) (string, error) {
 	return "", errors.New("agent models are required")
 }
 
+func (a *BaseAgent) ChatOnce(ctx context.Context, content string) (string, error) {
+	if a == nil {
+		return "", errors.New("agent is nil")
+	}
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return "", errors.New("chat content is required")
+	}
+
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	setting, err := a.setting.settingSnapshot()
+	if err != nil {
+		return "", err
+	}
+	provider, err := a.provider.GetProvider()
+	if err != nil {
+		return "", err
+	}
+
+	messages := []ChatMessage{
+		{Role: ChatRoleUser, Content: content},
+	}
+	if strings.TrimSpace(setting.SysPrompt) != "" {
+		messages = append([]ChatMessage{{Role: ChatRoleSystem, Content: setting.SysPrompt}}, messages...)
+	}
+
+	var errs []error
+	for _, model := range setting.Models {
+		model = strings.TrimSpace(model)
+		if model == "" {
+			continue
+		}
+		resp, err := provider.Chat(ctx, ChatRequest{
+			Model:           model,
+			Messages:        messages,
+			ReasoningEffort: setting.ReasoningEffort,
+		})
+		if err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", model, err))
+			continue
+		}
+		text := strings.TrimSpace(resp.Text)
+		if text == "" {
+			errs = append(errs, fmt.Errorf("%s: empty response", model))
+			continue
+		}
+		return text, nil
+	}
+
+	if len(errs) > 0 {
+		return "", errors.Join(errs...)
+	}
+	return "", errors.New("agent models are required")
+}
+
+func (a *BaseAgent) ClearHistory() {
+	if a == nil {
+		return
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.history.Clear()
+}
+
 func (a *BaseAgent) History() []ChatMessage {
 	if a == nil {
 		return nil

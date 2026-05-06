@@ -233,4 +233,149 @@ func TestAgentSettingStateInitReadsByAgentID(t *testing.T) {
 	}
 }
 
+func TestChatOnceDoesNotRecordHistory(t *testing.T) {
+	resetDefaultRegistryForTest()
+	if err := AddProvider(1, &fakeProvider{}); err != nil {
+		t.Fatalf("AddProvider error: %v", err)
+	}
+
+	agent := NewBaseAgent()
+	if err := agent.InitWithSetting(&BaseAgentSetting{
+		ProviderID: 1,
+		SysPrompt:  "translate",
+		Models:     []string{"m1"},
+	}); err != nil {
+		t.Fatalf("InitWithSetting error: %v", err)
+	}
+
+	text, err := agent.ChatOnce(context.Background(), "hello")
+	if err != nil {
+		t.Fatalf("ChatOnce error: %v", err)
+	}
+	if text != "ok" {
+		t.Fatalf("unexpected text: %q", text)
+	}
+	if len(agent.History()) != 0 {
+		t.Fatalf("ChatOnce should not record history, got %d messages", len(agent.History()))
+	}
+
+	// Chat should not see ChatOnce history.
+	text, err = agent.Chat(context.Background(), "world")
+	if err != nil {
+		t.Fatalf("Chat error: %v", err)
+	}
+	if len(agent.History()) != 2 {
+		t.Fatalf("Chat should only record its own exchange, got %d", len(agent.History()))
+	}
+}
+
+func TestChatOnceIncludesSysPrompt(t *testing.T) {
+	resetDefaultRegistryForTest()
+	provider := &fakeProvider{}
+	if err := AddProvider(1, provider); err != nil {
+		t.Fatalf("AddProvider error: %v", err)
+	}
+
+	agent := NewBaseAgent()
+	if err := agent.InitWithSetting(&BaseAgentSetting{
+		ProviderID: 1,
+		SysPrompt:  "translate to english",
+		Models:     []string{"m1"},
+	}); err != nil {
+		t.Fatalf("InitWithSetting error: %v", err)
+	}
+
+	if _, err := agent.ChatOnce(context.Background(), "hello"); err != nil {
+		t.Fatalf("ChatOnce error: %v", err)
+	}
+
+	req := provider.calls[len(provider.calls)-1]
+	if len(req.Messages) != 2 {
+		t.Fatalf("expected sys + user, got %d messages", len(req.Messages))
+	}
+	if req.Messages[0].Role != ChatRoleSystem || req.Messages[0].Content != "translate to english" {
+		t.Fatalf("sys prompt missing: %#v", req.Messages[0])
+	}
+	if req.Messages[1].Role != ChatRoleUser || req.Messages[1].Content != "hello" {
+		t.Fatalf("user message wrong: %#v", req.Messages[1])
+	}
+}
+
+func TestChatOnceFailsWithoutLeakingToHistory(t *testing.T) {
+	resetDefaultRegistryForTest()
+	provider := &fakeProvider{
+		failByModel: map[string]error{"m1": errors.New("boom")},
+	}
+	if err := AddProvider(1, provider); err != nil {
+		t.Fatalf("AddProvider error: %v", err)
+	}
+
+	agent := NewBaseAgent()
+	if err := agent.InitWithSetting(&BaseAgentSetting{
+		ProviderID: 1,
+		Models:     []string{"m1"},
+	}); err != nil {
+		t.Fatalf("InitWithSetting error: %v", err)
+	}
+
+	if _, err := agent.ChatOnce(context.Background(), "hello"); err == nil {
+		t.Fatal("expected ChatOnce error")
+	}
+	if len(agent.History()) != 0 {
+		t.Fatal("failed ChatOnce should not leak to history")
+	}
+}
+
+func TestClearHistory(t *testing.T) {
+	resetDefaultRegistryForTest()
+	if err := AddProvider(1, &fakeProvider{}); err != nil {
+		t.Fatalf("AddProvider error: %v", err)
+	}
+
+	agent := NewBaseAgent()
+	if err := agent.InitWithSetting(&BaseAgentSetting{
+		ProviderID: 1,
+		Models:     []string{"m1"},
+	}); err != nil {
+		t.Fatalf("InitWithSetting error: %v", err)
+	}
+
+	if _, err := agent.Chat(context.Background(), "first"); err != nil {
+		t.Fatalf("Chat error: %v", err)
+	}
+	if len(agent.History()) != 2 {
+		t.Fatalf("expected 2 messages, got %d", len(agent.History()))
+	}
+
+	agent.ClearHistory()
+	if len(agent.History()) != 0 {
+		t.Fatalf("ClearHistory should empty history, got %d", len(agent.History()))
+	}
+
+	// Next Chat should start fresh (no history).
+	if _, err := agent.Chat(context.Background(), "second"); err != nil {
+		t.Fatalf("Chat error: %v", err)
+	}
+	if len(agent.History()) != 2 {
+		t.Fatalf("after clear, chat should record its own exchange only, got %d", len(agent.History()))
+	}
+}
+
+func TestHistoryClearOnNil(t *testing.T) {
+	var h *AgentMessageHistory
+	h.Clear() // must not panic
+}
+
+func TestClearHistoryOnNilAgent(t *testing.T) {
+	var a *BaseAgent
+	a.ClearHistory() // must not panic
+}
+
+func TestChatOnceOnNilAgent(t *testing.T) {
+	var a *BaseAgent
+	if _, err := a.ChatOnce(context.Background(), "hello"); err == nil {
+		t.Fatal("expected error")
+	}
+}
+
 var _ IAgent[*BaseAgentSetting] = (*BaseAgent)(nil)

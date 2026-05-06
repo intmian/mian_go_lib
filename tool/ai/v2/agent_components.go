@@ -136,6 +136,15 @@ func (c *AgentMessageHistory) History() []ChatMessage {
 	return history
 }
 
+func (c *AgentMessageHistory) Clear() {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.history = c.history[:0]
+}
+
 func (c *AgentMessageHistory) BuildMessages(sysPrompt, content string) []ChatMessage {
 	history := c.History()
 	messages := make([]ChatMessage, 0, len(history)+2)
