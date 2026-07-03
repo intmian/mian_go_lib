@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"errors"
+	"io"
 	"slices"
 	"strings"
 
@@ -15,6 +16,18 @@ type OpenAI struct {
 	cl     openai.Client
 	model  []string
 	renshe string
+}
+
+type TranscriptionRequest struct {
+	Model    string
+	Language string
+	Prompt   string
+}
+
+type TranscriptionResult struct {
+	Text     string
+	Language string
+	Duration float64
 }
 
 const DefaultRenshe = "You are ChatGPT, a large language model trained by OpenAI."
@@ -105,4 +118,39 @@ func (o *OpenAI) Chat(content string) (string, error) {
 	}
 
 	return resp.Choices[0].Message.Content, nil
+}
+
+func (o *OpenAI) Transcribe(ctx context.Context, file io.Reader, req TranscriptionRequest) (TranscriptionResult, error) {
+	if file == nil {
+		return TranscriptionResult{}, errors.New("audio file is empty")
+	}
+	model := strings.TrimSpace(req.Model)
+	if model == "" {
+		return TranscriptionResult{}, errors.New("audio model is empty")
+	}
+
+	params := openai.AudioTranscriptionNewParams{
+		File:           file,
+		Model:          openai.AudioModel(model),
+		ResponseFormat: openai.AudioResponseFormatJSON,
+	}
+	if language := strings.TrimSpace(req.Language); language != "" {
+		params.Language = openai.String(language)
+	}
+	if prompt := strings.TrimSpace(req.Prompt); prompt != "" {
+		params.Prompt = openai.String(prompt)
+	}
+
+	resp, err := o.cl.Audio.Transcriptions.New(ctx, params)
+	if err != nil {
+		return TranscriptionResult{}, err
+	}
+	if resp == nil || strings.TrimSpace(resp.Text) == "" {
+		return TranscriptionResult{}, errors.New("openai-empty")
+	}
+	return TranscriptionResult{
+		Text:     strings.TrimSpace(resp.Text),
+		Language: strings.TrimSpace(resp.Language),
+		Duration: resp.Duration,
+	}, nil
 }
