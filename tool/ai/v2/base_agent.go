@@ -13,6 +13,7 @@ type BaseAgentSetting struct {
 	SysPrompt       string          `json:"sysPrompt"`
 	Models          []string        `json:"models"`
 	ReasoningEffort ReasoningEffort `json:"reasoningEffort"`
+	Tools           []ChatTool      `json:"tools"`
 }
 
 type BaseAgent struct {
@@ -96,6 +97,7 @@ func (a *BaseAgent) Chat(ctx context.Context, content string) (string, error) {
 			Model:           model,
 			Messages:        messages,
 			ReasoningEffort: setting.ReasoningEffort,
+			Tools:           append([]ChatTool(nil), setting.Tools...),
 		})
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", model, err))
@@ -154,6 +156,7 @@ func (a *BaseAgent) ChatOnce(ctx context.Context, content string) (string, error
 			Model:           model,
 			Messages:        messages,
 			ReasoningEffort: setting.ReasoningEffort,
+			Tools:           append([]ChatTool(nil), setting.Tools...),
 		})
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s: %w", model, err))

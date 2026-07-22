@@ -62,14 +62,17 @@ func TestExportSettingDoc(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ExportSettingDoc error: %v", err)
 	}
-	if len(docs) != 4 {
-		t.Fatalf("expected 4 docs, got %d", len(docs))
+	if len(docs) != 5 {
+		t.Fatalf("expected 5 docs, got %d", len(docs))
 	}
 	if docs[0].Name != "providerID" || docs[0].JSONType != "number" {
 		t.Fatalf("unexpected first doc: %#v", docs[0])
 	}
 	if docs[2].Name != "models" || !docs[2].IsArray {
 		t.Fatalf("models doc should be array: %#v", docs[2])
+	}
+	if docs[4].Name != "tools" || !docs[4].IsArray {
+		t.Fatalf("tools doc should be array: %#v", docs[4])
 	}
 }
 

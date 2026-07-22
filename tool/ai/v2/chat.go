@@ -33,6 +33,12 @@ const (
 	ThinkingTypeDisabled ThinkingType = "disabled"
 )
 
+type ChatTool string
+
+const (
+	ChatToolWebSearch ChatTool = "web_search"
+)
+
 type ChatMessage struct {
 	Role    ChatRole
 	Content string
@@ -44,18 +50,22 @@ type ChatRequest struct {
 	ReasoningEffort ReasoningEffort
 	Thinking        ThinkingType
 	MaxOutputTokens int64
+	MaxToolCalls    int64
+	Tools           []ChatTool
+}
 
-	// Tools/functions are intentionally not part of the v2 first slice. Provider
-	// methods only handle plain chat plus reasoning/thinking for now, and
-	// AvailableTools returns no callable tools until this request surface exists.
-	// Tools []ChatTool
-	// Functions []FunctionTool
+type ChatCitation struct {
+	StartIndex int64
+	EndIndex   int64
+	Title      string
+	URL        string
 }
 
 type ChatResponse struct {
 	Text             string
 	ReasoningContent string
 	Model            string
+	Citations        []ChatCitation
 	RawJSON          string
 }
 
@@ -80,6 +90,11 @@ type IChatStream interface {
 }
 
 func (p *OpenAIProvider) Chat(ctx context.Context, req ChatRequest) (ChatResponse, error) {
+	var err error
+	req, err = p.resolveRegisteredModel(req)
+	if err != nil {
+		return ChatResponse{}, err
+	}
 	if err := p.validateChatRequest(req); err != nil {
 		return ChatResponse{}, err
 	}
@@ -95,6 +110,11 @@ func (p *OpenAIProvider) Chat(ctx context.Context, req ChatRequest) (ChatRespons
 }
 
 func (p *OpenAIProvider) ChatStream(ctx context.Context, req ChatRequest) (IChatStream, error) {
+	var err error
+	req, err = p.resolveRegisteredModel(req)
+	if err != nil {
+		return nil, err
+	}
 	if err := p.validateChatRequest(req); err != nil {
 		return nil, err
 	}
@@ -109,20 +129,33 @@ func (p *OpenAIProvider) ChatStream(ctx context.Context, req ChatRequest) (IChat
 	}
 }
 
-func (p *OpenAIProvider) chatOpenAI(ctx context.Context, req ChatRequest) (ChatResponse, error) {
-	params := responses.ResponseNewParams{
-		Model: shared.ResponsesModel(req.Model),
-		Input: responses.ResponseNewParamsInputUnion{
-			OfInputItemList: toResponseInput(req.Messages),
-		},
+func (p *OpenAIProvider) resolveRegisteredModel(req ChatRequest) (ChatRequest, error) {
+	registered := p.RegisteredModels()
+	if len(registered) == 0 {
+		return req, nil
 	}
-	if req.MaxOutputTokens > 0 {
-		params.MaxOutputTokens = openai.Int(req.MaxOutputTokens)
+	modelID := ModelID(strings.TrimSpace(req.Model))
+	model, ok := p.GetModel(modelID)
+	if !ok {
+		return ChatRequest{}, fmt.Errorf("model %q is not registered", modelID)
 	}
-	if req.ReasoningEffort != "" {
-		params.Reasoning = openAIReasoningParam(req.ReasoningEffort)
+	if model.Type != ModelTypeText {
+		return ChatRequest{}, fmt.Errorf("model %q is not a text model", modelID)
 	}
+	if req.ReasoningEffort != "" && !slices.Contains(model.Reasoning, req.ReasoningEffort) {
+		return ChatRequest{}, fmt.Errorf("reasoning effort %q is not available for model %q", req.ReasoningEffort, modelID)
+	}
+	for i, tool := range req.Tools {
+		if !slices.Contains(model.Tools, tool) {
+			return ChatRequest{}, fmt.Errorf("chat tools[%d] %q is not available for model %q", i, tool, modelID)
+		}
+	}
+	req.Model = model.Name
+	return req, nil
+}
 
+func (p *OpenAIProvider) chatOpenAI(ctx context.Context, req ChatRequest) (ChatResponse, error) {
+	params := openAIResponseParams(req)
 	resp, err := p.client.Responses.New(ctx, params)
 	if err != nil {
 		return ChatResponse{}, err
@@ -135,6 +168,7 @@ func (p *OpenAIProvider) chatOpenAI(ctx context.Context, req ChatRequest) (ChatR
 		Text:             resp.OutputText(),
 		ReasoningContent: extractOpenAIReasoningSummary(resp.RawJSON()),
 		Model:            string(resp.Model),
+		Citations:        extractOpenAIURLCitations(resp),
 		RawJSON:          resp.RawJSON(),
 	}, nil
 }
@@ -174,19 +208,7 @@ func (p *OpenAIProvider) chatDeepSeek(ctx context.Context, req ChatRequest) (Cha
 }
 
 func (p *OpenAIProvider) chatOpenAIStream(ctx context.Context, req ChatRequest) (IChatStream, error) {
-	params := responses.ResponseNewParams{
-		Model: shared.ResponsesModel(req.Model),
-		Input: responses.ResponseNewParamsInputUnion{
-			OfInputItemList: toResponseInput(req.Messages),
-		},
-	}
-	if req.MaxOutputTokens > 0 {
-		params.MaxOutputTokens = openai.Int(req.MaxOutputTokens)
-	}
-	if req.ReasoningEffort != "" {
-		params.Reasoning = openAIReasoningParam(req.ReasoningEffort)
-	}
-
+	params := openAIResponseParams(req)
 	return &openAIChatStream{
 		stream: p.client.Responses.NewStreaming(ctx, params),
 	}, nil
@@ -222,6 +244,31 @@ func toResponseInput(messages []ChatMessage) responses.ResponseInputParam {
 		})
 	}
 	return input
+}
+
+func openAIResponseParams(req ChatRequest) responses.ResponseNewParams {
+	params := responses.ResponseNewParams{
+		Model: shared.ResponsesModel(req.Model),
+		Input: responses.ResponseNewParamsInputUnion{
+			OfInputItemList: toResponseInput(req.Messages),
+		},
+	}
+	if req.MaxOutputTokens > 0 {
+		params.MaxOutputTokens = openai.Int(req.MaxOutputTokens)
+	}
+	if req.MaxToolCalls > 0 {
+		params.MaxToolCalls = openai.Int(req.MaxToolCalls)
+	}
+	if req.ReasoningEffort != "" {
+		params.Reasoning = openAIReasoningParam(req.ReasoningEffort)
+	}
+	for _, tool := range req.Tools {
+		switch tool {
+		case ChatToolWebSearch:
+			params.Tools = append(params.Tools, responses.ToolParamOfWebSearch(responses.WebSearchToolTypeWebSearch))
+		}
+	}
+	return params
 }
 
 func toChatCompletionMessages(messages []ChatMessage) []openai.ChatCompletionMessageParamUnion {
@@ -261,6 +308,23 @@ func (p *OpenAIProvider) validateChatRequest(req ChatRequest) error {
 	}
 	if p.sourceType != ProviderSourceTypeDeepSeek && req.Thinking != ThinkingTypeUnset {
 		return fmt.Errorf("thinking is not available for %s", p.sourceType)
+	}
+	if req.MaxToolCalls < 0 {
+		return errors.New("max tool calls cannot be negative")
+	}
+	if req.MaxToolCalls > 0 && len(req.Tools) == 0 {
+		return errors.New("max tool calls requires at least one chat tool")
+	}
+	availableTools := p.AvailableTools()
+	seenTools := make(map[ChatTool]struct{}, len(req.Tools))
+	for i, tool := range req.Tools {
+		if !slices.Contains(availableTools, string(tool)) {
+			return fmt.Errorf("chat tools[%d] %q is not available for %s", i, tool, p.sourceType)
+		}
+		if _, ok := seenTools[tool]; ok {
+			return fmt.Errorf("chat tools[%d] %q is duplicated", i, tool)
+		}
+		seenTools[tool] = struct{}{}
 	}
 	return nil
 }
@@ -339,6 +403,7 @@ func (s *openAIChatStream) Recv() (ChatStreamEvent, error) {
 				Text:             text,
 				ReasoningContent: firstNonEmpty(s.reasoning.String(), extractOpenAIReasoningSummary(v.Response.RawJSON())),
 				Model:            string(v.Response.Model),
+				Citations:        extractOpenAIURLCitations(&v.Response),
 				RawJSON:          v.Response.RawJSON(),
 			}
 			return ChatStreamEvent{Type: ChatStreamEventDone, Response: &resp}, nil
@@ -445,6 +510,36 @@ func extractOpenAIReasoningSummary(raw string) string {
 		}
 	}
 	return summary.String()
+}
+
+func extractOpenAIURLCitations(resp *responses.Response) []ChatCitation {
+	if resp == nil {
+		return nil
+	}
+
+	var citations []ChatCitation
+	for _, item := range resp.Output {
+		if item.Type != "message" {
+			continue
+		}
+		for _, content := range item.Content {
+			if content.Type != "output_text" {
+				continue
+			}
+			for _, annotation := range content.Annotations {
+				if annotation.Type != "url_citation" {
+					continue
+				}
+				citations = append(citations, ChatCitation{
+					StartIndex: annotation.StartIndex,
+					EndIndex:   annotation.EndIndex,
+					Title:      annotation.Title,
+					URL:        annotation.URL,
+				})
+			}
+		}
+	}
+	return citations
 }
 
 func extractDeepSeekReasoning(raw string) string {

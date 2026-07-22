@@ -1,6 +1,6 @@
 # AI v2
 
-`tool/ai/v2` is the newer AI package for provider capability checks, plain chat, streaming chat, and lightweight stateful agents.
+`tool/ai/v2` is the newer AI package for provider/model capability checks, chat, streaming chat, OpenAI web search, and lightweight stateful agents.
 
 The directory name is `v2`, but the Go package name is `ai`:
 
@@ -8,13 +8,14 @@ The directory name is `v2`, but the Go package name is `ai`:
 import ai "github.com/intmian/mian_go_lib/tool/ai/v2"
 ```
 
-This package does not replace the older `github.com/intmian/mian_go_lib/tool/ai` wrapper yet. Use it when you need provider capabilities, reasoning controls, streaming, base agent components, or agent setting JSON helpers.
+This package does not replace the older `github.com/intmian/mian_go_lib/tool/ai` wrapper yet. Use it when you need provider capabilities, reasoning controls, OpenAI Responses tools, streaming, base agent components, or agent setting JSON helpers.
 
 ## Core concepts
 
 1. `ProviderID` and `AgentID` are `uint32`.
    - `0` means unset and is rejected.
    - Register providers once with `AddProvider`.
+   - `OpenAIProvider.RegisterModel` registers model IDs, upstream names, model types, optional call-protocol metadata, reasoning efforts, and tools on that provider instance.
 2. `AgentID` identifies an agent setting.
    - `AgentIDBase` is the built-in base chat agent setting ID.
    - Agent IDs are for setting registration, not agent construction.
@@ -50,6 +51,14 @@ func Run(ctx context.Context, baseURL string, token string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if err := provider.RegisterModel(ai.ModelConfig{
+		ID:        "main",
+		Name:      "gpt-5.4",
+		Type:      ai.ModelTypeText,
+		Reasoning: []ai.ReasoningEffort{ai.ReasoningEffortMedium},
+	}); err != nil {
+		return "", err
+	}
 	if err := ai.AddProvider(1, provider); err != nil {
 		return "", err
 	}
@@ -58,7 +67,7 @@ func Run(ctx context.Context, baseURL string, token string) (string, error) {
 	if err := agent.InitWithSetting(&ai.BaseAgentSetting{
 		ProviderID:      1,
 		SysPrompt:       "You are a helpful assistant.",
-		Models:          []string{"gpt-5.4", "gpt-5-chat-latest"},
+		Models:          []string{"main"},
 		ReasoningEffort: ai.ReasoningEffortMedium,
 	}); err != nil {
 		return "", err
@@ -135,7 +144,7 @@ setting, ok := ai.GetAgentSettingAs[*ai.BaseAgentSetting](ai.AgentIDBase)
 6. Records user and assistant messages only after success.
 7. Returns joined model errors when every model fails.
 
-`Models` is a concrete model-name fallback list, not a mode name list.
+`Models` is an ordered model fallback list, not a mode name list. For providers with registered models, entries are registered model IDs; providers without a model catalog retain the legacy direct upstream-name behavior.
 
 `BaseAgent.Chat` serializes calls on the same agent instance, including the provider network call. This preserves strict history ordering for the stateful one-on-one chat use case; callers that need parallel requests should use separate agent instances or a custom agent composition.
 
@@ -161,7 +170,21 @@ reasoning := provider.AvailableReasoning()
 tools := provider.AvailableTools()
 ```
 
-`AvailableTools()` currently returns no callable tools. The first v2 chat surface intentionally supports plain messages plus reasoning/thinking only.
+`AvailableReasoning` and `AvailableTools` describe the adapter's upper bound. Register each configured model with a `ModelConfig`; registered chat calls resolve the model ID to its upstream name and reject reasoning efforts or tools that the model did not declare. `ProviderSourceTypeOpenAI` can register `web_search`; the current DeepSeek adapter cannot.
+
+```go
+err := openaiProvider.RegisterModel(ai.ModelConfig{
+	ID:        "research",
+	Name:      "gpt-5.4",
+	Type:      ai.ModelTypeText,
+	Reasoning: []ai.ReasoningEffort{ai.ReasoningEffortLow, ai.ReasoningEffortMedium},
+	Tools:     []ai.ChatTool{ai.ChatToolWebSearch},
+})
+model, ok := openaiProvider.GetModel("research")
+registered := openaiProvider.RegisteredModels()
+```
+
+`ModelTypeText` and `ModelTypeSTT` are supported configuration types. Reasoning and chat tools only apply to text models. STT registration is capability/config metadata; audio processing still belongs to the owning caller until a matching v2 runtime surface is added. `ModelTypeChat` remains a source-compatible alias of `ModelTypeText`.
 
 ## Direct provider chat
 
@@ -177,6 +200,27 @@ resp, err := provider.Chat(ctx, ai.ChatRequest{
 	ReasoningEffort: ai.ReasoningEffortMedium,
 })
 ```
+
+Enable hosted OpenAI web search by adding `ChatToolWebSearch`. `MaxToolCalls` is optional and must only be set when at least one tool is present:
+
+```go
+resp, err := provider.Chat(ctx, ai.ChatRequest{
+	Model: "gpt-5.4",
+	Messages: []ai.ChatMessage{
+		{Role: ai.ChatRoleUser, Content: "Search the web for the latest OpenAI API changes."},
+	},
+	Tools:        []ai.ChatTool{ai.ChatToolWebSearch},
+	MaxToolCalls: 3,
+})
+if err != nil {
+	return err
+}
+for _, citation := range resp.Citations {
+	fmt.Printf("%s: %s\n", citation.Title, citation.URL)
+}
+```
+
+`ChatResponse.Citations` contains URL citations returned in OpenAI output-text annotations, including the upstream character offsets, title, and URL. Streaming requests expose the same citations on the final `ChatStreamEventDone` response.
 
 For streaming:
 
@@ -198,10 +242,32 @@ for {
 	case ai.ChatStreamEventReasoningDelta:
 		// event.ReasoningDelta
 	case ai.ChatStreamEventDone:
-		// event.Response
+		// event.Response.Citations contains final URL citations.
 	}
 }
 ```
+
+## Manual OpenAI web search test
+
+The live test is opt-in and is excluded from normal test runs. It reads credentials from environment variables and never prints the API key:
+
+- required: `OPENAI_API_KEY`
+- optional: `OPENAI_BASE_URL` (empty uses the official OpenAI endpoint)
+- optional: `OPENAI_MODEL` (default `gpt-5.4`)
+- optional: `OPENAI_REASONING_EFFORT` (default `low`)
+
+From the `mian_go_lib` module root:
+
+```powershell
+$secure = Read-Host "OpenAI API Key" -AsSecureString
+$env:OPENAI_API_KEY = [System.Net.NetworkCredential]::new("", $secure).Password
+$env:OPENAI_MODEL = "gpt-5.4"
+$env:OPENAI_REASONING_EFFORT = "low"
+go test -tags live_ai -run '^TestLiveOpenAIWebSearch$' -count=1 -v ./tool/ai/v2
+Remove-Item Env:OPENAI_API_KEY
+```
+
+The test performs a real, billable API request and requires at least one URL citation in the response. It keeps the configured reasoning effort while omitting `max_tool_calls` and `max_output_tokens`, which are not required for the search check and may be unsupported by some OpenAI-compatible gateways.
 
 ## Setting JSON helpers
 
@@ -246,11 +312,16 @@ Important validation rules:
 
 - `ProviderID == 0` is invalid.
 - Duplicate provider IDs are rejected.
+- Registered model IDs and names are required; duplicate model IDs are rejected per provider.
+- A registered model may only declare capabilities supported by its provider adapter.
+- When a provider has registered models, chat requests must use a registered chat model ID and may only request that model's declared reasoning efforts and tools.
 - Duplicate agent setting IDs are rejected.
 - `BaseAgentSetting.Models` must contain at least one non-empty model after trimming whitespace.
 - `Init` requires a registered `*BaseAgentSetting` at `AgentIDBase`.
 - `InitWithSetting` requires `ProviderID` and at least one model.
 - The referenced provider must be registered before provider access or chat, not before initialization.
+- `MaxToolCalls` cannot be negative and requires at least one `ChatRequest.Tools` entry when non-zero.
+- Duplicate or provider-unsupported chat tools are rejected before an upstream request.
 
 Provider lookup happens at chat time. This allows providers to be registered after agent construction, but before the first successful chat.
 
