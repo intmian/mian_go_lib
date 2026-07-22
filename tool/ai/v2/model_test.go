@@ -13,6 +13,7 @@ func TestModelConfigValidatesCallProtocolAgainstType(t *testing.T) {
 	}{
 		{name: "text inherits", modelType: ModelTypeText},
 		{name: "openai text", modelType: ModelTypeText, protocol: ModelCallProtocolOpenAIText},
+		{name: "deepseek text", modelType: ModelTypeText, protocol: ModelCallProtocolDeepSeekText},
 		{name: "text rejects stt", modelType: ModelTypeText, protocol: ModelCallProtocolOpenAISTT, wantErr: true},
 		{name: "stt inherits", modelType: ModelTypeSTT},
 		{name: "openai stt", modelType: ModelTypeSTT, protocol: ModelCallProtocolOpenAISTT},

@@ -186,6 +186,8 @@ registered := openaiProvider.RegisteredModels()
 
 `ModelTypeText` and `ModelTypeSTT` are supported configuration types. Reasoning and chat tools only apply to text models. STT registration is capability/config metadata; audio processing still belongs to the owning caller until a matching v2 runtime surface is added. `ModelTypeChat` remains a source-compatible alias of `ModelTypeText`.
 
+`ModelCallProtocolOpenAIText` and `ModelCallProtocolDeepSeekText` are the supported text call-protocol markers. They let an owning configuration layer choose the OpenAI Responses or DeepSeek Chat Completions adapter independently from the upstream model name. STT protocol markers remain `ModelCallProtocolOpenAISTT`, `ModelCallProtocolDashScopeQwen3ASR`, and `ModelCallProtocolDashScopeFunASR`.
+
 ## Direct provider chat
 
 Use a provider directly when you do not need agent history:
@@ -200,6 +202,8 @@ resp, err := provider.Chat(ctx, ai.ChatRequest{
 	ReasoningEffort: ai.ReasoningEffortMedium,
 })
 ```
+
+For a DeepSeek provider, `Thinking` may be left unset to preserve the upstream default or explicitly set to `ThinkingTypeEnabled`/`ThinkingTypeDisabled`. The adapter serializes an explicit value as `thinking: {"type":"enabled"}` or `thinking: {"type":"disabled"}`; other source types reject it.
 
 Enable hosted OpenAI web search by adding `ChatToolWebSearch`. `MaxToolCalls` is optional and must only be set when at least one tool is present:
 

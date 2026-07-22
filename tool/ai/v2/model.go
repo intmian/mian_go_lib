@@ -24,6 +24,7 @@ const (
 
 const (
 	ModelCallProtocolOpenAIText        ModelCallProtocol = "OpenAIText"
+	ModelCallProtocolDeepSeekText      ModelCallProtocol = "DeepSeekText"
 	ModelCallProtocolOpenAISTT         ModelCallProtocol = "OpenAISTT"
 	ModelCallProtocolDashScopeQwen3ASR ModelCallProtocol = "DashScopeQwen3ASR"
 	ModelCallProtocolDashScopeFunASR   ModelCallProtocol = "DashScopeFunASR"
@@ -81,7 +82,10 @@ func validateModelCallProtocol(modelType ModelType, protocol ModelCallProtocol) 
 	}
 	switch modelType {
 	case ModelTypeText:
-		if protocol != ModelCallProtocolOpenAIText {
+		switch protocol {
+		case ModelCallProtocolOpenAIText, ModelCallProtocolDeepSeekText:
+			return nil
+		default:
 			return fmt.Errorf("text model call protocol %q is invalid", protocol)
 		}
 	case ModelTypeSTT:
