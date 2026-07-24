@@ -186,7 +186,7 @@ registered := openaiProvider.RegisteredModels()
 
 `ModelTypeText` and `ModelTypeSTT` are supported configuration types. Reasoning and chat tools only apply to text models. STT registration is capability/config metadata; audio processing still belongs to the owning caller until a matching v2 runtime surface is added. `ModelTypeChat` remains a source-compatible alias of `ModelTypeText`.
 
-`ModelCallProtocolOpenAIText` and `ModelCallProtocolDeepSeekText` are the supported text call-protocol markers. They let an owning configuration layer choose the OpenAI Responses or DeepSeek Chat Completions adapter independently from the upstream model name. STT protocol markers remain `ModelCallProtocolOpenAISTT`, `ModelCallProtocolDashScopeQwen3ASR`, and `ModelCallProtocolDashScopeFunASR`.
+`ModelCallProtocolOpenAIText` and `ModelCallProtocolDeepSeekText` are the supported text call-protocol markers. They let an owning configuration layer choose the OpenAI Responses or DeepSeek Chat Completions adapter independently from the upstream model name. STT protocol markers are `ModelCallProtocolOpenAISTT`, `ModelCallProtocolDashScopeQwen3ASR`, `ModelCallProtocolDashScopeFunASR`, and `ModelCallProtocolDashScopeFunASRRealtime`.
 
 ## Direct provider chat
 

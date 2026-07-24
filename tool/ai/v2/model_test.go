@@ -19,6 +19,7 @@ func TestModelConfigValidatesCallProtocolAgainstType(t *testing.T) {
 		{name: "openai stt", modelType: ModelTypeSTT, protocol: ModelCallProtocolOpenAISTT},
 		{name: "dashscope qwen3 asr", modelType: ModelTypeSTT, protocol: ModelCallProtocolDashScopeQwen3ASR},
 		{name: "dashscope fun asr", modelType: ModelTypeSTT, protocol: ModelCallProtocolDashScopeFunASR},
+		{name: "dashscope fun asr realtime", modelType: ModelTypeSTT, protocol: ModelCallProtocolDashScopeFunASRRealtime},
 		{name: "stt rejects text", modelType: ModelTypeSTT, protocol: ModelCallProtocolOpenAIText, wantErr: true},
 	}
 	for _, tt := range tests {

@@ -23,11 +23,12 @@ const (
 )
 
 const (
-	ModelCallProtocolOpenAIText        ModelCallProtocol = "OpenAIText"
-	ModelCallProtocolDeepSeekText      ModelCallProtocol = "DeepSeekText"
-	ModelCallProtocolOpenAISTT         ModelCallProtocol = "OpenAISTT"
-	ModelCallProtocolDashScopeQwen3ASR ModelCallProtocol = "DashScopeQwen3ASR"
-	ModelCallProtocolDashScopeFunASR   ModelCallProtocol = "DashScopeFunASR"
+	ModelCallProtocolOpenAIText              ModelCallProtocol = "OpenAIText"
+	ModelCallProtocolDeepSeekText            ModelCallProtocol = "DeepSeekText"
+	ModelCallProtocolOpenAISTT               ModelCallProtocol = "OpenAISTT"
+	ModelCallProtocolDashScopeQwen3ASR       ModelCallProtocol = "DashScopeQwen3ASR"
+	ModelCallProtocolDashScopeFunASR         ModelCallProtocol = "DashScopeFunASR"
+	ModelCallProtocolDashScopeFunASRRealtime ModelCallProtocol = "DashScopeFunASRRealtime"
 )
 
 type ModelConfig struct {
@@ -90,7 +91,10 @@ func validateModelCallProtocol(modelType ModelType, protocol ModelCallProtocol) 
 		}
 	case ModelTypeSTT:
 		switch protocol {
-		case ModelCallProtocolOpenAISTT, ModelCallProtocolDashScopeQwen3ASR, ModelCallProtocolDashScopeFunASR:
+		case ModelCallProtocolOpenAISTT,
+			ModelCallProtocolDashScopeQwen3ASR,
+			ModelCallProtocolDashScopeFunASR,
+			ModelCallProtocolDashScopeFunASRRealtime:
 			return nil
 		default:
 			return fmt.Errorf("stt model call protocol %q is invalid", protocol)
