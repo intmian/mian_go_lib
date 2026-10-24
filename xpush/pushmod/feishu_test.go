@@ -88,10 +88,10 @@ func TestNormalizeFeishuMarkdown_Heading(t *testing.T) {
 	input := "### 日安，03月16日的播报\n白天小雨\n#### 摘要\n第二段"
 	got := normalizeFeishuMarkdown(input)
 
-	if !strings.Contains(got, "**日安，03月16日的播报**\n白天小雨") {
+	if !strings.Contains(got, "**日安，03月16日的播报**\n\n白天小雨") {
 		t.Fatalf("heading should be converted to a closed bold line, got: %q", got)
 	}
-	if !strings.Contains(got, "\n**摘要**\n第二段") {
+	if !strings.Contains(got, "\n\n**摘要**\n\n第二段") {
 		t.Fatalf("sub heading should be converted to a closed bold line, got: %q", got)
 	}
 }

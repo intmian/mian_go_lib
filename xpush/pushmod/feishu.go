@@ -105,6 +105,13 @@ func normalizeFeishuMarkdown(content string) string {
 		match := feishuHeadingPattern.FindStringSubmatch(line)
 		if len(match) == 2 {
 			lines[i] = "**" + strings.TrimSpace(match[1]) + "**"
+			// 标题转为普通加粗段落后，需要空行结束前面的列表并隔开正文。
+			if i > 0 {
+				lines[i] = "\n" + lines[i]
+			}
+			if i < len(lines)-1 {
+				lines[i] += "\n"
+			}
 		}
 	}
 	// 飞书卡片里的 markdown 段落间单空行即可，避免生成过多空白。
