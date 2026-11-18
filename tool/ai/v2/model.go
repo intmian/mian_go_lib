@@ -16,6 +16,8 @@ type ModelCallProtocol string
 const (
 	ModelTypeText ModelType = "text"
 	ModelTypeSTT  ModelType = "stt"
+	// ModelTypeSearch is a web search service rather than a generative model.
+	ModelTypeSearch ModelType = "search"
 
 	// ModelTypeChat is kept as a source-compatible alias. New configuration
 	// should persist ModelTypeText.
@@ -29,6 +31,7 @@ const (
 	ModelCallProtocolDashScopeQwen3ASR       ModelCallProtocol = "DashScopeQwen3ASR"
 	ModelCallProtocolDashScopeFunASR         ModelCallProtocol = "DashScopeFunASR"
 	ModelCallProtocolDashScopeFunASRRealtime ModelCallProtocol = "DashScopeFunASRRealtime"
+	ModelCallProtocolDeepSeekSearch          ModelCallProtocol = "DeepSeekSearch"
 )
 
 type ModelConfig struct {
@@ -48,7 +51,7 @@ func (m ModelConfig) Validate() error {
 		return errors.New("model name is required")
 	}
 	switch m.Type {
-	case ModelTypeText, ModelTypeSTT:
+	case ModelTypeText, ModelTypeSTT, ModelTypeSearch:
 	default:
 		return fmt.Errorf("model type %q is invalid", m.Type)
 	}
@@ -99,6 +102,11 @@ func validateModelCallProtocol(modelType ModelType, protocol ModelCallProtocol) 
 		default:
 			return fmt.Errorf("stt model call protocol %q is invalid", protocol)
 		}
+	case ModelTypeSearch:
+		if protocol == ModelCallProtocolDeepSeekSearch {
+			return nil
+		}
+		return fmt.Errorf("search model call protocol %q is invalid", protocol)
 	default:
 		return fmt.Errorf("model type %q is invalid", modelType)
 	}
