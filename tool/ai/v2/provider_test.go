@@ -218,3 +218,78 @@ func TestValidateChatRequestRejectsMaxToolCallsWithoutTools(t *testing.T) {
 		t.Fatal("expected max tool calls validation error")
 	}
 }
+
+func TestOpenAIResponseParamsJSONSchemaAndSources(t *testing.T) {
+	params := openAIResponseParams(ChatRequest{
+		Model:    "gpt-test",
+		Messages: []ChatMessage{{Role: ChatRoleUser, Content: "news"}},
+		Tools:    []ChatTool{ChatToolWebSearch},
+		JSONSchema: &ChatJSONSchema{
+			Name:   "news",
+			Schema: map[string]any{"type": "object"},
+			Strict: true,
+		},
+	})
+	data, err := json.Marshal(params)
+	if err != nil {
+		t.Fatalf("marshal response params: %v", err)
+	}
+	var payload struct {
+		Include []string `json:"include"`
+		Text    struct {
+			Format struct {
+				Type   string         `json:"type"`
+				Name   string         `json:"name"`
+				Strict bool           `json:"strict"`
+				Schema map[string]any `json:"schema"`
+			} `json:"format"`
+		} `json:"text"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		t.Fatalf("unmarshal response params: %v", err)
+	}
+	if len(payload.Include) != 1 || payload.Include[0] != "web_search_call.action.sources" {
+		t.Fatalf("unexpected include: %s", data)
+	}
+	f := payload.Text.Format
+	if f.Type != "json_schema" || f.Name != "news" || !f.Strict || f.Schema["type"] != "object" {
+		t.Fatalf("unexpected text format: %s", data)
+	}
+}
+
+func TestExtractOpenAIWebSearches(t *testing.T) {
+	raw := `{"output":[
+		{"type":"reasoning"},
+		{"type":"web_search_call","action":{"type":"search","query":"gta6","sources":[{"type":"url","url":"https://a.com/1"},{"type":"url","url":"https://b.com/2"}]}},
+		{"type":"web_search_call","action":{"type":"open_page","url":"https://a.com/1"}},
+		{"type":"message"}
+	]}`
+	got := extractOpenAIWebSearches(raw)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 searches, got %+v", got)
+	}
+	if got[0].Action != "search" || got[0].Query != "gta6" || len(got[0].Sources) != 2 || got[0].Sources[1] != "https://b.com/2" {
+		t.Fatalf("unexpected first search: %+v", got[0])
+	}
+	if got[1].Action != "open_page" || got[1].URL != "https://a.com/1" {
+		t.Fatalf("unexpected second search: %+v", got[1])
+	}
+}
+
+func TestOpenAIFinalTextSkipsCommentary(t *testing.T) {
+	var resp responses.Response
+	raw := `{"output":[
+		{"type":"message","phase":"commentary","content":[{"type":"output_text","text":"我先搜索一下。"}]},
+		{"type":"web_search_call","action":{"type":"search"}},
+		{"type":"message","phase":"final_answer","content":[{"type":"output_text","text":"{\"ok\":true}"}]}
+	],"tool_usage":{"web_search":{"num_requests":3}}}`
+	if err := json.Unmarshal([]byte(raw), &resp); err != nil {
+		t.Fatalf("unmarshal response: %v", err)
+	}
+	if got := openAIFinalText(&resp); got != `{"ok":true}` {
+		t.Fatalf("unexpected final text: %q", got)
+	}
+	if got := extractOpenAIWebSearchRequests(raw); got != 3 {
+		t.Fatalf("unexpected web search requests: %d", got)
+	}
+}

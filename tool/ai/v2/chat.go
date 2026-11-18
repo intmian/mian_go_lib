@@ -52,6 +52,32 @@ type ChatRequest struct {
 	MaxOutputTokens int64
 	MaxToolCalls    int64
 	Tools           []ChatTool
+	// JSONSchema 非空时要求模型按该结构输出 JSON（OpenAI Structured Outputs）。
+	// DeepSeek 不支持 json_schema，退化为 json_object。
+	JSONSchema *ChatJSONSchema
+}
+
+type ChatJSONSchema struct {
+	Name   string
+	Schema map[string]any
+	Strict bool
+}
+
+type ChatUsage struct {
+	InputTokens       int64
+	CachedInputTokens int64
+	OutputTokens      int64
+	ReasoningTokens   int64
+	// WebSearchRequests 是 OpenAI 实际计费的搜索次数（tool_usage.web_search.num_requests）。
+	WebSearchRequests int64
+}
+
+// ChatWebSearch 是模型一次联网动作：search 才计入搜索费，open_page / find_in_page 是打开或页内查找。
+type ChatWebSearch struct {
+	Action  string
+	Query   string
+	URL     string
+	Sources []string
 }
 
 type ChatCitation struct {
@@ -66,6 +92,8 @@ type ChatResponse struct {
 	ReasoningContent string
 	Model            string
 	Citations        []ChatCitation
+	Usage            ChatUsage
+	WebSearches      []ChatWebSearch
 	RawJSON          string
 }
 
@@ -165,10 +193,12 @@ func (p *OpenAIProvider) chatOpenAI(ctx context.Context, req ChatRequest) (ChatR
 	}
 
 	return ChatResponse{
-		Text:             resp.OutputText(),
+		Text:             openAIFinalText(resp),
 		ReasoningContent: extractOpenAIReasoningSummary(resp.RawJSON()),
 		Model:            string(resp.Model),
 		Citations:        extractOpenAIURLCitations(resp),
+		Usage:            openAIUsage(resp),
+		WebSearches:      extractOpenAIWebSearches(resp.RawJSON()),
 		RawJSON:          resp.RawJSON(),
 	}, nil
 }
@@ -183,6 +213,9 @@ func (p *OpenAIProvider) chatDeepSeek(ctx context.Context, req ChatRequest) (Cha
 	}
 	if req.ReasoningEffort != "" {
 		params.ReasoningEffort = shared.ReasoningEffort(req.ReasoningEffort)
+	}
+	if req.JSONSchema != nil {
+		params.ResponseFormat = openai.ChatCompletionNewParamsResponseFormatUnion{OfJSONObject: &shared.ResponseFormatJSONObjectParam{}}
 	}
 
 	opts := thinkingOptions(req.Thinking)
@@ -266,6 +299,20 @@ func openAIResponseParams(req ChatRequest) responses.ResponseNewParams {
 		switch tool {
 		case ChatToolWebSearch:
 			params.Tools = append(params.Tools, responses.ToolParamOfWebSearch(responses.WebSearchToolTypeWebSearch))
+			// 要求返回每次搜索看到的来源，调用方可据此校验输出里的链接确实被搜到过。
+			params.Include = append(params.Include, responses.ResponseIncludableWebSearchCallActionSources)
+		}
+	}
+	if req.JSONSchema != nil {
+		format := &responses.ResponseFormatTextJSONSchemaConfigParam{
+			Name:   req.JSONSchema.Name,
+			Schema: req.JSONSchema.Schema,
+		}
+		if req.JSONSchema.Strict {
+			format.Strict = openai.Bool(true)
+		}
+		params.Text = responses.ResponseTextConfigParam{
+			Format: responses.ResponseFormatTextConfigUnionParam{OfJSONSchema: format},
 		}
 	}
 	return params
@@ -395,7 +442,7 @@ func (s *openAIChatStream) Recv() (ChatStreamEvent, error) {
 			s.reasoning.WriteString(v.Delta)
 			return ChatStreamEvent{Type: ChatStreamEventReasoningDelta, ReasoningDelta: v.Delta}, nil
 		case responses.ResponseCompletedEvent:
-			text := v.Response.OutputText()
+			text := openAIFinalText(&v.Response)
 			if text == "" {
 				text = s.text.String()
 			}
@@ -404,6 +451,8 @@ func (s *openAIChatStream) Recv() (ChatStreamEvent, error) {
 				ReasoningContent: firstNonEmpty(s.reasoning.String(), extractOpenAIReasoningSummary(v.Response.RawJSON())),
 				Model:            string(v.Response.Model),
 				Citations:        extractOpenAIURLCitations(&v.Response),
+				Usage:            openAIUsage(&v.Response),
+				WebSearches:      extractOpenAIWebSearches(v.Response.RawJSON()),
 				RawJSON:          v.Response.RawJSON(),
 			}
 			return ChatStreamEvent{Type: ChatStreamEventDone, Response: &resp}, nil
@@ -568,4 +617,107 @@ func extractDeepSeekStreamReasoning(raw string) string {
 		return ""
 	}
 	return resp.Choices[0].Delta.ReasoningContent
+}
+
+func openAIUsage(resp *responses.Response) ChatUsage {
+	if resp == nil {
+		return ChatUsage{}
+	}
+	return ChatUsage{
+		InputTokens:       resp.Usage.InputTokens,
+		CachedInputTokens: resp.Usage.InputTokensDetails.CachedTokens,
+		OutputTokens:      resp.Usage.OutputTokens,
+		ReasoningTokens:   resp.Usage.OutputTokensDetails.ReasoningTokens,
+		WebSearchRequests: extractOpenAIWebSearchRequests(resp.RawJSON()),
+	}
+}
+
+// 当前 SDK 版本还没有 tool_usage 字段（新版要求 Go 1.26），直接从原始响应读取。
+func extractOpenAIWebSearchRequests(raw string) int64 {
+	var payload struct {
+		ToolUsage struct {
+			WebSearch struct {
+				NumRequests int64 `json:"num_requests"`
+			} `json:"web_search"`
+		} `json:"tool_usage"`
+	}
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return 0
+	}
+	return payload.ToolUsage.WebSearch.NumRequests
+}
+
+// openAIFinalText 只取最终回答。GPT-5.3 之后的模型可能在工具调用之间输出 phase=commentary 的进度说明，
+// SDK 的 OutputText() 会把它们和最终回答拼在一起，结构化输出时会破坏 JSON。
+func openAIFinalText(resp *responses.Response) string {
+	if resp == nil {
+		return ""
+	}
+	var payload struct {
+		Output []struct {
+			Type    string `json:"type"`
+			Phase   string `json:"phase"`
+			Content []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+		} `json:"output"`
+	}
+	if err := json.Unmarshal([]byte(resp.RawJSON()), &payload); err != nil {
+		return resp.OutputText()
+	}
+	var final strings.Builder
+	found := false
+	for _, item := range payload.Output {
+		if item.Type != "message" || item.Phase != "final_answer" {
+			continue
+		}
+		found = true
+		for _, content := range item.Content {
+			if content.Type == "output_text" {
+				final.WriteString(content.Text)
+			}
+		}
+	}
+	if !found {
+		return resp.OutputText()
+	}
+	return final.String()
+}
+
+// extractOpenAIWebSearches 从原始响应里取出 web_search_call。直接解析 JSON 比走 SDK 的 union 类型更直白。
+func extractOpenAIWebSearches(raw string) []ChatWebSearch {
+	if raw == "" {
+		return nil
+	}
+	var payload struct {
+		Output []struct {
+			Type   string `json:"type"`
+			Action struct {
+				Type    string `json:"type"`
+				Query   string `json:"query"`
+				URL     string `json:"url"`
+				Sources []struct {
+					URL string `json:"url"`
+				} `json:"sources"`
+			} `json:"action"`
+		} `json:"output"`
+	}
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		return nil
+	}
+	var searches []ChatWebSearch
+	for _, item := range payload.Output {
+		if item.Type != "web_search_call" {
+			continue
+		}
+		search := ChatWebSearch{Action: item.Action.Type, Query: item.Action.Query, URL: item.Action.URL}
+		for _, source := range item.Action.Sources {
+			if source.URL != "" {
+				search.Sources = append(search.Sources, source.URL)
+			}
+		}
+		searches = append(searches, search)
+	}
+	return searches
 }

@@ -172,6 +172,7 @@ func (p *OpenAIProvider) AvailableReasoning() []ReasoningEffort {
 			ReasoningEffortMedium,
 			ReasoningEffortHigh,
 			ReasoningEffortXHigh,
+			ReasoningEffortMax, // GPT-6 系列支持
 		}
 	case ProviderSourceTypeDeepSeek:
 		return []ReasoningEffort{
