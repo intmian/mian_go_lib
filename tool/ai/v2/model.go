@@ -35,8 +35,10 @@ const (
 )
 
 type ModelConfig struct {
-	ID           ModelID           `json:"id"`
-	Name         string            `json:"name"`
+	ID   ModelID `json:"id"`
+	Name string  `json:"name"`
+	// Alias 只用于展示，用来区分同一个上游模型的不同配置；请求上游始终用 Name。
+	Alias        string            `json:"alias,omitempty"`
 	Type         ModelType         `json:"type"`
 	CallProtocol ModelCallProtocol `json:"callProtocol,omitempty"`
 	Reasoning    []ReasoningEffort `json:"reasoning,omitempty"`

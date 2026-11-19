@@ -162,6 +162,28 @@ func (p *OpenAIProvider) AvailableModels(ctx context.Context) ([]string, error) 
 	return models, nil
 }
 
+// AvailableModelInfo 是上游 /models 里的一个模型。各家扩展字段不同，Raw 保留原始 JSON 由调用方解析。
+type AvailableModelInfo struct {
+	ID  string
+	Raw string
+}
+
+func (p *OpenAIProvider) AvailableModelInfos(ctx context.Context) ([]AvailableModelInfo, error) {
+	pager := p.client.Models.ListAutoPaging(ctx)
+	models := make([]AvailableModelInfo, 0)
+	for pager.Next() {
+		model := pager.Current()
+		if model.ID == "" {
+			continue
+		}
+		models = append(models, AvailableModelInfo{ID: model.ID, Raw: model.RawJSON()})
+	}
+	if err := pager.Err(); err != nil {
+		return nil, err
+	}
+	return models, nil
+}
+
 func (p *OpenAIProvider) AvailableReasoning() []ReasoningEffort {
 	switch p.sourceType {
 	case ProviderSourceTypeOpenAI:
