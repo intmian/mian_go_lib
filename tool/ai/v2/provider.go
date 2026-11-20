@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"sort"
 	"strings"
@@ -64,7 +65,39 @@ type OpenAIProvider struct {
 	models     map[ModelID]ModelConfig
 }
 
-func NewOpenAIProvider(baseURL, token string, sourceType ProviderSourceType) (*OpenAIProvider, error) {
+// ProviderOption 调整 OpenAIProvider 的底层请求行为。
+type ProviderOption func(*providerOptions)
+
+type providerOptions struct {
+	httpClient *http.Client
+	maxRetries *int
+}
+
+// WithHTTPClient 指定发请求用的 HTTP 客户端（默认 http.DefaultClient，连接超时 30 秒、等待响应不限时）。
+func WithHTTPClient(client *http.Client) ProviderOption {
+	return func(o *providerOptions) { o.httpClient = client }
+}
+
+// WithMaxRetries 设置 SDK 内部的自动重试次数（默认 2 次，连接失败也会重试）。传 0 表示由调用方自己决定是否重试。
+func WithMaxRetries(retries int) ProviderOption {
+	return func(o *providerOptions) {
+		if retries < 0 {
+			retries = 0
+		}
+		o.maxRetries = &retries
+	}
+}
+
+// HTTPStatusFromError 取出上游返回的 HTTP 状态码；连接失败、超时等没有收到响应的错误返回 false。
+func HTTPStatusFromError(err error) (int, bool) {
+	var apiErr *openai.Error
+	if errors.As(err, &apiErr) && apiErr.StatusCode > 0 {
+		return apiErr.StatusCode, true
+	}
+	return 0, false
+}
+
+func NewOpenAIProvider(baseURL, token string, sourceType ProviderSourceType, providerOpts ...ProviderOption) (*OpenAIProvider, error) {
 	if !IsOpenAILikeSource(sourceType) {
 		return nil, errors.New("unsupported openai-like provider source")
 	}
@@ -72,6 +105,18 @@ func NewOpenAIProvider(baseURL, token string, sourceType ProviderSourceType) (*O
 	opts := []option.RequestOption{option.WithAPIKey(token)}
 	if strings.TrimSpace(baseURL) != "" {
 		opts = append(opts, option.WithBaseURL(baseURL))
+	}
+	var settings providerOptions
+	for _, apply := range providerOpts {
+		if apply != nil {
+			apply(&settings)
+		}
+	}
+	if settings.httpClient != nil {
+		opts = append(opts, option.WithHTTPClient(settings.httpClient))
+	}
+	if settings.maxRetries != nil {
+		opts = append(opts, option.WithMaxRetries(*settings.maxRetries))
 	}
 
 	return &OpenAIProvider{
