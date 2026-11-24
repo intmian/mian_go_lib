@@ -105,18 +105,17 @@ func normalizeFeishuMarkdown(content string) string {
 		match := feishuHeadingPattern.FindStringSubmatch(line)
 		if len(match) == 2 {
 			lines[i] = "**" + strings.TrimSpace(match[1]) + "**"
-			// 标题转为普通加粗段落后，需要空行结束前面的列表并隔开正文。
+			// 飞书卡片的 markdown 里每个换行都会原样显示，空行就是一整行空白。
+			// 标题转成加粗行后只在上方留一行空白和前一节隔开，下方紧贴自己的正文，
+			// 否则标题和正文之间也会空一行，看起来像两段不相干的内容。
 			if i > 0 {
 				lines[i] = "\n" + lines[i]
 			}
-			if i < len(lines)-1 {
-				lines[i] += "\n"
-			}
 		}
 	}
-	// 飞书卡片里的 markdown 段落间单空行即可，避免生成过多空白。
 	content = strings.Join(lines, "\n")
-	return regexp.MustCompile(`\n{3,}`).ReplaceAllString(content, "\n\n")
+	content = regexp.MustCompile(`\n{3,}`).ReplaceAllString(content, "\n\n")
+	return strings.Trim(content, "\n")
 }
 
 func SendFeishuMessage(webhookUrl string, message FeishuMessage) error {
