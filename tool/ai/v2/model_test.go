@@ -20,6 +20,7 @@ func TestModelConfigValidatesCallProtocolAgainstType(t *testing.T) {
 		{name: "dashscope qwen3 asr", modelType: ModelTypeSTT, protocol: ModelCallProtocolDashScopeQwen3ASR},
 		{name: "dashscope fun asr", modelType: ModelTypeSTT, protocol: ModelCallProtocolDashScopeFunASR},
 		{name: "dashscope fun asr realtime", modelType: ModelTypeSTT, protocol: ModelCallProtocolDashScopeFunASRRealtime},
+		{name: "openai realtime stt", modelType: ModelTypeSTT, protocol: ModelCallProtocolOpenAIRealtimeSTT},
 		{name: "stt rejects text", modelType: ModelTypeSTT, protocol: ModelCallProtocolOpenAIText, wantErr: true},
 		{name: "search inherits", modelType: ModelTypeSearch},
 		{name: "deepseek search", modelType: ModelTypeSearch, protocol: ModelCallProtocolDeepSeekSearch},

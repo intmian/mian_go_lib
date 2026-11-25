@@ -31,7 +31,9 @@ const (
 	ModelCallProtocolDashScopeQwen3ASR       ModelCallProtocol = "DashScopeQwen3ASR"
 	ModelCallProtocolDashScopeFunASR         ModelCallProtocol = "DashScopeFunASR"
 	ModelCallProtocolDashScopeFunASRRealtime ModelCallProtocol = "DashScopeFunASRRealtime"
-	ModelCallProtocolDeepSeekSearch          ModelCallProtocol = "DeepSeekSearch"
+	// ModelCallProtocolOpenAIRealtimeSTT 是 OpenAI Realtime API 的转写会话（WebSocket，边说边出字）。
+	ModelCallProtocolOpenAIRealtimeSTT ModelCallProtocol = "OpenAIRealtimeSTT"
+	ModelCallProtocolDeepSeekSearch    ModelCallProtocol = "DeepSeekSearch"
 )
 
 type ModelConfig struct {
@@ -99,7 +101,8 @@ func validateModelCallProtocol(modelType ModelType, protocol ModelCallProtocol) 
 		case ModelCallProtocolOpenAISTT,
 			ModelCallProtocolDashScopeQwen3ASR,
 			ModelCallProtocolDashScopeFunASR,
-			ModelCallProtocolDashScopeFunASRRealtime:
+			ModelCallProtocolDashScopeFunASRRealtime,
+			ModelCallProtocolOpenAIRealtimeSTT:
 			return nil
 		default:
 			return fmt.Errorf("stt model call protocol %q is invalid", protocol)
